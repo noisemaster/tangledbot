@@ -18,6 +18,7 @@ var (
 func init() {
 	flag.StringVar(&Token, "t", "", "Account Token")
 	flag.StringVar(&Config, "c", "", "Config file location")
+	flag.Parse()
 }
 
 func main() {
@@ -35,7 +36,7 @@ func main() {
 		return
 	}
 
-	fmt.Println("%s (%s) now active")
+	fmt.Println("Bot now active")
 	<-make(chan struct{})
 	return
 }
