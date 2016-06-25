@@ -30,13 +30,19 @@ func main() {
 
 	discord.AddHandler(messageCreate)
 
+	bot, err := discord.User("@me")
+	if err != nil {
+		fmt.Println("error getting bot details,", err)
+		return
+	}
+
 	err = discord.Open()
 	if err != nil {
 		fmt.Println("error opening session,", err)
 		return
 	}
 
-	fmt.Println("Bot now active")
+	fmt.Println("%s (%s) now active", bot.Username, bot.ID)
 	<-make(chan struct{})
 	return
 }
