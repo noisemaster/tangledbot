@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -28,13 +27,13 @@ func main() {
 		return
 	}
 
-	discord.AddHandler(messageCreate)
-
 	bot, err := discord.User("@me")
 	if err != nil {
 		fmt.Println("error getting bot details,", err)
 		return
 	}
+
+	discord.AddHandler(messageCreate)
 
 	err = discord.Open()
 	if err != nil {
@@ -42,11 +41,11 @@ func main() {
 		return
 	}
 
-	fmt.Println("%s (%s) now active", bot.Username, bot.ID)
+	fmt.Printf("%s (%s) now active\n", bot.Username, bot.ID)
 	<-make(chan struct{})
 	return
 }
 
-func messageCreate(s *discordgo.Session, m *discordgo.Message) {
-	fmt.Println("%20s %20s %20s > %s\n", m.ChannelID, time.Now().Format(time.Stamp), m.Author.Username, m.Content)
+func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	fmt.Printf("%s > %s\n", m.Author.Username, m.Content)
 }
