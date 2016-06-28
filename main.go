@@ -49,3 +49,7 @@ func main() {
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	fmt.Printf("%s > %s\n", m.Author.Username, m.Content)
 }
+
+func onReady(s *discordgo.Session, event *discordgo.Ready) {
+	s.UpdateStatus(0, "Boxbot.Go v0.0.0.0.0.0.0.1")
+}
