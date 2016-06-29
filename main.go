@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -47,6 +48,14 @@ func main() {
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if len(m.Mentions) < 0 {
+		return
+	}
+	msg := m.ContentWithMentionsReplaced()
+	parsed := strings.Split(strings.ToLower(msg), " ")
+	if parsed[1] == "ping" {
+		s.ChannelMessageSend(m.ChannelID, "Pong")
+	}
 	fmt.Printf("%s > %s\n", m.Author.Username, m.Content)
 }
 
