@@ -1,30 +1,41 @@
 package main
 
 import (
-	"flag"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 var (
-	//Token for bot
-	Token string
-	//Config for bot
-	Config string
-	//What's the bot's ID so it doesn't talk to itself
+	//BotID so it doesn't talk to itself
 	BotID string
+	//BotKeys needed to run the bot
+	BotKeys Config
 )
 
+//Config Tokens and API keys loaded from a json file
+type Config struct {
+	DiscordToken  string `json:"discord token"`
+	GoogleAPIKey  string `json:"google api"`
+	GoogleCX      string `json:"google custom search cx"`
+	SoundcloudAPI string `json:"soundcloud api"`
+	TumblrAPI     string `json:"tumblr api"`
+}
+
 func init() {
-	flag.StringVar(&Token, "t", "", "Account Token")
-	flag.StringVar(&Config, "c", "", "Config file location")
-	flag.Parse()
+	file, err := ioutil.ReadFile("./config.json")
+	if err != nil {
+		fmt.Println("Config file not loaded, does one exist?")
+		return
+	}
+	json.Unmarshal(file, &BotKeys)
 }
 
 func main() {
-	discord, err := discordgo.New(Token)
+	discord, err := discordgo.New(BotKeys.DiscordToken)
 	if err != nil {
 		fmt.Println("error creating discord session,", err)
 		return
@@ -51,7 +62,16 @@ func main() {
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if len(m.Mentions) < 0 || m.Author.ID == BotID {
+	var forBot = false
+	if len(m.Mentions) < 1 || m.Author.ID == BotID {
+		return
+	}
+	for _, user := range m.Mentions {
+		if user.ID == BotID {
+			forBot = true
+		}
+	}
+	if forBot == false {
 		return
 	}
 	msg := m.ContentWithMentionsReplaced()
