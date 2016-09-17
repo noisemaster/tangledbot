@@ -74,12 +74,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if forBot == false {
 		return
 	}
-	msg := m.ContentWithMentionsReplaced()
-	parsed := strings.Split(strings.ToLower(msg), " ")
+	msg := m.Content
 	fmt.Printf("%s said %s\n", m.Author.Username, m.Content)
-	if parsed[1] == "ping" {
+	if strings.HasPrefix(msg, "--"+"ping") {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "Pong")
-	} else if parsed[1] == "stopthepain" {
+	} else if strings.HasPrefix(msg, "--"+"stopthepain") {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "https://41.media.tumblr.com/45ba426239ef6cd9cb9bd17ed43b5427/tumblr_inline_o2mejqgtvU1tkuibk_540.jpg")
 	} else {
 		return
