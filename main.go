@@ -12,11 +12,11 @@ import (
 var (
 	//BotID so it doesn't talk to itself
 	BotID string
-	//BotKeys needed to run the bot
+	//BotKeys needed to run the bot and plugins
 	BotKeys Config
 )
 
-//Config Tokens and API keys loaded from a json file
+//Config struct for tokens and API keys loaded from a json file
 type Config struct {
 	DiscordToken  string `json:"discord token"`
 	GoogleAPIKey  string `json:"google api"`
