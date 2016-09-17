@@ -86,5 +86,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 }
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
+	fmt.Println("READY for commands")
 	_ = s.UpdateStatus(0, "Boxbot.Go v0.1")
 }
