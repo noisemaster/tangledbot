@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -23,6 +24,19 @@ type Config struct {
 	GoogleCX      string `json:"google custom search cx"`
 	SoundcloudAPI string `json:"soundcloud api"`
 	TumblrAPI     string `json:"tumblr api"`
+}
+
+//Subreddit struct stores info about a subreddit and its posts
+type Subreddit struct {
+	Data struct {
+		Children []struct {
+			Data struct {
+				URL          string `json:"url"`
+				Title        string `json:"title"`
+				Announcement bool   `json:"stickied"`
+			} `json:"data"`
+		} `json:"children"`
+	} `json:"data"`
 }
 
 func init() {
@@ -63,30 +77,48 @@ func main() {
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	var forBot = false
-	if len(m.Mentions) < 1 || m.Author.ID == BotID {
-		return
-	}
-	for _, user := range m.Mentions {
-		if user.ID == BotID {
-			forBot = true
-		}
-	}
-	if forBot == false {
-		return
-	}
 	msg := m.Content
 	fmt.Printf("%s said %s\n", m.Author.Username, m.Content)
 	if strings.HasPrefix(msg, "--"+"ping") {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "Pong")
 	} else if strings.HasPrefix(msg, "--"+"stopthepain") {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "https://41.media.tumblr.com/45ba426239ef6cd9cb9bd17ed43b5427/tumblr_inline_o2mejqgtvU1tkuibk_540.jpg")
-	} else {
-		return
+	} else if strings.HasPrefix(msg, "--"+"reddit") {
+		go sendRedditPost(s, m, msg[9:])
 	}
 }
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
 	fmt.Println("READY for commands")
-	_ = s.UpdateStatus(0, "Boxbot.Go v0.1")
+	_ = s.UpdateStatus(0, "Boxbot.Go")
+}
+
+func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string) {
+	fmt.Println(sub)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://www.reddit.com/r/"+sub+".json", nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	req.Header.Set("User-Agent", "Boxbot/0.1")
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	var info Subreddit
+	json.Unmarshal(body, &info)
+	for _, v := range info.Data.Children {
+		if !v.Data.Announcement {
+			_, _ = s.ChannelMessageSend(m.ChannelID, "Here's the lastest post from r/"+sub+"\n**"+v.Data.Title+"**\n"+v.Data.URL)
+			return
+		}
+	}
 }
