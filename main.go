@@ -49,6 +49,7 @@ func main() {
 
 	BotID = bot.ID
 	discord.AddHandler(messageCreate)
+	discord.AddHandler(onReady)
 
 	err = discord.Open()
 	if err != nil {
