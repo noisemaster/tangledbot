@@ -86,8 +86,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "https://41.media.tumblr.com/45ba426239ef6cd9cb9bd17ed43b5427/tumblr_inline_o2mejqgtvU1tkuibk_540.jpg")
 	} else if strings.HasPrefix(msg, "--"+"reddit") {
 		go sendRedditPost(s, m, msg[9:])
+	} else if strings.HasPrefix(msg, "--"+"frinkgifcap") {
+		res, _ := frinkiac.GetFrinkiacGifMeme(m.Content[14:])
+		_, _ = s.ChannelMessageSend(m.ChannelID, res)
 	} else if strings.HasPrefix(msg, "--"+"frinkgif") {
-		res, _ := frinkiac.GetFrinkiacGifMeme(m.Content[11:])
+		res, _ := frinkiac.GetFrinkiacGif(m.Content[11:])
 		_, _ = s.ChannelMessageSend(m.ChannelID, res)
 	} else if strings.HasPrefix(msg, "--"+"frinkcap") {
 		res, _ := frinkiac.GetFrinkiacMeme(m.Content[11:])
@@ -95,8 +98,11 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(msg, "--"+"frink") {
 		res, _ := frinkiac.GetFrinkiacFrame(m.Content[8:])
 		_, _ = s.ChannelMessageSend(m.ChannelID, res)
+	} else if strings.HasPrefix(msg, "--"+"morbogifcap") {
+		res, _ := frinkiac.GetMorbotronGifMeme(m.Content[14:])
+		_, _ = s.ChannelMessageSend(m.ChannelID, res)
 	} else if strings.HasPrefix(msg, "--"+"morbogif") {
-		res, _ := frinkiac.GetMorbotronGifMeme(m.Content[11:])
+		res, _ := frinkiac.GetMorbotronGif(m.Content[11:])
 		_, _ = s.ChannelMessageSend(m.ChannelID, res)
 	} else if strings.HasPrefix(msg, "--"+"morbocap") {
 		res, _ := frinkiac.GetMorbotronMeme(m.Content[11:])
