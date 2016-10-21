@@ -77,6 +77,40 @@ func main() {
 	return
 }
 
+func handleFrinkiac(s *discordgo.Session, m *discordgo.MessageCreate) {
+	args := strings.Split(m.Content, " ")
+	if args[1] == "gif" {
+		parsed := strings.Join(args[2:], " ")
+		req, _ := frinkiac.GetFrinkiacGifMeme(parsed)
+		_, _ = s.ChannelMessageSend(m.ChannelID, req)
+	} else if args[1] == "cap" {
+		parsed := strings.Join(args[2:], " ")
+		req, _ := frinkiac.GetFrinkiacMeme(parsed)
+		_, _ = s.ChannelMessageSend(m.ChannelID, req)
+	} else {
+		parsed := strings.Join(args[1:], " ")
+		req, _ := frinkiac.GetFrinkiacFrame(parsed)
+		_, _ = s.ChannelMessageSend(m.ChannelID, req)
+	}
+}
+
+func handleMorbotron(s *discordgo.Session, m *discordgo.MessageCreate) {
+	args := strings.Split(m.Content, " ")
+	if args[1] == "gif" {
+		parsed := strings.Join(args[2:], " ")
+		req, _ := frinkiac.GetMorbotronGifMeme(parsed)
+		_, _ = s.ChannelMessageSend(m.ChannelID, req)
+	} else if args[1] == "cap" {
+		parsed := strings.Join(args[2:], " ")
+		req, _ := frinkiac.GetMorbotronMeme(parsed)
+		_, _ = s.ChannelMessageSend(m.ChannelID, req)
+	} else {
+		parsed := strings.Join(args[1:], " ")
+		req, _ := frinkiac.GetFrinkiacFrame(parsed)
+		_, _ = s.ChannelMessageSend(m.ChannelID, req)
+	}
+}
+
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	msg := m.Content
 	fmt.Printf("%s said %s\n", m.Author.Username, m.Content)
@@ -86,30 +120,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "https://41.media.tumblr.com/45ba426239ef6cd9cb9bd17ed43b5427/tumblr_inline_o2mejqgtvU1tkuibk_540.jpg")
 	} else if strings.HasPrefix(msg, "--"+"reddit") {
 		go sendRedditPost(s, m, msg[9:])
-	} else if strings.HasPrefix(msg, "--"+"frinkgifcap") {
-		res, _ := frinkiac.GetFrinkiacGifMeme(m.Content[14:])
-		_, _ = s.ChannelMessageSend(m.ChannelID, res)
-	} else if strings.HasPrefix(msg, "--"+"frinkgif") {
-		res, _ := frinkiac.GetFrinkiacGif(m.Content[11:])
-		_, _ = s.ChannelMessageSend(m.ChannelID, res)
-	} else if strings.HasPrefix(msg, "--"+"frinkcap") {
-		res, _ := frinkiac.GetFrinkiacMeme(m.Content[11:])
-		_, _ = s.ChannelMessageSend(m.ChannelID, res)
-	} else if strings.HasPrefix(msg, "--"+"frink") {
-		res, _ := frinkiac.GetFrinkiacFrame(m.Content[8:])
-		_, _ = s.ChannelMessageSend(m.ChannelID, res)
-	} else if strings.HasPrefix(msg, "--"+"morbogifcap") {
-		res, _ := frinkiac.GetMorbotronGifMeme(m.Content[14:])
-		_, _ = s.ChannelMessageSend(m.ChannelID, res)
-	} else if strings.HasPrefix(msg, "--"+"morbogif") {
-		res, _ := frinkiac.GetMorbotronGif(m.Content[11:])
-		_, _ = s.ChannelMessageSend(m.ChannelID, res)
-	} else if strings.HasPrefix(msg, "--"+"morbocap") {
-		res, _ := frinkiac.GetMorbotronMeme(m.Content[11:])
-		_, _ = s.ChannelMessageSend(m.ChannelID, res)
-	} else if strings.HasPrefix(msg, "--"+"morbo") {
-		res, _ := frinkiac.GetMorbotronFrame(m.Content[8:])
-		_, _ = s.ChannelMessageSend(m.ChannelID, res)
+	} else if strings.HasPrefix(msg, "--"+"frinkiac") {
+		go handleFrinkiac(s, m)
+	} else if strings.HasPrefix(msg, "--"+"morbotron") {
+		go handleMorbotron(s, m)
 	}
 }
 
