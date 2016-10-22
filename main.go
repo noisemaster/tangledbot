@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"strings"
 
@@ -127,6 +128,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		go handleFrinkiac(s, m)
 	} else if strings.HasPrefix(msg, "--"+"morbotron") {
 		go handleMorbotron(s, m)
+	} else if strings.HasPrefix(msg, "--"+"choose") {
+		if len(msg) < 9 {
+			return
+		}
+		choices := strings.Split(msg[9:], "or")
+		_, _ = s.ChannelMessageSend(m.ChannelID, "I choose **"+choices[rand.Intn(len(choices))]+"**")
 	} else if strings.HasPrefix(msg, "--"+"help") {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "```xl\nBoxbot command list\nCommands in the form of --{command}\n\tping\n\treddit {Subreddit} - Gets the newest post from a public subreddit\n\tfrinkiac {gif or cap or nothing} {search} - Gets a Gif or Caption from Frinkiac, gives a frame if gif or cap isn't given\n\tmorbotron {gif or cap or nothing} {search} - Functionally the same as --frinkiac but for Morobtron\n```")
 	}
