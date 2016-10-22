@@ -119,6 +119,9 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else if strings.HasPrefix(msg, "--"+"stopthepain") {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "https://41.media.tumblr.com/45ba426239ef6cd9cb9bd17ed43b5427/tumblr_inline_o2mejqgtvU1tkuibk_540.jpg")
 	} else if strings.HasPrefix(msg, "--"+"reddit") {
+		if len(msg) < 9 {
+			return
+		}
 		go sendRedditPost(s, m, msg[9:])
 	} else if strings.HasPrefix(msg, "--"+"frinkiac") {
 		go handleFrinkiac(s, m)
