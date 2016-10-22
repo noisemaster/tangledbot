@@ -135,7 +135,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		choices := strings.Split(msg[9:], "or")
 		_, _ = s.ChannelMessageSend(m.ChannelID, "I choose **"+choices[rand.Intn(len(choices))]+"**")
 	} else if strings.HasPrefix(msg, "--"+"help") {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "```xl\nBoxbot command list\nCommands in the form of --{command}\n\tping\n\treddit {Subreddit} - Gets the newest post from a public subreddit\n\tfrinkiac {gif or cap or nothing} {search} - Gets a Gif or Caption from Frinkiac, gives a frame if gif or cap isn't given\n\tmorbotron {gif or cap or nothing} {search} - Functionally the same as --frinkiac but for Morobtron\n```")
+		_, _ = s.ChannelMessageSend(m.ChannelID, "```xl\nBoxbot command list\nCommands in the form of --{command}\n\tping\n\treddit {Subreddit} - Gets the newest post from a public subreddit\n\tchoose {choice 1 or choice 2 or ...} - Choose a random entry from a list\n\tfrinkiac {gif or cap or nothing} {search} - Gets a Gif or Caption from Frinkiac, gives a frame if gif or cap isn't given\n\tmorbotron {gif or cap or nothing} {search} - Functionally the same as --frinkiac but for Morobtron\n```")
 	}
 }
 
