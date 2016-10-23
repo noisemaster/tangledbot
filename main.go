@@ -80,6 +80,9 @@ func main() {
 
 func handleFrinkiac(s *discordgo.Session, m *discordgo.MessageCreate) {
 	args := strings.Split(m.Content, " ")
+	if len(args) < 2 {
+		return
+	}
 	if args[1] == "gif" {
 		parsed := strings.Join(args[2:], " ")
 		req, _ := frinkiac.GetFrinkiacGifMeme(parsed)
@@ -97,6 +100,9 @@ func handleFrinkiac(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func handleMorbotron(s *discordgo.Session, m *discordgo.MessageCreate) {
 	args := strings.Split(m.Content, " ")
+	if len(args) < 2 {
+		return
+	}
 	if args[1] == "gif" {
 		parsed := strings.Join(args[2:], " ")
 		req, _ := frinkiac.GetMorbotronGifMeme(parsed)
