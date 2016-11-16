@@ -137,11 +137,11 @@ func sendInfoEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func sendHelpEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var e discordgo.MessageEmbed
-	e.Description = "**Boxbot Commands**\n--ping\n--reddit <subreddit> - Gets the latest post from a subreddit\n"
-	e.Description += "--choose {choice 1 or choice 2 or ...} - Choose a random entry from a list\n"
-	e.Description += "--info - Shows the latest updates to boxbot\n"
-	e.Description += "--frinkiac {gif or cap or nothing} {search} - Gets a Gif or Caption from Frinkiac, gives a frame if gif or cap isn't given\n"
-	e.Description += "--morbotron {gif or cap or nothing} {search} - Functionally the same as --frinkiac but for Morobtron\n"
+	e.Description = "**Boxbot Commands**\n**--ping**\n**--reddit <subreddit>** - Gets the latest post from a subreddit\n"
+	e.Description += "**--choose {choice 1 or choice 2 or ...}** - Choose a random entry from a list\n"
+	e.Description += "**--info - Shows the latest updates to boxbot**\n"
+	e.Description += "**--frinkiac {gif or cap or nothing} {search}** - Gets a Gif or Caption from Frinkiac, gives a frame if gif or cap isn't given\n"
+	e.Description += "**--morbotron {gif or cap or nothing} {search}** - Functionally the same as --frinkiac but for Morobtron\n"
 	e.Color = 0xE5343A
 	s.ChannelMessageSendEmbed(m.ChannelID, &e)
 }
