@@ -6,7 +6,10 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os/exec"
 	"strings"
+
+	"bytes"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/noisemaster/frinkiacapigo"
@@ -118,6 +121,20 @@ func handleMorbotron(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
+func sendInfoEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
+	var e discordgo.MessageEmbed
+	e.Title = "Boxbot.go v.2"
+	e.URL = "https://github.com/noisemaster/boxbot"
+	//Command shamelessly stolen from https://github.com/Rapptz/RoboDanny/blob/master/cogs/meta.py#L299
+	out, err := exec.Command("git", "show", "-s", "HEAD~3..HEAD", "--format=[%h](https://github.com/noisemaster/boxbot/commit/%H) - %s (%cr)").Output()
+	if err != nil {
+		s.ChannelMessageSendEmbed(m.ChannelID, &e)
+	}
+	e.Description = "**Latest Updates**\n" + string(bytes.Trim(out, " ")) + "\nNot much here to see right now"
+	e.Color = 0xE5343A
+	s.ChannelMessageSendEmbed(m.ChannelID, &e)
+}
+
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	msg := m.Content
 	fmt.Printf("%s said %s\n", m.Author.Username, m.Content)
@@ -142,12 +159,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "I choose **"+strings.Trim(choices[rand.Intn(len(choices))], " ")+"**")
 	} else if strings.HasPrefix(msg, "--"+"help") {
 		_, _ = s.ChannelMessageSend(m.ChannelID, "```xl\nBoxbot command list\nCommands in the form of --{command}\n\tping\n\treddit {Subreddit} - Gets the newest post from a public subreddit\n\tchoose {choice 1 or choice 2 or ...} - Choose a random entry from a list\n\tfrinkiac {gif or cap or nothing} {search} - Gets a Gif or Caption from Frinkiac, gives a frame if gif or cap isn't given\n\tmorbotron {gif or cap or nothing} {search} - Functionally the same as --frinkiac but for Morobtron\n```")
+	} else if strings.HasPrefix(msg, "--"+"info") {
+		sendInfoEmbed(s, m)
 	}
 }
 
 func onReady(s *discordgo.Session, event *discordgo.Ready) {
 	fmt.Println("READY for commands")
-	_ = s.UpdateStatus(0, "Boxbot.Go")
+	_ = s.UpdateStatus(0, "Boxbot.go")
 }
 
 func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string) {
@@ -158,7 +177,7 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 		fmt.Println(err)
 		return
 	}
-	req.Header.Set("User-Agent", "Boxbot/0.1")
+	req.Header.Set("User-Agent", "Boxbot/0.2")
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println(err)
