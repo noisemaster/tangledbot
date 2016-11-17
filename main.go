@@ -11,6 +11,8 @@ import (
 
 	"bytes"
 
+	"strconv"
+
 	"github.com/bwmarrin/discordgo"
 	"github.com/noisemaster/frinkiacapigo"
 )
@@ -39,6 +41,11 @@ type Subreddit struct {
 				URL          string `json:"url"`
 				Title        string `json:"title"`
 				Announcement bool   `json:"stickied"`
+				SelfPostText string `json:"selftext"`
+				SelfPost     bool   `json:"is_self"`
+				Score        int    `json:"score"`
+				NumComments  int    `json:"num_comments"`
+				Domain       string `json:"domain"`
 			} `json:"data"`
 		} `json:"children"`
 	} `json:"data"`
@@ -181,7 +188,7 @@ func onReady(s *discordgo.Session, event *discordgo.Ready) {
 }
 
 func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string) {
-	fmt.Println(sub)
+	var e discordgo.MessageEmbed
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "https://www.reddit.com/r/"+sub+".json", nil)
 	if err != nil {
@@ -204,7 +211,25 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 	json.Unmarshal(body, &info)
 	for _, v := range info.Data.Children {
 		if !v.Data.Announcement {
-			_, _ = s.ChannelMessageSend(m.ChannelID, "Here's the lastest post from r/"+sub+"\n**"+v.Data.Title+"**\n"+v.Data.URL)
+			e.Title = "Here's the latest post from r/" + sub
+			e.URL = "https://www.reddit.com/r/" + sub
+			e.Color = 0xE5343A
+			e.Description = "[" + v.Data.Title + "](" + v.Data.URL + ")\n"
+			if strings.HasSuffix(v.Data.URL, ".jpg") || strings.HasSuffix(v.Data.URL, ".png") || strings.HasSuffix(v.Data.URL, ".gif") {
+				var i discordgo.MessageEmbedImage
+				i.URL = v.Data.URL
+				e.Image = &i
+			}
+			if v.Data.SelfPost {
+				e.Description += v.Data.SelfPostText
+			}
+			var f = []*discordgo.MessageEmbedField{
+				&discordgo.MessageEmbedField{Name: "Score", Value: strconv.Itoa(v.Data.Score), Inline: true},
+				&discordgo.MessageEmbedField{Name: "Comments", Value: strconv.Itoa(v.Data.NumComments), Inline: true},
+				&discordgo.MessageEmbedField{Name: "From", Value: v.Data.Domain, Inline: true},
+			}
+			e.Fields = f
+			s.ChannelMessageSendEmbed(m.ChannelID, &e)
 			return
 		}
 	}
