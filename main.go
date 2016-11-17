@@ -220,12 +220,11 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 			} else if v.Data.SelfPost {
 				e.Description += v.Data.SelfPostText
 			}
-			var f = []*discordgo.MessageEmbedField{
+			e.Fields = []*discordgo.MessageEmbedField{
 				&discordgo.MessageEmbedField{Name: "Score", Value: strconv.Itoa(v.Data.Score), Inline: true},
 				&discordgo.MessageEmbedField{Name: "Comments", Value: strconv.Itoa(v.Data.NumComments), Inline: true},
 				&discordgo.MessageEmbedField{Name: "From", Value: v.Data.Domain, Inline: true},
 			}
-			e.Fields = f
 			s.ChannelMessageSendEmbed(m.ChannelID, &e)
 			return
 		}
