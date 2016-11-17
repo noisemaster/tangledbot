@@ -215,12 +215,9 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 			e.URL = "https://www.reddit.com/r/" + sub
 			e.Color = 0xE5343A
 			e.Description = "[" + v.Data.Title + "](" + v.Data.URL + ")\n"
-			if strings.HasSuffix(v.Data.URL, ".jpg") || strings.HasSuffix(v.Data.URL, ".png") || strings.HasSuffix(v.Data.URL, ".gif") {
-				var i discordgo.MessageEmbedImage
-				i.URL = v.Data.URL
-				e.Image = &i
-			}
-			if v.Data.SelfPost {
+			if strings.Contains(v.Data.URL, ".jpg") || strings.Contains(v.Data.URL, ".png") || strings.Contains(v.Data.URL, ".gif") || strings.Contains(v.Data.Domain, "imgur") {
+				e.Image = &discordgo.MessageEmbedImage{URL: v.Data.URL}
+			} else if v.Data.SelfPost {
 				e.Description += v.Data.SelfPostText
 			}
 			var f = []*discordgo.MessageEmbedField{
