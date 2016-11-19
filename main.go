@@ -51,6 +51,13 @@ type Subreddit struct {
 	} `json:"data"`
 }
 
+//TumblrTag stuct contains info about a tumblr tag
+type TumblrTag struct {
+	Response []struct {
+		PostURL string `json:"post_url"`
+	} `json:"response"`
+}
+
 func init() {
 	file, err := ioutil.ReadFile("./config.json")
 	if err != nil {
@@ -176,9 +183,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		choices := strings.Split(msg[9:], "or")
 		_, _ = s.ChannelMessageSend(m.ChannelID, "I choose **"+strings.Trim(choices[rand.Intn(len(choices))], " ")+"**")
 	} else if strings.HasPrefix(msg, "--"+"help") {
-		sendHelpEmbed(s, m)
+		go sendHelpEmbed(s, m)
 	} else if strings.HasPrefix(msg, "--"+"info") {
-		sendInfoEmbed(s, m)
+		go sendInfoEmbed(s, m)
+	} else if strings.HasPrefix(msg, "--"+"tumblr") {
+		if len(msg) < 9 {
+			return
+		}
+		go sendTumblrPost(s, m, msg[9:])
 	}
 }
 
@@ -229,4 +241,29 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 			return
 		}
 	}
+}
+
+func sendTumblrPost(s *discordgo.Session, m *discordgo.MessageCreate, tag string) {
+	r := strings.NewReplacer(" ", "%20")
+	var info TumblrTag
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://api.tumblr.com/v2/tagged?tag="+r.Replace(tag)+"&api_key="+BotKeys.TumblrAPI, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	req.Header.Set("User-Agent", "Boxbot/0.2")
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	json.Unmarshal(body, &info)
+	s.ChannelMessageSend(m.ChannelID, info.Response[rand.Intn(len(info.Response))].PostURL)
 }
