@@ -164,7 +164,6 @@ func sendServerInfo(s *discordgo.Session, m *discordgo.MessageCreate) {
 		Title: g.Name,
 		Color: 0xE5343A,
 	}
-	fmt.Println(g.Icon)
 	e.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: "https://cdn.discordapp.com/icons/" + c.GuildID + "/" + g.Icon + ".jpg"}
 	for _, z := range g.Emojis {
 		emojis += "<:" + z.Name + ":" + z.ID + "> "
