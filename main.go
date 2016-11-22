@@ -149,6 +149,38 @@ func sendInfoEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
 	s.ChannelMessageSendEmbed(m.ChannelID, &e)
 }
 
+func sendServerInfo(s *discordgo.Session, m *discordgo.MessageCreate) {
+	c, _ := s.Channel(m.ChannelID)
+	g, err := s.Guild(c.GuildID)
+	if err != nil {
+		return
+	}
+	owner, err := s.User(g.OwnerID)
+	if err != nil {
+		return
+	}
+	var emojis string
+	e := discordgo.MessageEmbed{
+		Title: g.Name,
+		Color: 0xE5343A,
+	}
+	fmt.Println(g.Icon)
+	e.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: "https://cdn.discordapp.com/icons/" + c.GuildID + "/" + g.Icon + ".jpg"}
+	for _, z := range g.Emojis {
+		emojis += "<:" + z.Name + ":" + z.ID + "> "
+	}
+	e.Fields = []*discordgo.MessageEmbedField{
+		&discordgo.MessageEmbedField{Name: "Owner", Value: owner.Username, Inline: true},
+		&discordgo.MessageEmbedField{Name: "Members", Value: strconv.Itoa(g.MemberCount), Inline: true},
+		&discordgo.MessageEmbedField{Name: "Roles", Value: strconv.Itoa(len(g.Roles)), Inline: true},
+		&discordgo.MessageEmbedField{Name: "Emojis", Value: emojis},
+	}
+	_, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
 func sendHelpEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var e discordgo.MessageEmbed
 	e.Description = "**Boxbot Commands**\n**--ping**\n**--reddit <subreddit>** - Gets the latest post from a subreddit\n"
@@ -191,6 +223,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		go sendTumblrPost(s, m, msg[9:])
+	} else if strings.HasPrefix(msg, "--"+"server") {
+		go sendServerInfo(s, m)
 	}
 }
 
