@@ -256,10 +256,13 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 	for _, v := range info.Data.Children {
 		if !v.Data.Announcement {
 			var e = discordgo.MessageEmbed{
-				Title:       "Here's the latest post from r/" + sub,
-				URL:         "https://www.reddit.com/r/" + sub,
-				Color:       0xE5343A,
-				Description: "[" + v.Data.Title + "](" + v.Data.URL + ")\n",
+				Title: v.Data.Title,
+				URL:   v.Data.URL,
+				Color: 0xE5343A,
+			}
+			e.Author = &discordgo.MessageEmbedAuthor{
+				Name: "/r/" + sub,
+				URL:  "https://www.reddit.com/r/" + sub,
 			}
 			if strings.Contains(v.Data.URL, ".jpg") || strings.Contains(v.Data.URL, ".png") || strings.Contains(v.Data.URL, ".gif") || strings.Contains(v.Data.Domain, "imgur") {
 				e.Image = &discordgo.MessageEmbedImage{URL: v.Data.URL}
