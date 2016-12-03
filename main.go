@@ -182,13 +182,32 @@ func sendServerInfo(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func sendHelpEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var e discordgo.MessageEmbed
-	e.Description = "**Boxbot Commands**\n**--ping**\n**--reddit <subreddit>** - Gets the latest post from a subreddit\n"
-	e.Description += "**--choose {choice 1 or choice 2 or ...}** - Choose a random entry from a list\n"
-	e.Description += "**--info - Shows the latest updates to boxbot**\n"
-	e.Description += "**--frinkiac {gif or cap or nothing} {search}** - Gets a Gif or Caption from Frinkiac, gives a frame if gif or cap isn't given\n"
-	e.Description += "**--morbotron {gif or cap or nothing} {search}** - Functionally the same as --frinkiac but for Morobtron\n"
+	me, err := s.User("@me")
+	if err != nil {
+		return
+	}
+	e.Author = &discordgo.MessageEmbedAuthor{
+		IconURL: "https://cdn.discordapp.com/avatars/" + me.ID + "/" + me.Avatar + ".jpg",
+		Name:    me.Username,
+	}
 	e.Color = 0xE5343A
-	s.ChannelMessageSendEmbed(m.ChannelID, &e)
+	e.Description = "**Boxbot Commands**"
+	_, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
+	if err != nil {
+		fmt.Println(err)
+	}
+	e.Fields = []*discordgo.MessageEmbedField{
+		&discordgo.MessageEmbedField{Name: "--ping", Value: "Pong!"},
+		&discordgo.MessageEmbedField{Name: "--reddit <subreddit>", Value: "Checks Reddit for the latest post from a subreddit"},
+		&discordgo.MessageEmbedField{Name: "--choose <choice 1 or choice 2 or ...>", Value: "Chooses a random option"},
+		&discordgo.MessageEmbedField{Name: "--info", Value: "Shows the latest updates to boxbot"},
+		&discordgo.MessageEmbedField{Name: "--frinkiac <search>", Value: "Gets an image from Frinkiac matching the search\n**Other Options**\n**--frinkiac cap <search>**\nGets a frame and the subtitle\n**--frinkiac gif <search>**\nGets a gif"},
+		&discordgo.MessageEmbedField{Name: "--morbotron <search>", Value: "Gets an image from Morobtron matching the search\n**Other Options**\n**--morbotron cap <search>**\nGets a frame and the subtitle\n**--morbotron gif <search>**\nGets a gif"},
+	}
+	_, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
