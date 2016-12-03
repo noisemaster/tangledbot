@@ -161,8 +161,10 @@ func sendServerInfo(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	var emojis string
 	e := discordgo.MessageEmbed{
-		Title: g.Name,
 		Color: 0xE5343A,
+	}
+	e.Author = &discordgo.MessageEmbedAuthor{
+		Name: g.Name,
 	}
 	e.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: "https://cdn.discordapp.com/icons/" + c.GuildID + "/" + g.Icon + ".jpg"}
 	for _, z := range g.Emojis {
