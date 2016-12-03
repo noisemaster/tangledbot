@@ -174,10 +174,7 @@ func sendServerInfo(s *discordgo.Session, m *discordgo.MessageCreate) {
 		&discordgo.MessageEmbedField{Name: "Roles", Value: strconv.Itoa(len(g.Roles)), Inline: true},
 		&discordgo.MessageEmbedField{Name: "Emojis", Value: emojis},
 	}
-	_, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
-	if err != nil {
-		fmt.Println(err)
-	}
+	s.ChannelMessageSendEmbed(m.ChannelID, &e)
 }
 
 func sendHelpEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -192,10 +189,6 @@ func sendHelpEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	e.Color = 0xE5343A
 	e.Description = "**Boxbot Commands**"
-	_, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
-	if err != nil {
-		fmt.Println(err)
-	}
 	e.Fields = []*discordgo.MessageEmbedField{
 		&discordgo.MessageEmbedField{Name: "--ping", Value: "Pong!"},
 		&discordgo.MessageEmbedField{Name: "--reddit <subreddit>", Value: "Checks Reddit for the latest post from a subreddit"},
@@ -204,10 +197,7 @@ func sendHelpEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
 		&discordgo.MessageEmbedField{Name: "--frinkiac <search>", Value: "Gets an image from Frinkiac matching the search\n**Other Options**\n**--frinkiac cap <search>**\nGets a frame and the subtitle\n**--frinkiac gif <search>**\nGets a gif"},
 		&discordgo.MessageEmbedField{Name: "--morbotron <search>", Value: "Gets an image from Morobtron matching the search\n**Other Options**\n**--morbotron cap <search>**\nGets a frame and the subtitle\n**--morbotron gif <search>**\nGets a gif"},
 	}
-	_, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
-	if err != nil {
-		fmt.Println(err)
-	}
+	s.ChannelMessageSendEmbed(m.ChannelID, &e)
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
