@@ -130,7 +130,7 @@ func handleMorbotron(s *discordgo.Session, m *discordgo.MessageCreate) {
 		_, _ = s.ChannelMessageSend(m.ChannelID, req)
 	} else {
 		parsed := strings.Join(args[1:], " ")
-		req, _ := frinkiac.GetFrinkiacFrame(parsed)
+		req, _ := frinkiac.GetMorbotronFrame(parsed)
 		_, _ = s.ChannelMessageSend(m.ChannelID, req)
 	}
 }
