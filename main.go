@@ -1,17 +1,17 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
+	"os"
 	"os/exec"
-	"strings"
-
-	"bytes"
-
 	"strconv"
+	"strings"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/noisemaster/frinkiacapigo"
@@ -22,6 +22,8 @@ var (
 	BotID string
 	//BotKeys needed to run the bot and plugins
 	BotKeys Config
+	//RobotLines an array of lines said by League of Legends player "'LeadRobot'"
+	RobotLines []string
 )
 
 //Config struct for tokens and API keys loaded from a json file
@@ -65,6 +67,11 @@ func init() {
 		return
 	}
 	json.Unmarshal(file, &BotKeys)
+
+	RobotLines, err = readLines("storage/LeadRobot.txt")
+	if err != nil {
+		fmt.Println("LeadRobot.txt not found, that's ok")
+	}
 }
 
 func main() {
@@ -93,6 +100,21 @@ func main() {
 	fmt.Printf("%s (%s) now active\n", bot.Username, bot.ID)
 	<-make(chan struct{})
 	return
+}
+
+func readLines(path string) ([]string, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines, scanner.Err()
 }
 
 func handleFrinkiac(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -235,6 +257,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		go sendTumblrPost(s, m, msg[9:])
 	} else if strings.HasPrefix(msg, "--"+"server") {
 		go sendServerInfo(s, m)
+	} else if strings.HasPrefix(msg, "--leadrobot") {
+		s.ChannelMessageSend(m.ChannelID, "`"+RobotLines[rand.Intn(len(RobotLines))]+"`")
 	}
 }
 
