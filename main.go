@@ -257,7 +257,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		go sendTumblrPost(s, m, msg[9:])
 	} else if strings.HasPrefix(msg, "--"+"server") {
 		go sendServerInfo(s, m)
-	} else if strings.HasPrefix(msg, "--leadrobot") {
+	} else if strings.HasPrefix(msg, "--"+"leadrobot") {
 		s.ChannelMessageSend(m.ChannelID, "`"+RobotLines[rand.Intn(len(RobotLines))]+"`")
 	}
 }
