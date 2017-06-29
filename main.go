@@ -84,6 +84,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		go boxbot.SendServerInfo(s, m)
 	} else if strings.HasPrefix(msg, "--"+"leadrobot") {
 		go boxbot.SendRobotQuote(s, m)
+	} else if strings.HasPrefix(msg, "--"+"fullwidth") {
+		go boxbot.SendFullWidth(s, m)
 	}
 }
 

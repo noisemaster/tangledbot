@@ -91,3 +91,21 @@ func HandleChoices(s *discordgo.Session, m *discordgo.MessageCreate) {
 	choices := strings.Split(m.Content[9:], "or")
 	s.ChannelMessageSend(m.ChannelID, "I choose **"+strings.Trim(choices[rand.Intn(len(choices))], " ")+"**")
 }
+
+func convertToFullWidth(s string) string {
+	var conv []rune
+	for _, v := range s {
+		if v == ' ' {
+			conv = append(conv, rune(v), rune(v))
+		} else {
+			conv = append(conv, rune(v)+65248)
+		}
+	}
+	return string(conv)
+}
+
+func SendFullWidth(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if len(m.Content) > 11 {
+		s.ChannelMessageSend(m.ChannelID, convertToFullWidth(m.Content[12:]))
+	}
+}
