@@ -86,6 +86,10 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		go boxbot.SendRobotQuote(s, m)
 	} else if strings.HasPrefix(msg, "--"+"fullwidth") {
 		go boxbot.SendFullWidth(s, m)
+	} else if strings.HasPrefix(msg, "--"+"addtag") {
+		go boxbot.AddTag(s, m)
+	} else if strings.HasPrefix(msg, "--"+"tag") {
+		go boxbot.GetTag(s, m)
 	}
 }
 
