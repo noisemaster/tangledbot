@@ -19,7 +19,6 @@ func AddTag(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 	content := strings.Join(args[2:], " ")
-	fmt.Println(content)
 
 	db, err := bolt.Open("storage/tags.db", 0600, nil)
 	if err != nil {
