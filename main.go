@@ -90,6 +90,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		go boxbot.AddTag(s, m)
 	} else if strings.HasPrefix(msg, "--"+"tag") {
 		go boxbot.GetTag(s, m)
+	} else if strings.HasPrefix(msg, "--"+"listtags") {
+		go boxbot.ListTags(s, m)
 	}
 }
 

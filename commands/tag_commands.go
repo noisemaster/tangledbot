@@ -67,3 +67,32 @@ func GetTag(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	s.ChannelMessageSend(m.ChannelID, content)
 }
+
+// ListTags sends out a list of all tags for this server
+func ListTags(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// Getting the Server's ID
+	channel, err := s.Channel(m.ChannelID)
+	if err != nil {
+		fmt.Println("Error getting channel")
+	}
+
+	db, err := bolt.Open("storage/tags.db", 0600, nil)
+	if err != nil {
+		fmt.Printf("Error opening db, %s\n", err)
+	}
+	defer db.Close()
+
+	guild, err := s.Guild(channel.GuildID)
+
+	var tagList = []string{"**Tags for " + guild.Name + "**"}
+	err = db.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(channel.GuildID))
+		c := b.Cursor()
+		for k, _ := c.First(); k != nil; k, _ = c.Next() {
+			tagList = append(tagList, string(k[:]))
+		}
+		return nil
+	})
+
+	s.ChannelMessageSend(m.ChannelID, strings.Join(tagList, "\n"))
+}
