@@ -92,6 +92,8 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		go boxbot.GetTag(s, m)
 	} else if strings.HasPrefix(msg, "--"+"listtags") {
 		go boxbot.ListTags(s, m)
+	} else if strings.HasPrefix(msg, "--"+"deletetag") {
+		go boxbot.DeleteTag(s, m)
 	}
 }
 

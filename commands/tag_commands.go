@@ -65,7 +65,11 @@ func GetTag(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return nil
 	})
 
-	s.ChannelMessageSend(m.ChannelID, content)
+	if content == "" {
+		s.ChannelMessageSend(m.ChannelID, "Tag not found")
+	} else {
+		s.ChannelMessageSend(m.ChannelID, content)
+	}
 }
 
 // ListTags sends out a list of all tags for this server
@@ -95,4 +99,38 @@ func ListTags(s *discordgo.Session, m *discordgo.MessageCreate) {
 	})
 
 	s.ChannelMessageSend(m.ChannelID, strings.Join(tagList, "\n"))
+}
+
+//DeleteTag removes a tag from the database
+//Command format: --deletetag [tag_name]
+func DeleteTag(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// Getting the Server's ID
+	channel, err := s.Channel(m.ChannelID)
+	if err != nil {
+		fmt.Println("Error getting channel")
+	}
+
+	db, err := bolt.Open("storage/tags.db", 0600, nil)
+	if err != nil {
+		fmt.Printf("Error opening db, %s\n", err)
+	}
+	defer db.Close()
+
+	tag := strings.Trim(m.Content[11:], " ")
+	fmt.Println("Tag:", tag, "|")
+
+	err = db.Update(func(tx *bolt.Tx) error {
+		b, uperr := tx.CreateBucketIfNotExists([]byte(channel.GuildID))
+		uperr = b.Delete([]byte(tag))
+		if uperr != nil {
+			fmt.Println("Error in DB:", err)
+		}
+		return uperr
+	})
+
+	if err != nil {
+		fmt.Println("Error in DB:", err)
+	}
+
+	s.ChannelMessageSend(m.ChannelID, ":white_check_mark:")
 }
