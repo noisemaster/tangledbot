@@ -9,6 +9,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/noisemaster/frinkiacapigo"
+	"github.com/noisemaster/godogceo"
 )
 
 var robotLines []string
@@ -109,4 +110,13 @@ func SendFullWidth(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if len(m.Content) > 11 {
 		s.ChannelMessageSend(m.ChannelID, convertToFullWidth(m.Content[12:]))
 	}
+}
+
+//SendRandomDog sends a random dog image from dog.ceo
+func SendRandomDog(s *discordgo.Session, m *discordgo.MessageCreate) {
+	image, err := godogceo.GetRandomImage()
+	if err != nil {
+		fmt.Println(err)
+	}
+	s.ChannelMessageSend(m.ChannelID, image)
 }
