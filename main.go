@@ -17,6 +17,24 @@ var (
 	BotKeys Config
 )
 
+//Commands stores all commands for the bot as a map
+var Commands = map[string]func(s *discordgo.Session, m *discordgo.MessageCreate){
+	"--reddit":    boxbot.SendRedditPost,
+	"--frinkiac":  boxbot.HandleFrinkiac,
+	"--morbotron": boxbot.HandleMorbotron,
+	"--choose":    boxbot.HandleChoices,
+	"--help":      boxbot.SendHelpEmbed,
+	"--info":      boxbot.SendInfoEmbed,
+	"--server":    boxbot.SendServerInfo,
+	"--leadrobot": boxbot.SendRobotQuote,
+	"--fullwidth": boxbot.SendFullWidth,
+	"--addtag":    boxbot.AddTag,
+	"--tag":       boxbot.GetTag,
+	"--listtags":  boxbot.ListTags,
+	"--deletetag": boxbot.DeleteTag,
+	"--dog":       boxbot.SendRandomDog,
+}
+
 //Config struct for tokens and API keys loaded from a json file
 type Config struct {
 	DiscordToken  string `json:"discord token"`
@@ -62,38 +80,11 @@ func main() {
 }
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	msg := m.Content
-	fmt.Printf("%s said %s\n", m.Author.Username, m.Content)
-	if strings.HasPrefix(msg, "--"+"ping") {
-		_, _ = s.ChannelMessageSend(m.ChannelID, "Pong")
-	} else if strings.HasPrefix(msg, "--"+"reddit") {
-		go boxbot.SendRedditPost(s, m)
-	} else if strings.HasPrefix(msg, "--"+"frinkiac") {
-		go boxbot.HandleFrinkiac(s, m)
-	} else if strings.HasPrefix(msg, "--"+"morbotron") {
-		go boxbot.HandleMorbotron(s, m)
-	} else if strings.HasPrefix(msg, "--"+"choose") {
-		go boxbot.HandleChoices(s, m)
-	} else if strings.HasPrefix(msg, "--"+"help") {
-		go boxbot.SendHelpEmbed(s, m)
-	} else if strings.HasPrefix(msg, "--"+"info") {
-		go boxbot.SendInfoEmbed(s, m)
-	} else if strings.HasPrefix(msg, "--"+"tumblr") {
-		go boxbot.SendTumblrPost(s, m, BotKeys.TumblrAPI)
-	} else if strings.HasPrefix(msg, "--"+"server") {
-		go boxbot.SendServerInfo(s, m)
-	} else if strings.HasPrefix(msg, "--"+"leadrobot") {
-		go boxbot.SendRobotQuote(s, m)
-	} else if strings.HasPrefix(msg, "--"+"fullwidth") {
-		go boxbot.SendFullWidth(s, m)
-	} else if strings.HasPrefix(msg, "--"+"addtag") {
-		go boxbot.AddTag(s, m)
-	} else if strings.HasPrefix(msg, "--"+"tag") {
-		go boxbot.GetTag(s, m)
-	} else if strings.HasPrefix(msg, "--"+"listtags") {
-		go boxbot.ListTags(s, m)
-	} else if strings.HasPrefix(msg, "--"+"deletetag") {
-		go boxbot.DeleteTag(s, m)
+	for command, function := range Commands {
+		if strings.HasPrefix(m.Content, command) {
+			go function(s, m)
+			break
+		}
 	}
 }
 
