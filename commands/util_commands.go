@@ -11,7 +11,7 @@ import (
 //SendInfoEmbed sends a message containing the bot's version, a link to the repo, and the latest commits
 func SendInfoEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var e discordgo.MessageEmbed
-	e.Title = "Boxbot.go v.2"
+	e.Title = "Boxbot.go"
 	e.URL = "https://github.com/noisemaster/boxbot"
 	//Command shamelessly stolen from https://github.com/Rapptz/RoboDanny/blob/master/cogs/meta.py#L299
 	out, err := exec.Command("git", "show", "-s", "HEAD~3..HEAD", "--format=[%h](https://github.com/noisemaster/boxbot/commit/%H) - %s (%cr)").Output()
