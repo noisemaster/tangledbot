@@ -83,7 +83,7 @@ func HandleMorbotron(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-//HandleMorbotron sends a item from a list of items
+//HandleChoices sends a item from a list of items
 func HandleChoices(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if len(m.Content) < 9 {
 		return
@@ -104,6 +104,7 @@ func convertToFullWidth(s string) string {
 	return string(conv)
 }
 
+//SendFullWidth sends a message back using full width unicode
 func SendFullWidth(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if len(m.Content) > 11 {
 		s.ChannelMessageSend(m.ChannelID, convertToFullWidth(m.Content[12:]))
