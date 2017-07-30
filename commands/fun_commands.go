@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -119,4 +120,42 @@ func SendRandomDog(s *discordgo.Session, m *discordgo.MessageCreate) {
 		fmt.Println(err)
 	}
 	s.ChannelMessageSend(m.ChannelID, image)
+	SendBreedList(s, m)
+}
+
+// SendBreedList sends a list of dog breeds and subbreeds as an embed as a
+// private message
+func SendBreedList(s *discordgo.Session, m *discordgo.MessageCreate) {
+	list, err := godogceo.GetDogBreeds()
+	var breeds []string
+	if err != nil {
+		fmt.Println(err)
+	}
+	for breed := range list.Message {
+		breeds = append(breeds, breed)
+	}
+	e := discordgo.MessageEmbed{
+		URL:   "https://dog.ceo",
+		Title: "All Dog Breeds & Subbreeds",
+		Color: 0xE5343A,
+	}
+	// Makes sure that the breeds are being sent in alphabetical order
+	sort.Strings(breeds)
+	for _, breed := range breeds {
+		e.Description += "**" + breed + "**\n"
+		if len(list.Message[breed]) > 0 {
+			for i := 0; i < len(list.Message[breed]); i++ {
+				e.Description += "\t" + list.Message[breed][i] + "\n"
+			}
+		}
+	}
+	pm, err := s.UserChannelCreate(m.Author.ID)
+	if err != nil {
+		fmt.Println(err)
+	}
+	_, err = s.ChannelMessageSendEmbed(pm.ID, &e)
+	if err != nil {
+		fmt.Println(err)
+	}
+	s.ChannelMessageSend(m.ChannelID, ":incoming_envelope:")
 }

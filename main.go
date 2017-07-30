@@ -19,20 +19,21 @@ var (
 
 //Commands stores all commands for the bot as a map
 var Commands = map[string]func(s *discordgo.Session, m *discordgo.MessageCreate){
-	"--reddit":    boxbot.SendRedditPost,
-	"--frinkiac":  boxbot.HandleFrinkiac,
-	"--morbotron": boxbot.HandleMorbotron,
-	"--choose":    boxbot.HandleChoices,
-	"--help":      boxbot.SendHelpEmbed,
-	"--info":      boxbot.SendInfoEmbed,
-	"--server":    boxbot.SendServerInfo,
-	"--leadrobot": boxbot.SendRobotQuote,
-	"--fullwidth": boxbot.SendFullWidth,
-	"--addtag":    boxbot.AddTag,
-	"--tag":       boxbot.GetTag,
-	"--listtags":  boxbot.ListTags,
-	"--deletetag": boxbot.DeleteTag,
-	"--dog":       boxbot.SendRandomDog,
+	"--reddit":     boxbot.SendRedditPost,
+	"--frinkiac":   boxbot.HandleFrinkiac,
+	"--morbotron":  boxbot.HandleMorbotron,
+	"--choose":     boxbot.HandleChoices,
+	"--help":       boxbot.SendHelpEmbed,
+	"--info":       boxbot.SendInfoEmbed,
+	"--server":     boxbot.SendServerInfo,
+	"--leadrobot":  boxbot.SendRobotQuote,
+	"--fullwidth":  boxbot.SendFullWidth,
+	"--addtag":     boxbot.AddTag,
+	"--tag":        boxbot.GetTag,
+	"--listtags":   boxbot.ListTags,
+	"--deletetag":  boxbot.DeleteTag,
+	"--dog":        boxbot.SendRandomDog,
+	"--listbreeds": boxbot.SendBreedList,
 }
 
 //Config struct for tokens and API keys loaded from a json file
