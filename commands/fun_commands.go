@@ -115,12 +115,20 @@ func SendFullWidth(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 //SendRandomDog sends a random dog image from dog.ceo
 func SendRandomDog(s *discordgo.Session, m *discordgo.MessageCreate) {
-	image, err := godogceo.GetRandomImage()
-	if err != nil {
-		fmt.Println(err)
+	args := strings.Split(m.Content, " ")
+	if len(args) == 1 {
+		image, err := godogceo.GetRandomImage()
+		if err != nil {
+			fmt.Println(err)
+		}
+		s.ChannelMessageSend(m.ChannelID, image)
+	} else {
+		image, err := godogceo.GetRandomBreedImage(args[1])
+		if err != nil {
+			fmt.Println(err)
+		}
+		s.ChannelMessageSend(m.ChannelID, image)
 	}
-	s.ChannelMessageSend(m.ChannelID, image)
-	SendBreedList(s, m)
 }
 
 // SendBreedList sends a list of dog breeds and subbreeds as an embed as a
