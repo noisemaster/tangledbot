@@ -11,6 +11,14 @@ import (
 //SendInfoEmbed sends a message containing the bot's version, a link to the repo, and the latest commits
 func SendInfoEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var e discordgo.MessageEmbed
+	me, err := s.User("@me")
+	if err != nil {
+		return
+	}
+	e.Author = &discordgo.MessageEmbedAuthor{
+		IconURL: "https://cdn.discordapp.com/avatars/" + me.ID + "/" + me.Avatar + ".jpg",
+		Name:    me.Username,
+	}
 	e.Title = "Boxbot.go"
 	e.URL = "https://github.com/noisemaster/boxbot"
 	//Command shamelessly stolen from https://github.com/Rapptz/RoboDanny/blob/master/cogs/meta.py#L299
@@ -43,6 +51,8 @@ func SendHelpEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
 		&discordgo.MessageEmbedField{Name: "--info", Value: "Shows the latest updates to boxbot"},
 		&discordgo.MessageEmbedField{Name: "--frinkiac <search>", Value: "Gets an image from Frinkiac matching the search\n**Other Options**\n**--frinkiac cap <search>**\nGets a frame and the subtitle\n**--frinkiac gif <search>**\nGets a gif"},
 		&discordgo.MessageEmbedField{Name: "--morbotron <search>", Value: "Gets an image from Morobtron matching the search\n**Other Options**\n**--morbotron cap <search>**\nGets a frame and the subtitle\n**--morbotron gif <search>**\nGets a gif"},
+		&discordgo.MessageEmbedField{Name: "--tag <tag>", Value: "Gets a tag from the database\nUse **--listtags** to find the tags for your server\nUse**--addtag <tag> <info>** to add a tag"},
+		&discordgo.MessageEmbedField{Name: "--dog <breed (optional)>", Value: "Gets a random dog picture\nUse **--listdogs** to find out what breeds you can put in"},
 	}
 	s.ChannelMessageSendEmbed(m.ChannelID, &e)
 }
