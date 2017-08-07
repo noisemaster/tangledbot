@@ -49,8 +49,9 @@ func SendHelpEmbed(s *discordgo.Session, m *discordgo.MessageCreate) {
 		&discordgo.MessageEmbedField{Name: "--reddit <subreddit>", Value: "Checks Reddit for the latest post from a subreddit"},
 		&discordgo.MessageEmbedField{Name: "--choose <choice 1 or choice 2 or ...>", Value: "Chooses a random option"},
 		&discordgo.MessageEmbedField{Name: "--info", Value: "Shows the latest updates to boxbot"},
-		&discordgo.MessageEmbedField{Name: "--frinkiac <search>", Value: "Gets an image from Frinkiac matching the search\n**Other Options**\n**--frinkiac cap <search>**\nGets a frame and the subtitle\n**--frinkiac gif <search>**\nGets a gif"},
-		&discordgo.MessageEmbedField{Name: "--morbotron <search>", Value: "Gets an image from Morobtron matching the search\n**Other Options**\n**--morbotron cap <search>**\nGets a frame and the subtitle\n**--morbotron gif <search>**\nGets a gif"},
+		&discordgo.MessageEmbedField{Name: "--frinkiac <search>", Value: "Gets an image from [Frinkiac](https://frinkiac.com/) matching the search\n**Other Options**\n**--frinkiac cap <search>**\nGets a frame and the subtitle\n**--frinkiac gif <search>**\nGets a gif"},
+		&discordgo.MessageEmbedField{Name: "--morbotron <search>", Value: "Gets an image from [Morobtron](https://morbotron.com/) matching the search\n**Other Options**\n**--morbotron cap <search>**\nGets a frame and the subtitle\n**--morbotron gif <search>**\nGets a gif"},
+		&discordgo.MessageEmbedField{Name: "--moas <search>", Value: "Gets an image from [Master of All Science](https://masterofallscience.com/) matching the search\n**Other Options**\n**--moas cap <search>**\nGets a frame and the subtitle\n**--moas gif <search>**\nGets a gif"},
 		&discordgo.MessageEmbedField{Name: "--tag <tag>", Value: "Gets a tag from the database\nUse **--listtags** to find the tags for your server\nUse**--addtag <tag> <info>** to add a tag"},
 		&discordgo.MessageEmbedField{Name: "--dog <breed (optional)>", Value: "Gets a random dog picture\nUse **--listdogs** to find out what breeds you can put in"},
 	}
