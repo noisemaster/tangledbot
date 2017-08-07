@@ -85,6 +85,27 @@ func HandleMorbotron(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
+//HandleMOAS sends images from Rick & Morty quote search engine Master of All Science
+func HandleMOAS(s *discordgo.Session, m *discordgo.MessageCreate) {
+	args := strings.Split(m.Content, " ")
+	if len(args) < 2 {
+		return
+	}
+	if args[1] == "gif" {
+		parsed := strings.Join(args[2:], " ")
+		req, _ := frinkiac.GetMasterOfAllScienceGifMeme(parsed)
+		_, _ = s.ChannelMessageSend(m.ChannelID, req)
+	} else if args[1] == "cap" {
+		parsed := strings.Join(args[2:], " ")
+		req, _ := frinkiac.GetMasterOfAllScienceMeme(parsed)
+		_, _ = s.ChannelMessageSend(m.ChannelID, req)
+	} else {
+		parsed := strings.Join(args[1:], " ")
+		req, _ := frinkiac.GetMasterOfAllScienceFrame(parsed)
+		_, _ = s.ChannelMessageSend(m.ChannelID, req)
+	}
+}
+
 //HandleChoices sends a item from a list of items
 func HandleChoices(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if len(m.Content) < 9 {

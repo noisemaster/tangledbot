@@ -22,6 +22,7 @@ var Commands = map[string]func(s *discordgo.Session, m *discordgo.MessageCreate)
 	"--reddit":     boxbot.SendRedditPost,
 	"--frinkiac":   boxbot.HandleFrinkiac,
 	"--morbotron":  boxbot.HandleMorbotron,
+	"--moas":       boxbot.HandleMOAS,
 	"--choose":     boxbot.HandleChoices,
 	"--help":       boxbot.SendHelpEmbed,
 	"--info":       boxbot.SendInfoEmbed,
