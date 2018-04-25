@@ -73,6 +73,9 @@ func GetGelbooruImage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			Name:    m.Author.Username,
 			IconURL: m.Author.AvatarURL("256"),
 		}
+		if len(page.Tags) > 1024 {
+			page.Tags = "Too many to show"
+		}
 		embed.Fields = []*discordgo.MessageEmbedField{
 			&discordgo.MessageEmbedField{Name: "Tags", Value: fixer.Replace(page.Tags)},
 			&discordgo.MessageEmbedField{Name: "ID", Value: strconv.Itoa(page.ID), Inline: true},
