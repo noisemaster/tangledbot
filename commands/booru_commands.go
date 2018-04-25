@@ -12,34 +12,46 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-var booruPoster map[string]gelbooruPosterDetails
+var booruPoster map[string]booruPosterDetails
 
-type gelbooruPosterDetails struct {
-	page         gelbooruPage
+type booruPosterDetails struct {
+	page         booruPage
 	poster       string
 	embedMessage discordgo.MessageEmbed
 }
 
-type gelbooruPage struct {
-	Rating string `json:"rating"`
-	URL    string `json:"file_url"`
-	Tags   string `json:"tags"`
-	Score  int    `json:"score"`
-	ID     int    `json:"id"`
+type booruPage struct {
+	Rating  string   `json:"rating"`
+	URL     string   `json:"file_url"`
+	Tags    string   `json:"tags"`
+	Score   int      `json:"score"`
+	ID      int      `json:"id"`
+	Artists []string `json:"artist,omitempty"`
 }
 
 func init() {
-	booruPoster = make(map[string]gelbooruPosterDetails)
+	booruPoster = make(map[string]booruPosterDetails)
+}
+
+//GetE621Image grabs a random image from e621
+func GetE621Image(s *discordgo.Session, m *discordgo.MessageCreate) {
+	var tagFixer = strings.NewReplacer(" ", "+")
+	tags := m.Content[len("--"+"e621 "):]
+	getBooruPost(s, m, "https://e621.net/post/index.json?tags="+tagFixer.Replace(tags), tags, "https://e621.net/post/show/")
 }
 
 //GetGelbooruImage grabs a random image from Gelbooru
 func GetGelbooruImage(s *discordgo.Session, m *discordgo.MessageCreate) {
+	tags := m.Content[len("--"+"gelbooru "):]
+	getBooruPost(s, m, "https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&tags="+tags, tags, "https://gelbooru.com/index.php?page=post&s=view&id=")
+}
+
+func getBooruPost(s *discordgo.Session, m *discordgo.MessageCreate, request string, tags string, postURLBase string) {
 	channelInfo, _ := s.Channel(m.ChannelID)
 	if channelInfo.NSFW {
-		var pages []gelbooruPage
-		tags := m.Content[len("--"+"gelbooru "):]
+		var pages []booruPage
 		client := &http.Client{}
-		req, err := http.NewRequest("GET", "https://gelbooru.com/index.php?page=dapi&s=post&q=index&json=1&tags="+tags, nil)
+		req, err := http.NewRequest("GET", request, nil)
 		if err != nil {
 			return
 		}
@@ -81,7 +93,12 @@ func GetGelbooruImage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			&discordgo.MessageEmbedField{Name: "ID", Value: strconv.Itoa(page.ID), Inline: true},
 			&discordgo.MessageEmbedField{Name: "Score", Value: strconv.Itoa(page.Score), Inline: true},
 		}
-		embed.Description = "[Post Link](" + "https://gelbooru.com/index.php?page=post&s=view&id=" + strconv.Itoa(page.ID) + ")\t[Direct Image Link](" + page.URL + ")"
+		if page.Artists != nil && len(page.Artists) == 1 {
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Artist", Value: page.Artists[0]})
+		} else if page.Artists != nil && len(page.Artists) > 1 {
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Artists", Value: strings.Join(page.Artists, ", ")})
+		}
+		embed.Description = "[Post Link](" + postURLBase + strconv.Itoa(page.ID) + ")\t[Direct Image Link](" + page.URL + ")"
 		embed.Image = &discordgo.MessageEmbedImage{
 			URL: page.URL,
 		}
@@ -95,12 +112,12 @@ func GetGelbooruImage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		s.MessageReactionAdd(m.ChannelID, message.ID, "🔞")
-		booruPoster[message.ID] = gelbooruPosterDetails{page, m.Author.ID, embed}
+		booruPoster[message.ID] = booruPosterDetails{page, m.Author.ID, embed}
 	}
 }
 
-//HandleGelbooruImageReactAdded Handles a react being added to a Gelbooru message
-func HandleGelbooruImageReactAdded(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+//HandleBooruImageReactAdded Handles a react being added to a Gelbooru message
+func HandleBooruImageReactAdded(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	if val, ok := booruPoster[r.MessageID]; ok {
 		if r.UserID == val.poster {
 			embed := val.embedMessage
@@ -110,8 +127,8 @@ func HandleGelbooruImageReactAdded(s *discordgo.Session, r *discordgo.MessageRea
 	}
 }
 
-//HandleGelbooruImageReactRemoved Handles a react being added to a Gelbooru message
-func HandleGelbooruImageReactRemoved(s *discordgo.Session, r *discordgo.MessageReactionRemove) {
+//HandleBooruImageReactRemoved Handles a react being added to a Gelbooru message
+func HandleBooruImageReactRemoved(s *discordgo.Session, r *discordgo.MessageReactionRemove) {
 	if val, ok := booruPoster[r.MessageID]; ok {
 		if r.UserID == val.poster {
 			embed := val.embedMessage

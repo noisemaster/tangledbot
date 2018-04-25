@@ -36,6 +36,7 @@ var Commands = map[string]func(s *discordgo.Session, m *discordgo.MessageCreate)
 	"--dog":        boxbot.SendRandomDog,
 	"--listbreeds": boxbot.SendBreedList,
 	"--gelbooru":   boxbot.GetGelbooruImage,
+	"--e621":       boxbot.GetE621Image,
 }
 
 //Config struct for tokens and API keys loaded from a json file
@@ -70,8 +71,8 @@ func main() {
 	BotID = bot.ID
 	discord.AddHandler(messageCreate)
 	discord.AddHandler(onReady)
-	discord.AddHandler(boxbot.HandleGelbooruImageReactAdded)
-	discord.AddHandler(boxbot.HandleGelbooruImageReactRemoved)
+	discord.AddHandler(boxbot.HandleBooruImageReactAdded)
+	discord.AddHandler(boxbot.HandleBooruImageReactRemoved)
 
 	err = discord.Open()
 	if err != nil {
