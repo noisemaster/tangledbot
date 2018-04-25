@@ -19,31 +19,32 @@ var (
 
 //Commands stores all commands for the bot as a map
 var Commands = map[string]func(s *discordgo.Session, m *discordgo.MessageCreate){
-	"--reddit":     boxbot.SendRedditPost,
-	"--frinkiac":   boxbot.HandleFrinkiac,
-	"--morbotron":  boxbot.HandleMorbotron,
-	"--moas":       boxbot.HandleMOAS,
-	"--choose":     boxbot.HandleChoices,
-	"--help":       boxbot.SendHelpEmbed,
-	"--info":       boxbot.SendInfoEmbed,
-	"--server":     boxbot.SendServerInfo,
-	"--leadrobot":  boxbot.SendRobotQuote,
-	"--fullwidth":  boxbot.SendFullWidth,
-	"--addtag":     boxbot.AddTag,
-	"--tag":        boxbot.GetTag,
-	"--listtags":   boxbot.ListTags,
-	"--deletetag":  boxbot.DeleteTag,
+	"--reddit":    boxbot.SendRedditPost,
+	"--frinkiac":  boxbot.HandleFrinkiac,
+	"--morbotron": boxbot.HandleMorbotron,
+	"--moas":      boxbot.HandleMOAS,
+	"--choose":    boxbot.HandleChoices,
+	"--help":      boxbot.SendHelpEmbed,
+	"--info":      boxbot.SendInfoEmbed,
+	"--server":    boxbot.SendServerInfo,
+	"--leadrobot": boxbot.SendRobotQuote,
+	"--fullwidth": boxbot.SendFullWidth,
+	//	"--addtag":     boxbot.AddTag,
+	//	"--tag":        boxbot.GetTag,
+	//	"--listtags":   boxbot.ListTags,
+	//	"--deletetag":  boxbot.DeleteTag,
 	"--dog":        boxbot.SendRandomDog,
 	"--listbreeds": boxbot.SendBreedList,
+	"--gelbooru":   boxbot.GetGelbooruImage,
 }
 
 //Config struct for tokens and API keys loaded from a json file
 type Config struct {
-	DiscordToken  string `json:"discord token"`
-	GoogleAPIKey  string `json:"google api"`
-	GoogleCX      string `json:"google custom search cx"`
-	SoundcloudAPI string `json:"soundcloud api"`
-	TumblrAPI     string `json:"tumblr api"`
+	DiscordToken  string `json:"discordToken"`
+	GoogleAPIKey  string `json:"googleApi"`
+	GoogleCX      string `json:"googleCX"`
+	SoundcloudAPI string `json:"soundcloudApi"`
+	TumblrAPI     string `json:"tumblrApi"`
 }
 
 func main() {
@@ -69,6 +70,8 @@ func main() {
 	BotID = bot.ID
 	discord.AddHandler(messageCreate)
 	discord.AddHandler(onReady)
+	discord.AddHandler(boxbot.HandleGelbooruImageReactAdded)
+	discord.AddHandler(boxbot.HandleGelbooruImageReactRemoved)
 
 	err = discord.Open()
 	if err != nil {
@@ -83,7 +86,7 @@ func main() {
 
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	for command, function := range Commands {
-		if strings.HasPrefix(m.Content, command) {
+		if strings.HasPrefix(strings.ToLower(m.Content), command) {
 			go function(s, m)
 			break
 		}
