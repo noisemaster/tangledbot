@@ -69,7 +69,7 @@ func SendServerInfo(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if err != nil {
 		return
 	}
-	var emojis int
+	var emojis = len(g.Emojis)
 	e := discordgo.MessageEmbed{
 		Color: 0xE5343A,
 	}
@@ -77,9 +77,6 @@ func SendServerInfo(s *discordgo.Session, m *discordgo.MessageCreate) {
 		Name: g.Name,
 	}
 	e.Thumbnail = &discordgo.MessageEmbedThumbnail{URL: "https://cdn.discordapp.com/icons/" + c.GuildID + "/" + g.Icon + ".jpg"}
-	for _ = range g.Emojis {
-		emojis += 1
-	}
 	e.Fields = []*discordgo.MessageEmbedField{
 		&discordgo.MessageEmbedField{Name: "Owner", Value: owner.Username, Inline: true},
 		&discordgo.MessageEmbedField{Name: "Members", Value: strconv.Itoa(g.MemberCount), Inline: true},
