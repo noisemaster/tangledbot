@@ -87,7 +87,9 @@ func GetGelbooruImage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 		message, err := s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("Can't send message", err)
+			fmt.Println("Likely due to the following page", page)
+			return
 		}
 		s.MessageReactionAdd(m.ChannelID, message.ID, "🔞")
 		booruPoster[message.ID] = gelbooruPosterDetails{page, m.Author.ID, embed}
