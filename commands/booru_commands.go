@@ -81,7 +81,7 @@ func GetGelbooruImage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			&discordgo.MessageEmbedField{Name: "ID", Value: strconv.Itoa(page.ID), Inline: true},
 			&discordgo.MessageEmbedField{Name: "Score", Value: strconv.Itoa(page.Score), Inline: true},
 		}
-		embed.Description = "[Image Link](" + page.URL + ")"
+		embed.Description = "[Post Link](" + "https://gelbooru.com/index.php?page=post&s=view&id=" + strconv.Itoa(page.ID) + ")\t[Direct Image Link](" + page.URL + ")"
 		embed.Image = &discordgo.MessageEmbedImage{
 			URL: page.URL,
 		}
