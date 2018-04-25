@@ -58,7 +58,8 @@ func GetGelbooruImage(s *discordgo.Session, m *discordgo.MessageCreate) {
 			return
 		}
 		json.Unmarshal(body, &pages)
-		var page = pages[rand.Intn(len(pages))]
+		var numChosen = rand.Intn(len(pages))
+		var page = pages[numChosen]
 		var fixer = strings.NewReplacer("_", "\\_")
 		var embed discordgo.MessageEmbed
 		if page.Rating == "s" {
@@ -80,6 +81,9 @@ func GetGelbooruImage(s *discordgo.Session, m *discordgo.MessageCreate) {
 		embed.Description = "[Image Link](" + page.URL + ")"
 		embed.Image = &discordgo.MessageEmbedImage{
 			URL: page.URL,
+		}
+		embed.Footer = &discordgo.MessageEmbedFooter{
+			Text: "Image " + strconv.Itoa(numChosen+1) + "/" + strconv.Itoa(len(pages)),
 		}
 		message, err := s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		if err != nil {
