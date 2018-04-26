@@ -70,6 +70,10 @@ func getBooruPost(s *discordgo.Session, m *discordgo.MessageCreate, request stri
 			return
 		}
 		json.Unmarshal(body, &pages)
+		if len(pages) == 0 {
+			s.ChannelMessageSend(m.ChannelID, "Nothing found for "+tags)
+			return
+		}
 		var numChosen = rand.Intn(len(pages))
 		var page = pages[numChosen]
 		var fixer = strings.NewReplacer("_", "\\_")
