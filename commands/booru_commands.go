@@ -118,7 +118,7 @@ func getBooruPost(s *discordgo.Session, m *discordgo.MessageCreate, request stri
 			fmt.Println("Likely due to the following page", page)
 			return
 		}
-		s.MessageReactionAdd(m.ChannelID, message.ID, "🔞")
+		s.MessageReactionAdd(m.ChannelID, message.ID, "🙅")
 		booruPoster[message.ID] = booruPosterDetails{page, m.Author.ID, embed}
 	}
 }
