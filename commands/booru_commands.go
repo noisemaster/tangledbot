@@ -21,12 +21,13 @@ type booruPosterDetails struct {
 }
 
 type booruPage struct {
-	Rating  string   `json:"rating"`
-	URL     string   `json:"file_url"`
-	Tags    string   `json:"tags"`
-	Score   int      `json:"score"`
-	ID      int      `json:"id"`
-	Artists []string `json:"artist,omitempty"`
+	Rating    string   `json:"rating"`
+	URL       string   `json:"file_url"`
+	Tags      string   `json:"tags"`
+	Score     int      `json:"score"`
+	ID        int      `json:"id"`
+	Artists   []string `json:"artist,omitempty"`
+	Timestamp string   `json:"created_at"`
 }
 
 func init() {
@@ -109,6 +110,8 @@ func getBooruPost(s *discordgo.Session, m *discordgo.MessageCreate, request stri
 		embed.Footer = &discordgo.MessageEmbedFooter{
 			Text: "Image " + strconv.Itoa(numChosen+1) + "/" + strconv.Itoa(len(pages)),
 		}
+		timestamp, _ := time.Parse(time.RubyDate, page.Timestamp)
+		embed.Timestamp = strings.TrimRight(timestamp.UTC().Format(time.RFC3339), "Z")
 		message, err := s.ChannelMessageSendEmbed(m.ChannelID, &embed)
 		if err != nil {
 			fmt.Println("Can't send message", err)
