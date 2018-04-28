@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -77,7 +78,7 @@ func getBooruPost(s *discordgo.Session, m *discordgo.MessageCreate, request stri
 		}
 		var numChosen = rand.Intn(len(pages))
 		var page = pages[numChosen]
-		var fixer = strings.NewReplacer("_", "\\_")
+		var formatter = strings.NewReplacer("_", "\\_", "&#039;", "'", "&gt;", ">", "&lt;", "<")
 		var embed discordgo.MessageEmbed
 		if page.Rating == "s" {
 			embed.Color = 0x009e51
@@ -91,17 +92,17 @@ func getBooruPost(s *discordgo.Session, m *discordgo.MessageCreate, request stri
 			IconURL: m.Author.AvatarURL("256"),
 		}
 		if len(page.Tags) > 1024 {
-			page.Tags = "Too many to show"
+			page.Tags = strconv.Itoa(len(strings.Split(page.Tags, " "))) + " Tags"
 		}
 		embed.Fields = []*discordgo.MessageEmbedField{
-			&discordgo.MessageEmbedField{Name: "Tags", Value: fixer.Replace(page.Tags)},
+			&discordgo.MessageEmbedField{Name: "Tags", Value: formatter.Replace(page.Tags)},
 			&discordgo.MessageEmbedField{Name: "ID", Value: strconv.Itoa(page.ID), Inline: true},
 			&discordgo.MessageEmbedField{Name: "Score", Value: strconv.Itoa(page.Score), Inline: true},
 		}
 		if page.Artists != nil && len(page.Artists) == 1 {
-			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Artist", Value: page.Artists[0]})
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Artist", Value: formatter.Replace(page.Artists[0])})
 		} else if page.Artists != nil && len(page.Artists) > 1 {
-			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Artists", Value: strings.Join(page.Artists, ", ")})
+			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Artists", Value: formatter.Replace(strings.Join(page.Artists, ", "))})
 		}
 		embed.Description = "[Post Link](" + postURLBase + strconv.Itoa(page.ID) + ")\t[Direct Image Link](" + page.URL + ")"
 		embed.Image = &discordgo.MessageEmbedImage{
