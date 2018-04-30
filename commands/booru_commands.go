@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 var booruPoster map[string]booruPosterDetails
+var posterMutex *sync.Mutex
 
 type booruPosterDetails struct {
 	page         booruPage
@@ -33,6 +35,7 @@ type booruPage struct {
 
 func init() {
 	booruPoster = make(map[string]booruPosterDetails)
+	posterMutex = &sync.Mutex{}
 }
 
 //GetE621Image grabs a random image from e621
@@ -91,7 +94,7 @@ func getBooruPost(s *discordgo.Session, m *discordgo.MessageCreate, request stri
 			Name:    m.Author.Username,
 			IconURL: m.Author.AvatarURL("256"),
 		}
-		if len(page.Tags) > 1024 {
+		if len(page.Tags) > 900 {
 			page.Tags = strconv.Itoa(len(strings.Split(page.Tags, " "))) + " Tags"
 		}
 		embed.Fields = []*discordgo.MessageEmbedField{
@@ -120,12 +123,15 @@ func getBooruPost(s *discordgo.Session, m *discordgo.MessageCreate, request stri
 			return
 		}
 		s.MessageReactionAdd(m.ChannelID, message.ID, "🙅")
+		posterMutex.Lock()
 		booruPoster[message.ID] = booruPosterDetails{page, m.Author.ID, embed}
+		posterMutex.Unlock()
 	}
 }
 
 //HandleBooruImageReactAdded Handles a react being added to a Gelbooru message
 func HandleBooruImageReactAdded(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
+	posterMutex.Lock()
 	if val, ok := booruPoster[r.MessageID]; ok {
 		if r.UserID == val.poster {
 			embed := val.embedMessage
@@ -133,10 +139,12 @@ func HandleBooruImageReactAdded(s *discordgo.Session, r *discordgo.MessageReacti
 			s.ChannelMessageEditEmbed(r.ChannelID, r.MessageID, &embed)
 		}
 	}
+	posterMutex.Unlock()
 }
 
 //HandleBooruImageReactRemoved Handles a react being added to a Gelbooru message
 func HandleBooruImageReactRemoved(s *discordgo.Session, r *discordgo.MessageReactionRemove) {
+	posterMutex.Lock()
 	if val, ok := booruPoster[r.MessageID]; ok {
 		if r.UserID == val.poster {
 			embed := val.embedMessage
@@ -144,4 +152,5 @@ func HandleBooruImageReactRemoved(s *discordgo.Session, r *discordgo.MessageReac
 			s.ChannelMessageEditEmbed(r.ChannelID, r.MessageID, &embed)
 		}
 	}
+	posterMutex.Unlock()
 }
