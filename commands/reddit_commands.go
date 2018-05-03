@@ -22,6 +22,7 @@ type subredditPost struct {
 		Score        int    `json:"score"`
 		NumComments  int    `json:"num_comments"`
 		Domain       string `json:"domain"`
+		NSFW         bool   `json:"over_18"`
 	} `json:"data"`
 }
 
@@ -55,6 +56,7 @@ func SendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string, random bool) {
 	client := &http.Client{}
+	channelInfo, _ := s.Channel(m.ChannelID)
 	req, err := http.NewRequest("GET", "https://www.reddit.com/r/"+sub+".json", nil)
 	if err != nil {
 		fmt.Println(err)
@@ -75,12 +77,13 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 	var info subreddit
 	json.Unmarshal(body, &info)
 	isImage := func(p subredditPost) bool {
-			return strings.Contains(p.Data.URL, ".jpg") || strings.Contains(p.Data.URL, ".png") || strings.Contains(p.Data.URL, ".gif")
+		return strings.Contains(p.Data.URL, ".jpg") || strings.Contains(p.Data.URL, ".png") || strings.Contains(p.Data.URL, ".gif")
 	}
 	if random {
 		posts := info.filter(isImage)
 		if len(posts) == 0 {
 			s.ChannelMessageSend(m.ChannelID, "No images found in r/"+sub)
+			return
 		}
 		post := posts[rand.Intn(len(posts))]
 		var e = discordgo.MessageEmbed{
@@ -98,7 +101,15 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 			&discordgo.MessageEmbedField{Name: "Comments", Value: strconv.Itoa(post.Data.NumComments), Inline: true},
 			&discordgo.MessageEmbedField{Name: "From", Value: post.Data.Domain, Inline: true},
 		}
-		message, err := s.ChannelMessageSendEmbed(m.ChannelID, &e)
+		var message *discordgo.Message
+		if post.Data.NSFW && channelInfo.NSFW {
+			message, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
+		} else if post.Data.NSFW && !channelInfo.NSFW {
+			s.ChannelMessageSend(m.ChannelID, "This is not an NSFW channel")
+			return
+		} else {
+			message, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
+		}
 		if err != nil {
 			s.ChannelMessageSend(m.ChannelID, "Message failed to send")
 			fmt.Println("Can't send message", err)
@@ -131,7 +142,15 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 					&discordgo.MessageEmbedField{Name: "Comments", Value: strconv.Itoa(v.Data.NumComments), Inline: true},
 					&discordgo.MessageEmbedField{Name: "From", Value: v.Data.Domain, Inline: true},
 				}
-				message, err := s.ChannelMessageSendEmbed(m.ChannelID, &e)
+				var message *discordgo.Message
+				if v.Data.NSFW && channelInfo.NSFW {
+					message, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
+				} else if v.Data.NSFW && !channelInfo.NSFW {
+					s.ChannelMessageSend(m.ChannelID, "This is not an NSFW channel")
+					return
+				} else {
+					message, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
+				}
 				if err != nil {
 					s.ChannelMessageSend(m.ChannelID, "Message failed to send")
 					fmt.Println("Can't send message", err)
