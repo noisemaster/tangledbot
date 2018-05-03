@@ -74,10 +74,14 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 	}
 	var info subreddit
 	json.Unmarshal(body, &info)
-	if random {
-		posts := info.filter(func(p subredditPost) bool {
+	isImage := func(p subredditPost) bool {
 			return strings.Contains(p.Data.URL, ".jpg") || strings.Contains(p.Data.URL, ".png") || strings.Contains(p.Data.URL, ".gif")
-		})
+	}
+	if random {
+		posts := info.filter(isImage)
+		if len(posts) == 0 {
+			s.ChannelMessageSend(m.ChannelID, "No images found in r/"+sub)
+		}
 		post := posts[rand.Intn(len(posts))]
 		var e = discordgo.MessageEmbed{
 			Title: post.Data.Title,
@@ -94,7 +98,17 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 			&discordgo.MessageEmbedField{Name: "Comments", Value: strconv.Itoa(post.Data.NumComments), Inline: true},
 			&discordgo.MessageEmbedField{Name: "From", Value: post.Data.Domain, Inline: true},
 		}
-		s.ChannelMessageSendEmbed(m.ChannelID, &e)
+		message, err := s.ChannelMessageSendEmbed(m.ChannelID, &e)
+		if err != nil {
+			s.ChannelMessageSend(m.ChannelID, "Message failed to send")
+			fmt.Println("Can't send message", err)
+			fmt.Println("Likely due to the following post", post)
+			return
+		}
+		s.MessageReactionAdd(m.ChannelID, message.ID, "🙅")
+		posterMutex.Lock()
+		booruPoster[message.ID] = booruPosterDetails{booruPage{URL: post.Data.URL}, m.Author.ID, e}
+		posterMutex.Unlock()
 	} else {
 		for _, v := range info.Data.Children {
 			if !v.Data.Announcement {
@@ -107,7 +121,7 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 					Name: "/r/" + sub,
 					URL:  "https://www.reddit.com/r/" + sub,
 				}
-				if strings.Contains(v.Data.URL, ".jpg") || strings.Contains(v.Data.URL, ".png") || strings.Contains(v.Data.URL, ".gif") || strings.Contains(v.Data.Domain, "imgur") {
+				if isImage(v) {
 					e.Image = &discordgo.MessageEmbedImage{URL: v.Data.URL}
 				} else if v.Data.SelfPost {
 					e.Description += v.Data.SelfPostText
@@ -117,7 +131,19 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 					&discordgo.MessageEmbedField{Name: "Comments", Value: strconv.Itoa(v.Data.NumComments), Inline: true},
 					&discordgo.MessageEmbedField{Name: "From", Value: v.Data.Domain, Inline: true},
 				}
-				s.ChannelMessageSendEmbed(m.ChannelID, &e)
+				message, err := s.ChannelMessageSendEmbed(m.ChannelID, &e)
+				if err != nil {
+					s.ChannelMessageSend(m.ChannelID, "Message failed to send")
+					fmt.Println("Can't send message", err)
+					fmt.Println("Likely due to the following post", v)
+					return
+				}
+				if isImage(v) {
+					s.MessageReactionAdd(m.ChannelID, message.ID, "🙅")
+					posterMutex.Lock()
+					booruPoster[message.ID] = booruPosterDetails{booruPage{URL: v.Data.URL}, m.Author.ID, e}
+					posterMutex.Unlock()
+				}
 				return
 			}
 		}
