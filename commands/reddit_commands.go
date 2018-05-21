@@ -23,6 +23,7 @@ type subredditPost struct {
 		NumComments  int    `json:"num_comments"`
 		Domain       string `json:"domain"`
 		NSFW         bool   `json:"over_18"`
+		Permalink    string `json:"permalink"`
 	} `json:"data"`
 }
 
@@ -47,7 +48,7 @@ func SendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if len(args) < 2 {
 		return
 	}
-	if args[1] == "rand" {
+	if strings.ToLower(args[1]) == "rand" {
 		sendRedditPost(s, m, args[2], true)
 	} else {
 		sendRedditPost(s, m, args[1], false)
@@ -77,7 +78,7 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 	var info subreddit
 	json.Unmarshal(body, &info)
 	isImage := func(p subredditPost) bool {
-		return strings.Contains(p.Data.URL, ".jpg") || strings.Contains(p.Data.URL, ".png") || strings.Contains(p.Data.URL, ".gif")
+		return strings.Contains(p.Data.URL, ".jpg") || strings.Contains(p.Data.URL, ".png") || (strings.Contains(p.Data.URL, ".gif") && !strings.HasSuffix(p.Data.URL, ".gifv"))
 	}
 	if random {
 		posts := info.filter(isImage)
@@ -87,9 +88,10 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 		}
 		post := posts[rand.Intn(len(posts))]
 		var e = discordgo.MessageEmbed{
-			Title: post.Data.Title,
-			URL:   post.Data.URL,
-			Color: 0xE5343A,
+			Title:       post.Data.Title,
+			URL:         post.Data.URL,
+			Color:       0xE5343A,
+			Description: "[View Comments](https://www.reddit.com" + post.Data.Permalink + ")",
 		}
 		e.Author = &discordgo.MessageEmbedAuthor{
 			Name: "/r/" + sub,
@@ -124,9 +126,10 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 		for _, v := range info.Data.Children {
 			if !v.Data.Announcement {
 				var e = discordgo.MessageEmbed{
-					Title: v.Data.Title,
-					URL:   v.Data.URL,
-					Color: 0xE5343A,
+					Title:       v.Data.Title,
+					URL:         v.Data.URL,
+					Color:       0xE5343A,
+					Description: "[View Comments](https://www.reddit.com" + v.Data.Permalink + ")",
 				}
 				e.Author = &discordgo.MessageEmbedAuthor{
 					Name: "/r/" + sub,
