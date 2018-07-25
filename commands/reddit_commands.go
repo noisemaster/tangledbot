@@ -8,22 +8,25 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
 type subredditPost struct {
 	Data struct {
-		URL          string `json:"url"`
-		Title        string `json:"title"`
-		Announcement bool   `json:"stickied"`
-		SelfPostText string `json:"selftext"`
-		SelfPost     bool   `json:"is_self"`
-		Score        int    `json:"score"`
-		NumComments  int    `json:"num_comments"`
-		Domain       string `json:"domain"`
-		NSFW         bool   `json:"over_18"`
-		Permalink    string `json:"permalink"`
+		URL          string  `json:"url"`
+		Title        string  `json:"title"`
+		Announcement bool    `json:"stickied"`
+		SelfPostText string  `json:"selftext"`
+		SelfPost     bool    `json:"is_self"`
+		Score        int     `json:"score"`
+		NumComments  int     `json:"num_comments"`
+		Domain       string  `json:"domain"`
+		NSFW         bool    `json:"over_18"`
+		Permalink    string  `json:"permalink"`
+		Subreddit    string  `json:"subreddit"`
+		CreatedUTC   float64 `json:"created_utc"`
 	} `json:"data"`
 }
 
@@ -94,8 +97,8 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 			Description: "[View Comments](https://www.reddit.com" + post.Data.Permalink + ")",
 		}
 		e.Author = &discordgo.MessageEmbedAuthor{
-			Name: "/r/" + sub,
-			URL:  "https://www.reddit.com/r/" + sub,
+			Name: "/r/" + post.Data.Subreddit,
+			URL:  "https://www.reddit.com/r/" + post.Data.Subreddit,
 		}
 		e.Image = &discordgo.MessageEmbedImage{URL: post.Data.URL}
 		e.Fields = []*discordgo.MessageEmbedField{
@@ -103,6 +106,8 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 			&discordgo.MessageEmbedField{Name: "Comments", Value: strconv.Itoa(post.Data.NumComments), Inline: true},
 			&discordgo.MessageEmbedField{Name: "From", Value: post.Data.Domain, Inline: true},
 		}
+		timestamp := time.Unix(int64(post.Data.CreatedUTC), 0)
+		e.Timestamp = strings.TrimRight(timestamp.Format(time.RFC3339), "Z")
 		var message *discordgo.Message
 		if post.Data.NSFW && channelInfo.NSFW {
 			message, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
@@ -132,8 +137,8 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 					Description: "[View Comments](https://www.reddit.com" + v.Data.Permalink + ")",
 				}
 				e.Author = &discordgo.MessageEmbedAuthor{
-					Name: "/r/" + sub,
-					URL:  "https://www.reddit.com/r/" + sub,
+					Name: "/r/" + v.Data.Subreddit,
+					URL:  "https://www.reddit.com/r/" + v.Data.Subreddit,
 				}
 				if isImage(v) {
 					e.Image = &discordgo.MessageEmbedImage{URL: v.Data.URL}
@@ -145,6 +150,8 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 					&discordgo.MessageEmbedField{Name: "Comments", Value: strconv.Itoa(v.Data.NumComments), Inline: true},
 					&discordgo.MessageEmbedField{Name: "From", Value: v.Data.Domain, Inline: true},
 				}
+				timestamp := time.Unix(int64(v.Data.CreatedUTC), 0)
+				e.Timestamp = strings.TrimRight(timestamp.Format(time.RFC3339), "Z")
 				var message *discordgo.Message
 				if v.Data.NSFW && channelInfo.NSFW {
 					message, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
