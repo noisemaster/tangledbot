@@ -83,6 +83,10 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 	isImage := func(p subredditPost) bool {
 		return strings.Contains(p.Data.URL, ".jpg") || strings.Contains(p.Data.URL, ".png") || (strings.Contains(p.Data.URL, ".gif") && !strings.HasSuffix(p.Data.URL, ".gifv"))
 	}
+	if len(info.Data.Children) == 0 {
+		s.ChannelMessageSend(m.ChannelID, "No posts found")
+		return
+	}
 	if random {
 		posts := info.filter(isImage)
 		if len(posts) == 0 {
