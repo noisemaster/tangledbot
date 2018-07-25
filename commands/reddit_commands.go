@@ -90,7 +90,7 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 	if random {
 		posts := info.filter(isImage)
 		if len(posts) == 0 {
-			s.ChannelMessageSend(m.ChannelID, "No images found in r/"+sub)
+			s.ChannelMessageSend(m.ChannelID, "No images found in r/"+info.Data.Children[0].Data.Subreddit)
 			return
 		}
 		post := posts[rand.Intn(len(posts))]
