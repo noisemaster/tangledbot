@@ -37,6 +37,7 @@ var Commands = map[string]func(s *discordgo.Session, m *discordgo.MessageCreate)
 	"--listbreeds": boxbot.SendBreedList,
 	"--gelbooru":   boxbot.GetGelbooruImage,
 	"--e621":       boxbot.GetE621Image,
+	"is this a ":   boxbot.SendIsThisImage,
 }
 
 //Config struct for tokens and API keys loaded from a json file
