@@ -22,7 +22,7 @@ func SendIsThisImage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	dc := gg.NewContext(ix, iy)
 	dc.DrawImage(image, 0, 0)
 
-	dc.SetRGB(0, 0, 0)
+	dc.SetRGB(.082, .082, .082)
 	if err = dc.LoadFontFace("storage/WorkSans-Regular.ttf", 44); err != nil {
 		log.Println(err)
 		return
@@ -30,21 +30,21 @@ func SendIsThisImage(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	// Write string
 	memeText, _ := m.ContentWithMoreMentionsReplaced(s)
-	memeText = memeText[10:]
+	memeText = memeText[8:]
 	stroke := 5
 	for dy := -stroke; dy <= stroke; dy++ {
 		for dx := -stroke; dx <= stroke; dx++ {
 			if dx*dx+dy*dy >= stroke*stroke {
 				continue
 			}
-			x := 385 + float64(dx)
+			x := 355 + float64(dx)
 			y := 698 + float64(dy)
 			dc.DrawStringAnchored(memeText, x, y, 0, 0.5)
 		}
 	} //390, 702
 
 	dc.SetRGB(1, 1, 1)
-	dc.DrawStringAnchored(memeText, 385, 698, 0, 0.5)
+	dc.DrawStringAnchored(memeText, 355, 698, 0, 0.5)
 
 	b := bytes.Buffer{}
 	err = png.Encode(&b, dc.Image())
