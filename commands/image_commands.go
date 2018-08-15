@@ -23,7 +23,7 @@ func SendIsThisImage(s *discordgo.Session, m *discordgo.MessageCreate) {
 	dc.DrawImage(image, 0, 0)
 
 	dc.SetRGB(.082, .082, .082)
-	if err = dc.LoadFontFace("storage/WorkSans-Regular.ttf", 44); err != nil {
+	if err = dc.LoadFontFace("storage/Lato-Regular.ttf", 44); err != nil {
 		log.Println(err)
 		return
 	}
