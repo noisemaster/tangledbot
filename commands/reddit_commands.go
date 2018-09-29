@@ -61,7 +61,7 @@ func SendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate) {
 func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string, random bool) {
 	client := &http.Client{}
 	channelInfo, _ := s.Channel(m.ChannelID)
-	req, err := http.NewRequest("GET", "https://www.reddit.com/r/"+sub+".json", nil)
+	req, err := http.NewRequest("GET", "https://www.reddit.com/r/"+sub+".json?limit=100", nil)
 	if err != nil {
 		fmt.Println(err)
 		return
