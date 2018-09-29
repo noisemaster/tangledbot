@@ -93,7 +93,8 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 			s.ChannelMessageSend(m.ChannelID, "No images found in r/"+info.Data.Children[0].Data.Subreddit)
 			return
 		}
-		post := posts[rand.Intn(len(posts))]
+		randomPostNo := rand.Intn(len(posts))
+		post := posts[randomPostNo]
 		var e = discordgo.MessageEmbed{
 			Title:       post.Data.Title,
 			URL:         post.Data.URL,
@@ -112,6 +113,9 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 		}
 		timestamp := time.Unix(int64(post.Data.CreatedUTC), 0)
 		e.Timestamp = strings.TrimRight(timestamp.Format(time.RFC3339), "Z")
+		e.Footer = &discordgo.MessageEmbedFooter{
+			Text: "Image " + strconv.Itoa(randomPostNo+1) + "/" + strconv.Itoa(len(posts)),
+		}
 		var message *discordgo.Message
 		if post.Data.NSFW && channelInfo.NSFW {
 			message, err = s.ChannelMessageSendEmbed(m.ChannelID, &e)
