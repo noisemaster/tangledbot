@@ -142,7 +142,7 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 					Title:       v.Data.Title,
 					URL:         v.Data.URL,
 					Color:       0xE5343A,
-					Description: "[View Comments](https://www.reddit.com" + v.Data.Permalink + ")",
+					Description: "[View Comments](https://www.reddit.com" + v.Data.Permalink + ")\n",
 				}
 				e.Author = &discordgo.MessageEmbedAuthor{
 					Name: "/r/" + v.Data.Subreddit,
@@ -150,6 +150,8 @@ func sendRedditPost(s *discordgo.Session, m *discordgo.MessageCreate, sub string
 				}
 				if isImage(v) {
 					e.Image = &discordgo.MessageEmbedImage{URL: v.Data.URL}
+				} else if v.Data.SelfPost && len(v.Data.SelfPostText) > 900 {
+					e.Description += v.Data.SelfPostText[:900] + "..."
 				} else if v.Data.SelfPost {
 					e.Description += v.Data.SelfPostText
 				}
