@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/noisemaster/frinkiacapigo"
@@ -51,8 +53,13 @@ func HandleFrinkiac(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 	if args[1] == "gif" {
 		parsed := strings.Join(args[2:], " ")
-		req, _ := frinkiac.GetFrinkiacGifMeme(parsed)
-		_, _ = s.ChannelMessageSend(m.ChannelID, req)
+		meme, _ := frinkiac.GetFrinkiacGifMeme(parsed)
+		msg, _ := s.ChannelMessageSend(m.ChannelID, "Fetching Gif...")
+		client := &http.Client{}
+		req, _ := http.NewRequest("GET", meme, nil)
+		client.Do(req)
+		time.Sleep(10 * time.Second)
+		s.ChannelMessageEdit(m.ChannelID, msg.ID, meme)
 	} else if args[1] == "cap" {
 		parsed := strings.Join(args[2:], " ")
 		req, _ := frinkiac.GetFrinkiacMeme(parsed)
