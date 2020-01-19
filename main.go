@@ -8,6 +8,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	boxbot "github.com/noisemaster/boxbot/commands"
+	sports "github.com/noisemaster/boxbot/commands/sport"
 )
 
 var (
@@ -38,6 +39,7 @@ var Commands = map[string]func(s *discordgo.Session, m *discordgo.MessageCreate)
 	"--gelbooru":   boxbot.GetGelbooruImage,
 	"--e621":       boxbot.GetE621Image,
 	"--isthis":     boxbot.SendIsThisImage,
+	"--nfl":        sports.FindNFLGames,
 }
 
 //Config struct for tokens and API keys loaded from a json file
