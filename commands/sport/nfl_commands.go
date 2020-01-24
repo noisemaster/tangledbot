@@ -92,6 +92,7 @@ func FindNFLGames(s *discordgo.Session, m *discordgo.MessageCreate) {
 		gameTime := time.Unix(game.ScheduledGame.IsoTime/1000, 0)
 		year, month, day := gameTime.Date()
 		currentTime := time.Now()
+		aDayAgo := time.Now().AddDate(0, 0, -1)
 
 		var scoreString string
 		timeString := month.String() + " " + strconv.Itoa(day) + ", " + strconv.Itoa(year) + " " + gameTime.Format(time.Kitchen) + " (Eastern)"
@@ -105,7 +106,11 @@ func FindNFLGames(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 		if scoreString != "" {
-			finalValue = timeString + " " + game.Score.PhaseDescription + " ||" + scoreString + "||"
+			if aDayAgo.Unix() > gameTime.Unix() {
+				finalValue = timeString + " " + game.Score.PhaseDescription + " " + scoreString
+			} else {
+				finalValue = timeString + " " + game.Score.PhaseDescription + " ||" + scoreString + "||"
+			}
 		} else {
 			finalValue = timeString
 		}
