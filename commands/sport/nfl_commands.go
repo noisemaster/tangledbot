@@ -23,17 +23,19 @@ type nflSchedule struct {
 }
 
 type nflScheduleEntry struct {
-	GameID             int    `json:"gameId"`
-	GameDate           string `json:"gameDate"`
-	GameTimeEastern    string `json:"gameTimeEastern"`
-	GameTimeLocal      string `json:"gameTimeLocal"`
-	IsoTime            int64  `json:"isoTime"`
-	HomeTeamID         string `json:"homeTeamId"`
-	VisitorTeamID      string `json:"visitorTeamId"`
-	HomeTeamAbbr       string `json:"homeTeamAbbr"`
-	VisitorTeamAbbr    string `json:"visitorTeamAbbr"`
-	HomeDisplayName    string `json:"homeDisplayName"`
-	VisitorDisplayName string `json:"visitorDisplayName"`
+	GameID             int        `json:"gameId"`
+	GameDate           string     `json:"gameDate"`
+	GameTimeEastern    string     `json:"gameTimeEastern"`
+	GameTimeLocal      string     `json:"gameTimeLocal"`
+	GameType           string     `json:"gameType"`
+	Stadium            nflStadium `json:"site"`
+	IsoTime            int64      `json:"isoTime"`
+	HomeTeamID         string     `json:"homeTeamId"`
+	VisitorTeamID      string     `json:"visitorTeamId"`
+	HomeTeamAbbr       string     `json:"homeTeamAbbr"`
+	VisitorTeamAbbr    string     `json:"visitorTeamAbbr"`
+	HomeDisplayName    string     `json:"homeDisplayName"`
+	VisitorDisplayName string     `json:"visitorDisplayName"`
 }
 
 type nflScore struct {
@@ -50,6 +52,13 @@ type nflScore struct {
 	RedZone            bool                `json:"redZone,omitempty"`
 	VisitorTeamScore   nflTeamQuarterScore `json:"visitorTeamScore,omitempty"`
 	HomeTeamScore      nflTeamQuarterScore `json:"homeTeamScore,omitempty"`
+}
+
+type nflStadium struct {
+	SiteCity     string `json:"siteCity,omitempty"`
+	SiteFullname string `json:"siteFullname,omitempty"`
+	SiteState    string `json:"siteState,omitempty"`
+	RoofType     string `json:"roofType,omitempty"`
 }
 
 type nflTeamQuarterScore struct {
@@ -115,8 +124,23 @@ func FindNFLGames(s *discordgo.Session, m *discordgo.MessageCreate) {
 			finalValue = timeString
 		}
 
+		var name string
+		if game.ScheduledGame.GameType == "SB" {
+			name = "Super Bowl"
+			finalValue = game.ScheduledGame.VisitorDisplayName + " vs. " + game.ScheduledGame.HomeDisplayName + "\n" +
+				game.ScheduledGame.Stadium.SiteFullname + " - " + game.ScheduledGame.Stadium.SiteCity + ", " + game.ScheduledGame.Stadium.SiteState + "\n" +
+				finalValue
+		} else if game.ScheduledGame.GameType == "PRO" {
+			name = "Pro Bowl"
+			finalValue = game.ScheduledGame.VisitorDisplayName + " vs. " + game.ScheduledGame.HomeDisplayName + "\n" +
+				game.ScheduledGame.Stadium.SiteFullname + " - " + game.ScheduledGame.Stadium.SiteCity + ", " + game.ScheduledGame.Stadium.SiteState + "\n" +
+				finalValue
+		} else {
+			name = game.ScheduledGame.VisitorDisplayName + " @ " + game.ScheduledGame.HomeDisplayName
+		}
+
 		gameField := discordgo.MessageEmbedField{
-			Name:   game.ScheduledGame.VisitorDisplayName + " @ " + game.ScheduledGame.HomeDisplayName,
+			Name:   name,
 			Value:  finalValue,
 			Inline: false,
 		}
