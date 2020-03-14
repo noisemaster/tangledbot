@@ -76,6 +76,10 @@ func init() {
 
 //GetE621Image grabs a random image from e621
 func GetE621Image(s *discordgo.Session, m *discordgo.MessageCreate) {
+	channelInfo, _ := s.Channel(m.ChannelID)
+	if !channelInfo.NSFW {
+		m.Content = m.Content + " rating:safe"
+	}
 	var tagFixer = strings.NewReplacer(" ", "+")
 	tags := m.Content[len("--"+"e621 "):]
 	getE621Post(s, m, "https://e621.net/posts.json?tags="+tagFixer.Replace(tags), tags, "https://e621.net/posts/")
