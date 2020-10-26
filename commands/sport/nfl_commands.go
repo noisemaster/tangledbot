@@ -1,10 +1,9 @@
 package boxbot
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"net/http"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -73,6 +72,79 @@ type nflTeamQuarterScore struct {
 
 // FindNFLGames shows the active games for the current week of the NFL
 func FindNFLGames(s *discordgo.Session, m *discordgo.MessageCreate) {
+	resp, err := fetchESPNFootball()
+	if err != nil {
+		return
+	}
+
+	var embed discordgo.MessageEmbed
+	embed.Title = "NFL Week " + strconv.Itoa(resp.Week.Number)
+	var fields []*discordgo.MessageEmbedField
+
+	findVisitorTeam := func(p espnCompetitors) bool {
+		return p.HomeAway == "away"
+	}
+
+	findHomeTeam := func(p espnCompetitors) bool {
+		return p.HomeAway == "home"
+	}
+
+	for _, game := range resp.Events {
+		var finalValue string
+		var rfc3339Fixer = strings.NewReplacer("Z", ":00Z")
+		loc, _ := time.LoadLocation("America/New_York")
+
+		gameTime, err := time.Parse(time.RFC3339, rfc3339Fixer.Replace(game.Date))
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		gameTime = gameTime.In(loc)
+
+		year, month, day := gameTime.Date()
+		currentTime := time.Now()
+		aDayAgo := time.Now().AddDate(0, 0, -1)
+
+		timeString := month.String() + " " + strconv.Itoa(day) + ", " + strconv.Itoa(year) + " " + gameTime.Format(time.Kitchen) + " (Eastern)"
+
+		var scoreString string
+		var visitingTeam = game.Competitions[0].find(findVisitorTeam)
+		var homeTeam = game.Competitions[0].find(findHomeTeam)
+
+		var networkString = strings.Join(game.Competitions[0].Broadcasts[0].Names, ", ")
+
+		if currentTime.Unix() > gameTime.Unix() {
+			scoreString = visitingTeam.Team.Abbreviation + " " + visitingTeam.Score + " - " + homeTeam.Team.Abbreviation + " " + homeTeam.Score
+			if !(game.Competitions[0].Status.Type.State == "pre") && !game.Competitions[0].Status.Type.Completed {
+				timeString = "<:live:668567946997792800> LIVE " + networkString + ":"
+			}
+		}
+
+		if scoreString != "" {
+			if aDayAgo.Unix() > gameTime.Unix() {
+				finalValue = timeString + "\n" + game.Competitions[0].Status.Type.Detail + "\n" + scoreString
+			} else {
+				finalValue = timeString + "\n" + game.Competitions[0].Status.Type.Detail + "\n||" + scoreString + "||"
+			}
+		} else {
+			finalValue = timeString
+		}
+
+		gameField := discordgo.MessageEmbedField{
+			Name:   game.Name,
+			Value:  finalValue,
+			Inline: true,
+		}
+
+		fields = append(fields, &gameField)
+	}
+	embed.Fields = fields
+
+	s.ChannelMessageSendEmbed(m.ChannelID, &embed)
+}
+
+/* func FindNFLGames(s *discordgo.Session, m *discordgo.MessageCreate) {
 	var results nflScoresResult
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", "https://feeds.nfl.com/feeds-rs/scores.json", nil)
@@ -149,4 +221,4 @@ func FindNFLGames(s *discordgo.Session, m *discordgo.MessageCreate) {
 	embed.Fields = fields
 
 	s.ChannelMessageSendEmbed(m.ChannelID, &embed)
-}
+} */
