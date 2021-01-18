@@ -24,6 +24,7 @@ _testmain.go
 *.prof
 
 config.json
+config.ts
 *.db
 
 debug
