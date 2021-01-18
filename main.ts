@@ -3,6 +3,7 @@ import { sendNFLEmbed } from "./commands/nfl.ts";
 import { sendRedditEmbed } from "./commands/reddit.ts";
 import { hidePost, isPostHideable, showPost } from "./handlers/imagePostHandler.ts";
 import config from './config.ts';
+import { sendE621Embed } from "./commands/booru.ts";
 
 const client = new Client();
 
@@ -19,6 +20,9 @@ client.on('interactionCreate', async (interaction: Interaction) => {
             break;
         case 'reddit':
             await sendRedditEmbed(interaction);
+            break;
+        case 'e621':
+            await sendE621Embed(interaction);
             break;
         default:
             break;
