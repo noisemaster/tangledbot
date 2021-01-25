@@ -1,4 +1,4 @@
-import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v0.9.3/mod.ts'
+import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.0.0/mod.ts'
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 
 interface redditPost {

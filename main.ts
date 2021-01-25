@@ -1,4 +1,4 @@
-import { Client, Intents, Interaction } from 'https://deno.land/x/harmony@v0.9.3/mod.ts'
+import { Client, Intents, Interaction } from 'https://deno.land/x/harmony@v1.0.0/mod.ts'
 import { sendNFLEmbed } from "./commands/nfl.ts";
 import { sendRedditEmbed } from "./commands/reddit.ts";
 import { hidePost, isPostHideable, showPost } from "./handlers/imagePostHandler.ts";
