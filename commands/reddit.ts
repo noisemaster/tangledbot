@@ -1,5 +1,6 @@
 import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.0.0/mod.ts'
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
+import { trim } from "./lib/trim.ts";
 
 interface redditPost {
     data: {
@@ -37,11 +38,17 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
         : true
     );
 
-    if (posts.length === 0) {
+    try {
         await interaction.respond({
-            content: 'No posts found',
-            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE
+            type: InteractionResponseType.ACK_WITH_SOURCE,
         });
+    } catch (error) {
+        console.error(error);
+        return;
+    }
+
+    if (posts.length === 0) {
+        await interaction.send('No posts found');
         return;
     }
 
@@ -57,7 +64,7 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
             name: `/${post.subreddit_name_prefixed}`,
             url: `https://reddit.com/r/${subreddit}`
         },
-        description: `[View Comments](https://www.reddit.com${post.permalink})\n${post.selfPost ? post.selfPostText : ''}`,
+        description: `[View Comments](https://www.reddit.com${post.permalink})\n${post.is_self ? trim(post.selftext, 850) : ''}`,
         color: 0xE5343A,
         fields: [
             { name: "Score", value: post.score, inline: true },
@@ -76,19 +83,7 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
     }
 
     if (post.over_18 && !interaction.channel.nsfw) {
-        await interaction.respond({
-            content: 'This channel is not a NSFW channel',
-            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE
-        });
-        return;
-    }
-
-    try {
-        await interaction.respond({
-            type: InteractionResponseType.ACK_WITH_SOURCE,
-        });
-    } catch (error) {
-        console.error(error);
+        await interaction.send('This channel is not a NSFW channel');
         return;
     }
 
