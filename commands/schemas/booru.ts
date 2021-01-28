@@ -1,11 +1,13 @@
-export const E621CommandSchema = {
+import { SlashCommandOptionType, SlashCommandPartial } from "https://deno.land/x/harmony@v1.0.0/src/types/slash.ts";
+
+export const E621CommandSchema: SlashCommandPartial = {
     "name": "e621",
     "description": "Fetch a random image from E621 (sends safe images only outside of NSFW channels)",
     "options": [
         {
             "name": "tag",
             "description": "Set of space separated tags to search for (use _ for tags with spaces)",
-            "type": 3,
+            "type": SlashCommandOptionType.STRING,
             "required": true,
         },
     ]

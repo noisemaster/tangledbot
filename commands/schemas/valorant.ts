@@ -1,11 +1,13 @@
-export const ValorantCommandSchema = {
+import { SlashCommandOptionType, SlashCommandPartial } from "https://deno.land/x/harmony@v1.0.0/src/types/slash.ts";
+
+export const ValorantCommandSchema: SlashCommandPartial = {
     "name": "valorant",
     "description": "View the schedule of Valorant matches (via valorantesports.com)",
     "options": [
         {
             "name": "region",
             "description": "Match region",
-            "type": 3,
+            "type": SlashCommandOptionType.STRING,
             "required": true,
             "choices": [
                 {
