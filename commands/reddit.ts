@@ -26,6 +26,15 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
     const subreddit: string = subredditOption ? subredditOption.value : '';
     const isImage: boolean = isImageOption ? isImageOption.value : false;
 
+    try {
+        await interaction.respond({
+            type: InteractionResponseType.ACK_WITH_SOURCE,
+        });
+    } catch (error) {
+        console.error(error);
+        return;
+    }
+
     const request = await fetch(`https://www.reddit.com/r/${subreddit}.json?limit=100`);
     const redditData = await request.json();
 
@@ -37,15 +46,6 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
           (x.data.url.includes('.gif') && !x.data.url.includes('.gifv'))
         : true
     );
-
-    try {
-        await interaction.respond({
-            type: InteractionResponseType.ACK_WITH_SOURCE,
-        });
-    } catch (error) {
-        console.error(error);
-        return;
-    }
 
     if (posts.length === 0) {
         await interaction.send('No posts found');
