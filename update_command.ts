@@ -1,8 +1,8 @@
 import config from './config.ts';
-import {ValorantCommandSchema as commandRequest} from './commands/schemas/valorant.ts';
+import {IsThisSchema as commandRequest} from './commands/schemas/isthis.ts';
 
-// const url = `https://discord.com/api/v8/applications/${config.discord.appID}/commands`;
-const url = `https://discord.com/api/v8/applications/${config.discord.appID}/guilds/${config.discord.testingGuildID}/commands`;
+const url = `https://discord.com/api/v8/applications/${config.discord.appID}/commands`;
+// const url = `https://discord.com/api/v8/applications/${config.discord.appID}/guilds/${config.discord.testingGuildID}/commands`;
 
 const headers = {
     "Authorization": `Bot ${config.discord.token}`,

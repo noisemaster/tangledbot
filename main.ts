@@ -5,6 +5,7 @@ import { hidePost, isPostHideable, showPost } from "./handlers/imagePostHandler.
 import config from './config.ts';
 import { sendE621Embed } from "./commands/booru.ts";
 import { sendValorantFixtureEmbed } from "./commands/valorant.ts";
+import { generateIsThisImage } from "./commands/image/isthis.ts";
 
 const client = new Client();
 
@@ -27,6 +28,9 @@ client.on('interactionCreate', async (interaction: Interaction) => {
             break;
         case 'valorant':
             await sendValorantFixtureEmbed(interaction);
+            break;
+        case 'isthis':
+            await generateIsThisImage(interaction);
             break;
         default:
             break;
