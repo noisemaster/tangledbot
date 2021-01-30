@@ -35,7 +35,7 @@ export const sendShowEmbed = async (interaction: Interaction) => {
     const typeOption = interaction.data.options.find(option => option.name === 'type');
     const textOverride = interaction.data.options.find(option => option.name === 'subtitleoverride');
 
-    const type: requestType = typeOption ? typeOption.value : 'frame';
+    const type: requestType = typeOption ? typeOption.value : 'subtitle';
     const subtitleOverride: string = textOverride ? textOverride.value : '';
 
     await interaction.respond({
@@ -45,6 +45,11 @@ export const sendShowEmbed = async (interaction: Interaction) => {
     const urlBase: string = showURLMap[showOption];
     const framesRequest = await fetch(`${urlBase}/api/search?q=${encodeURIComponent(phrase)}`)
     const frames: Frames[] = await framesRequest.json();
+
+    if (frames.length === 0) {
+        await interaction.send("No images found");
+        return;
+    }
 
     // Taking the first frame as the best frame
     const [selectedFrame] = frames;
