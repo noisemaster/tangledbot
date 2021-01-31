@@ -76,7 +76,8 @@ export const sendShowEmbed = async (interaction: Interaction) => {
     let b64lines = addPaddingToBase64url(encode(Buffer.from(wrappedCaption, 'utf-8')));
 
     if (type === 'subtitle') {
-        await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${selectedFrame.Timestamp}.jpg?b64lines=${b64lines}`);
+        const [imgFrame = {RepresentativeTimestamp: selectedFrame.Timestamp}] = frameRange;
+        await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`);
         return;
     }
 
