@@ -1,6 +1,6 @@
 import { Embed, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.0.0/mod.ts'
 import { EmbedField } from "https://deno.land/x/harmony@v1.0.0/src/types/channel.ts";
-import { sub, differenceInDays, format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
+import { sub, differenceInDays, format, isAfter } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 
 // Format shared between League and Valorant's esport sites
 interface RiotFixture {
@@ -61,7 +61,16 @@ export const sendValorantFixtureEmbed = async (interaction: Interaction) => {
 
     const {data: {schedule}} = await scheduleReq.json();
     const {updated: updateTime, events} = schedule;
-    const eventFields = events.map((event: RiotFixture) => {
+    const twoDaysAgo = sub(new Date(), {days: 2});
+    const eventFields = events
+        .filter((event: RiotFixture) => {
+            const matchDate = Date.parse(event.startTime);
+            const dayDiff = differenceInDays(twoDaysAgo, matchDate);
+            const isInFuture = isAfter(matchDate, twoDaysAgo);
+
+            return isInFuture || (!isInFuture && differenceInDays(matchDate, dayDiff) <= 2);
+        })
+        .map((event: RiotFixture) => {
         const [team1, team2] = event.match.teams;
         const date = Date.parse(event.startTime);
 
@@ -70,7 +79,7 @@ export const sendValorantFixtureEmbed = async (interaction: Interaction) => {
         const field: EmbedField = {
             name: `${team1.name} vs. ${team2.name}`,
             value: gameData,
-            inline: false,
+            inline: true,
         };
 
         return field;
@@ -79,10 +88,10 @@ export const sendValorantFixtureEmbed = async (interaction: Interaction) => {
     const embed = new Embed({
         title: 'Recent & Upcoming Valorant Matches',
         fields: eventFields,
-        footer: {
-            text: 'Last Updated'
-        },
-        timestamp: updateTime,
+        // footer: {
+        //     text: 'Last Updated'
+        // },
+        // timestamp: updateTime,
     });
 
     await interaction.respond({
