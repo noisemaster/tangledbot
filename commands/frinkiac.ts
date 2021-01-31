@@ -53,19 +53,6 @@ export const sendShowEmbed = async (interaction: Interaction) => {
 
     // Taking the first frame as the best frame
     const [selectedFrame] = frames;
-
-    if (type === 'frame') {
-        await interaction.send(`${urlBase}/img/${selectedFrame.Episode}/${selectedFrame.Timestamp}.jpg`);
-        return;
-    }
-
-    if (type === 'subtitle' && textOverride) {
-        const wrappedCaption = wrap(subtitleOverride, {width: 24});
-        const b64lines = addPaddingToBase64url(encode(Buffer.from(wrappedCaption, 'utf-8')));
-        await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${selectedFrame.Timestamp}.jpg?b64lines=${b64lines}`);
-        return;
-    }
-    
     const frameDataRequest = await fetch(`${urlBase}/api/caption?e=${selectedFrame.Episode}&t=${selectedFrame.Timestamp}`);
     const frameData: CaptionRequest = await frameDataRequest.json();
 
@@ -74,9 +61,21 @@ export const sendShowEmbed = async (interaction: Interaction) => {
     const caption = frameRange.reduce((cap: string, subtitle) => `${cap} ${subtitle.Content}`, '').trim();
     const wrappedCaption = wrap(caption, {width: 24});
     let b64lines = addPaddingToBase64url(encode(Buffer.from(wrappedCaption, 'utf-8')));
+    const [imgFrame = {RepresentativeTimestamp: selectedFrame.Timestamp}] = frameRange;
+
+    if (type === 'frame') {
+        await interaction.send(`${urlBase}/img/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg`);
+        return;
+    }
+
+    if (type === 'subtitle' && textOverride) {
+        const wrappedCaption = wrap(subtitleOverride, {width: 24});
+        const b64lines = addPaddingToBase64url(encode(Buffer.from(wrappedCaption, 'utf-8')));
+        await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`);
+        return;
+    }
 
     if (type === 'subtitle') {
-        const [imgFrame = {RepresentativeTimestamp: selectedFrame.Timestamp}] = frameRange;
         await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`);
         return;
     }
