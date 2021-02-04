@@ -7,6 +7,7 @@ import { sendE621Embed } from "./commands/booru.ts";
 import { sendValorantFixtureEmbed } from "./commands/valorant.ts";
 import { generateIsThisImage } from "./commands/image/isthis.ts";
 import { sendShowEmbed } from "./commands/frinkiac.ts";
+import { fetchQuote } from "./commands/stock.ts";
 
 const client = new Client();
 
