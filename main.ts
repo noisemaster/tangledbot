@@ -36,6 +36,9 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         case 'show':
             await sendShowEmbed(interaction);
             break;
+        case 'stock':
+            await fetchQuote(interaction);
+            break;
         default:
             break;
     }
