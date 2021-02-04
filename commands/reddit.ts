@@ -1,4 +1,5 @@
 import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.0.0/mod.ts'
+import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { trim } from "./lib/trim.ts";
 
@@ -56,6 +57,7 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
     const post = posts[randomIndex].data;
 
     const isPostImage = isImage || post.url.includes('.jpg') || post.url.includes('.png') || post.url.includes('.jpeg') || post.url.includes('.gif')
+    const postDate = format(new Date(post.created_utc * 1000), "yyyy-MM-dd'T'HH:mm:ssxxx", undefined);
 
     const postEmbed = new Embed({
         title: post.title,
@@ -72,8 +74,9 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
             { name: "From", value: post.domain, inline: true },
         ],
         footer: {
-            text: `Post ${randomIndex + 1}/${posts.length}`
-        }
+            text: `Post ${randomIndex + 1}/${posts.length}`,
+        },
+        timestamp: postDate
     });
 
     if (isPostImage) {
