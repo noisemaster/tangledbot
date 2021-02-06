@@ -22,18 +22,27 @@ export const fetchQuote = async (interaction: Interaction) => {
     }
 
     const [data] = result;
-    const {symbol: returnedSymbol, longName, regularMarketPrice, regularMarketChange, regularMarketChangePercent, regularMarketTime} = data;
+    const {symbol: returnedSymbol, quoteType, startDate, coinImageUrl, fromCurrency, longName, shortName, regularMarketPrice, regularMarketChange, regularMarketChangePercent, regularMarketTime} = data;
     const lastRefresh = new Date(regularMarketTime * 1000);
     const lastRefreshFormat = format(lastRefresh, "yyyy-MM-dd'T'HH:mm:ssxxx", undefined);
     const diffSymbol = regularMarketChange > 0 ? '🔺' : '🔻';
     const diffColor = regularMarketChange > 0 ? 0x44bd32 : 0xe74c3c;
 
     const stockEmbed = new Embed({
-        title: `${longName} (${returnedSymbol})`,
-        description: `${regularMarketPrice.toFixed(2)}\n${diffSymbol} ${Math.abs(regularMarketChange).toFixed(2)} (${regularMarketChangePercent.toFixed(2)}%)`,
+        title: `${longName || shortName} (${returnedSymbol})`,
         timestamp: lastRefreshFormat,
         color: diffColor
     });
+
+    if (quoteType === 'CRYPTOCURRENCY') {
+        stockEmbed.setAuthor({
+            icon_url: coinImageUrl,
+            name: fromCurrency
+        });
+        stockEmbed.setDescription(`${regularMarketPrice}\n${diffSymbol} ${Math.abs(regularMarketChange)} (${regularMarketChangePercent.toFixed(2)}%)`);
+    } else {
+        stockEmbed.setDescription(`${regularMarketPrice.toFixed(2)}\n${diffSymbol} ${Math.abs(regularMarketChange.toFixed(2))} (${regularMarketChangePercent.toFixed(2)}%)`);
+    }
 
     await interaction.respond({
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
