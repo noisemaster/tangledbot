@@ -9,16 +9,22 @@ export const fetchQuote = async (interaction: Interaction) => {
 
     const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`
 
-    const stockResp = await fetch(url);
-    const stock = await stockResp.json();
-    const {result} = stock.quoteResponse;
+    let stockResp = await fetch(url);
+    let stock = await stockResp.json();
+    let {result} = stock.quoteResponse;
 
     if (result.length === 0) {
-        await interaction.respond({
-            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-            content: `${symbol} not found`
-        });
-        return;
+        stockResp = await fetch(url + '-USD');
+        stock = await stockResp.json();
+        result = stock.quoteResponse.result;
+
+        if (result.length === 0) {
+            await interaction.respond({
+                type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+                content: `${symbol} not found`
+            });
+            return;
+        }
     }
 
     const [data] = result;
