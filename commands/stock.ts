@@ -13,7 +13,7 @@ export const fetchQuote = async (interaction: Interaction) => {
     let stock = await stockResp.json();
     let {result} = stock.quoteResponse;
 
-    if (result.length === 0) {
+    if (result.length === 0 || result[0].quoteType === 'MUTUALFUND') {
         stockResp = await fetch(url + '-USD');
         stock = await stockResp.json();
         result = stock.quoteResponse.result;
@@ -28,7 +28,16 @@ export const fetchQuote = async (interaction: Interaction) => {
     }
 
     const [data] = result;
-    const {symbol: returnedSymbol, quoteType, startDate, coinImageUrl, fromCurrency, longName, shortName, regularMarketPrice, regularMarketChange, regularMarketChangePercent, regularMarketTime} = data;
+    const {symbol: returnedSymbol, exchange, quoteType, coinImageUrl, fromCurrency, longName, shortName, regularMarketPrice, regularMarketChange, regularMarketChangePercent, regularMarketTime} = data;
+
+    if (!regularMarketTime) {
+        await interaction.respond({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            content: `${symbol} not found`
+        });
+        return;
+    }
+
     const lastRefresh = new Date(regularMarketTime * 1000);
     const lastRefreshFormat = format(lastRefresh, "yyyy-MM-dd'T'HH:mm:ssxxx", undefined);
     const diffSymbol = regularMarketChange > 0 ? '🔺' : '🔻';
@@ -48,6 +57,7 @@ export const fetchQuote = async (interaction: Interaction) => {
         stockEmbed.setDescription(`${regularMarketPrice}\n${diffSymbol} ${Math.abs(regularMarketChange)} (${regularMarketChangePercent.toFixed(2)}%)`);
     } else {
         stockEmbed.setDescription(`${regularMarketPrice.toFixed(2)}\n${diffSymbol} ${Math.abs(regularMarketChange.toFixed(2))} (${regularMarketChangePercent.toFixed(2)}%)`);
+        stockEmbed.setFooter(`Exchange: ${exchange}`);
     }
 
     await interaction.respond({
