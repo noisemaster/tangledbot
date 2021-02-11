@@ -74,7 +74,13 @@ export const fetchQuote = async (interaction: Interaction) => {
 
 // this is probably the worst way to do this, but uhh it'll shut kaz up
 const fetchChart = async (symbol: string): Promise<Uint8Array> => {
-    const browser = await puppeteer.launch({headless: true});
+    const browser = await puppeteer.launch({
+        headless: true,
+        defaultViewport: {
+            width: 1072,
+            height: 715
+        }
+    });
     const page = await browser.newPage();
     await page.goto(`https://finance.yahoo.com/chart/${symbol}`);
     await page.waitForNavigation({waitUntil: 'networkidle2'});
