@@ -84,6 +84,34 @@ const fetchChart = async (symbol: string): Promise<Uint8Array> => {
     const page = await browser.newPage();
     await page.goto(`https://finance.yahoo.com/chart/${symbol}`);
     await page.waitForNavigation({waitUntil: 'networkidle2'});
+
+    // Remove portfolio sidebar
+    const sidebarButton = await page.$('button[data-test="view-toggler"]');
+    if (sidebarButton) {
+        await sidebarButton.click();
+    }
+
+    // Set chart to Candle
+    const chartDropdown = await page.$('div.M\\(0\\):nth-child(8) > div:nth-child(1)');
+    if (chartDropdown) {
+        await chartDropdown.click();
+    }
+    const candleButton = await page.$('li.C\\(\\$linkColor\\)\\:h:nth-child(3) > button:nth-child(1)');
+    if (candleButton) {
+        await candleButton.click();
+    }
+
+    // Set date range to 1D
+    const dateRangeDropdown = await page.$('.miniRangeBtn > div:nth-child(1)');
+    if (dateRangeDropdown) {
+        await dateRangeDropdown.click();
+    }
+
+    const dateRangeButton = await page.$('li.Fw\\(n\\):nth-child(1) > button:nth-child(1)');
+    if (dateRangeButton) {
+        await dateRangeButton.click();
+    }
+
     const screenshot = await page.screenshot({encoding: 'binary'});
     await browser.close();
     return screenshot as Uint8Array;
