@@ -2,7 +2,6 @@ import { Interaction } from "https://deno.land/x/harmony@v1.0.0/src/structures/s
 import { InteractionResponseType } from "https://deno.land/x/harmony@v1.0.0/src/types/slash.ts";
 import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { Embed } from "https://deno.land/x/harmony@v1.0.0/src/structures/embed.ts";
-import puppeteer from "https://deno.land/x/puppeteer@5.5.1/mod.ts";
 import { MessageAttachment } from "https://deno.land/x/harmony@v1.0.0/mod.ts";
 
 export const fetchQuote = async (interaction: Interaction) => {
@@ -72,47 +71,18 @@ export const fetchQuote = async (interaction: Interaction) => {
     });
 }
 
-// this is probably the worst way to do this, but uhh it'll shut kaz up
 const fetchChart = async (symbol: string): Promise<Uint8Array> => {
-    const browser = await puppeteer.launch({
-        headless: true,
-        defaultViewport: {
-            width: 1072,
-            height: 715
-        }
+    const badger = Deno.run({
+        cmd: ["python", "./helpers/badger.py", symbol],
+        stdout: 'piped'
     });
-    const page = await browser.newPage();
-    await page.goto(`https://finance.yahoo.com/chart/${symbol}`);
-    await page.waitForNavigation({waitUntil: 'networkidle2'});
 
-    // Remove portfolio sidebar
-    const sidebarButton = await page.$('button[data-test="view-toggler"]');
-    if (sidebarButton) {
-        await sidebarButton.click();
+    const output = await badger.output();
+    const { code } = await badger.status();
+    
+    if (code !== 0) {
+        throw new Error('Candlesticks chart not generated')
     }
 
-    // Set chart to Candle
-    const chartDropdown = await page.$('div.M\\(0\\):nth-child(8) > div:nth-child(1)');
-    if (chartDropdown) {
-        await chartDropdown.click();
-    }
-    const candleButton = await page.$('li.C\\(\\$linkColor\\)\\:h:nth-child(3) > button:nth-child(1)');
-    if (candleButton) {
-        await candleButton.click();
-    }
-
-    // Set date range to 1D
-    const dateRangeDropdown = await page.$('.miniRangeBtn > div:nth-child(1)');
-    if (dateRangeDropdown) {
-        await dateRangeDropdown.click();
-    }
-
-    const dateRangeButton = await page.$('li.Fw\\(n\\):nth-child(1) > button:nth-child(1)');
-    if (dateRangeButton) {
-        await dateRangeButton.click();
-    }
-
-    const screenshot = await page.screenshot({encoding: 'binary'});
-    await browser.close();
-    return screenshot as Uint8Array;
+    return output;
 }
