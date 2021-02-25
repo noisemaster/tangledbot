@@ -19,7 +19,7 @@ This'll assume that the quote provided is valid since it'll be called after a ca
 Yahoo Finance's API anyways
 """
 def getStock(stock: str):
-    req = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/{}?interval=1m".format(stock))
+    req = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/{}?interval=2m".format(stock))
     data = req.json()
 
     timestamps = data["chart"]["result"][0]['timestamp']
