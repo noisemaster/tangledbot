@@ -71,19 +71,19 @@ export const sendValorantFixtureEmbed = async (interaction: Interaction) => {
             return isInFuture || (!isInFuture && differenceInDays(matchDate, dayDiff) <= 2);
         })
         .map((event: RiotFixture) => {
-        const [team1, team2] = event.match.teams;
-        const date = Date.parse(event.startTime);
+            const [team1, team2] = event.match.teams;
+            const date = Date.parse(event.startTime);
 
-        const gameData = `${event.league.name} - ${event.blockName}\n${format(date, 'MMMM d, yyyy h:mm a z', undefined)}`
+            const gameData = `${event.league.name} - ${event.blockName}\n${format(date, 'MMMM d, yyyy h:mm a z', undefined)}`
 
-        const field: EmbedField = {
-            name: `${team1.name} vs. ${team2.name}`,
-            value: gameData,
-            inline: true,
-        };
+            const field: EmbedField = {
+                name: `${team1.name} vs. ${team2.name}`,
+                value: gameData,
+                inline: true,
+            };
 
-        return field;
-    });
+            return field;
+        });
 
     const embed = new Embed({
         title: 'Recent & Upcoming Valorant Matches',
