@@ -1,5 +1,5 @@
-import config from './config.ts';
-import {FrinkiacCommandSchema as commandRequest} from './commands/schemas/frinkiac.ts';
+import config from '../config.ts';
+import {StockCommandSchema as commandRequest} from '../commands/schemas/stock.ts';
 
 const url = `https://discord.com/api/v8/applications/${config.discord.appID}/commands`;
 // const url = `https://discord.com/api/v8/applications/${config.discord.appID}/guilds/${config.discord.testingGuildID}/commands`;
