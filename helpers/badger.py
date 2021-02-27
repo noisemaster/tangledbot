@@ -3,7 +3,7 @@ badger.py
 
 Helper script to generate candlestick charts using data from Yahoo Finance's API
 
-Expected usage: python badger.py [symbol]
+Expected usage: python badger.py [symbol] [time range]
 Outputs: PNG image, expected to be read by the bot (should be UTF-8 encoded)
 """
 
@@ -14,12 +14,30 @@ import pandas
 import sys
 import os
 
+VALID_RANGES = ["1d","5d","1mo","3mo","6mo","1y","2y","5y","10y","ytd","max"]
+VALID_INTERVALS = ["1m", "2m", "5m", "15m", "30m", "60m", "90m", "1h", "1d", "5d", "1wk", "1mo", "3mo"]
+
+INTERVALS = {
+    "1d": "2m",
+    "5d": "5m",
+    "1mo": "1d",
+    "3mo": "1d",
+    "1y": "1wk",
+    "2y": "1mo",
+    "5y": "1mo",
+    "ytd": "1mo",
+    "max": "3mo",
+}
+
 """
 This'll assume that the quote provided is valid since it'll be called after a call to
 Yahoo Finance's API anyways
 """
-def getStock(stock: str):
-    req = requests.get("https://query1.finance.yahoo.com/v8/finance/chart/{}?interval=2m".format(stock))
+def getStock(stock: str, timeRange: str):
+    interval = INTERVALS[timeRange]
+    url = "https://query1.finance.yahoo.com/v8/finance/chart/{}?range={}&interval={}".format(stock, timeRange, interval)
+
+    req = requests.get(url)
     data = req.json()
 
     timestamps = data["chart"]["result"][0]['timestamp']
@@ -40,10 +58,7 @@ def getStock(stock: str):
         "low": low
     }
 
-if __name__ == '__main__':
-    stock = sys.argv[1]
-    details = getStock(stock)
-
+def generateFigure(details: dict):
     frame = pandas.DataFrame.from_dict(details)
     fig = go.Figure(data=[
                         go.Candlestick(
@@ -58,6 +73,18 @@ if __name__ == '__main__':
     fig.update_layout(
         xaxis_rangeslider_visible = False
     )
+
+    return fig
+
+if __name__ == '__main__':
+    stock = sys.argv[1]
+    timeRange = sys.argv[2]
+
+    if (timeRange not in VALID_RANGES):
+        exit(130)
+
+    details = getStock(stock, timeRange)
+    fig = generateFigure(details)
 
     with os.fdopen(sys.stdout.fileno(), 'wb') as stdout:
         fig.write_image(file=stdout, format='png', width=1000, height=700)

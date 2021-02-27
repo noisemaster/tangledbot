@@ -8,6 +8,9 @@ export const fetchQuote = async (interaction: Interaction) => {
     const symbolOption = interaction.data.options.find(option => option.name === 'symbol');
     const symbol: string = symbolOption ? symbolOption.value : '';
 
+    const timeRangeOption = interaction.data.options.find(option => option.name === 'timerange');
+    const timeRange: string = timeRangeOption ? timeRangeOption.value : '1d';
+
     const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`
 
     let stockResp = await fetch(url);
@@ -42,7 +45,7 @@ export const fetchQuote = async (interaction: Interaction) => {
     const diffSymbol = regularMarketChange > 0 ? '🔺' : '🔻';
     const diffColor = regularMarketChange > 0 ? 0x44bd32 : 0xe74c3c;
     
-    const image = await fetchChart(returnedSymbol);
+    const image = await fetchChart(returnedSymbol, timeRange);
     const stockEmbed = new Embed({
         title: `${longName || shortName} (${returnedSymbol})`,
         timestamp: lastRefreshFormat,
@@ -71,9 +74,9 @@ export const fetchQuote = async (interaction: Interaction) => {
     });
 }
 
-const fetchChart = async (symbol: string): Promise<Uint8Array> => {
+const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array> => {
     const badger = Deno.run({
-        cmd: ["python", "./helpers/badger.py", symbol],
+        cmd: ["python", "./helpers/badger.py", symbol, timeRange],
         stdout: 'piped'
     });
 
