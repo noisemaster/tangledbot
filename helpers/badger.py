@@ -26,7 +26,7 @@ INTERVALS = {
     "1y": "1wk",
     "2y": "1mo",
     "5y": "1mo",
-    "ytd": "1mo",
+    "ytd": "1wk",
     "max": "3mo",
 }
 
