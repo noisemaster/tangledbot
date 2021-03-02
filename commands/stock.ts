@@ -3,6 +3,7 @@ import { InteractionResponseType } from "https://deno.land/x/harmony@v1.0.0/src/
 import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { Embed } from "https://deno.land/x/harmony@v1.0.0/src/structures/embed.ts";
 import { MessageAttachment } from "https://deno.land/x/harmony@v1.0.0/mod.ts";
+import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v1.0.0/src/structures/webhook.ts";
 
 export const fetchQuote = async (interaction: Interaction) => {
     const symbolOption = interaction.data.options.find(option => option.name === 'symbol');
@@ -45,17 +46,15 @@ export const fetchQuote = async (interaction: Interaction) => {
     const diffSymbol = regularMarketChange > 0 ? '🔺' : '🔻';
     const diffColor = regularMarketChange > 0 ? 0x44bd32 : 0xe74c3c;
     
-    const image = await fetchChart(returnedSymbol, timeRange);
+    const image = await fetchChart(returnedSymbol, timeRange).catch(err => {
+        console.log(err);
+    });
+    
     const stockEmbed = new Embed({
         title: `${longName || shortName} (${returnedSymbol})`,
         timestamp: lastRefreshFormat,
         color: diffColor,
-        image: {
-            url: `attachment://${returnedSymbol}.png`
-        }
     });
-
-    const imageAttach = new MessageAttachment(`${returnedSymbol}.png`, image);
 
     if (quoteType === 'CRYPTOCURRENCY') {
         stockEmbed.setAuthor({
@@ -68,10 +67,20 @@ export const fetchQuote = async (interaction: Interaction) => {
         stockEmbed.setFooter(`Exchange: ${exchange}`);
     }
 
-    await interaction.send({
+    const payload: AllWebhookMessageOptions = {
         embeds: [stockEmbed],
-        file: imageAttach,
-    });
+    };
+
+    if (image) {
+        const imageAttach = new MessageAttachment(`${returnedSymbol}.png`, image);
+        payload.file = imageAttach;
+
+        stockEmbed.setImage({
+            url: `attachment://${returnedSymbol}.png`
+        });
+    }
+
+    await interaction.send(payload);
 }
 
 const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array> => {
