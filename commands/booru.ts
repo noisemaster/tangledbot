@@ -71,6 +71,7 @@ export const sendE621Embed = async (interaction: Interaction) => {
     embed.setDescription(`[Post Link](https://e621.net/posts/${post.id})`);
     embed.setImage({ url: post.file.url });
     embed.setFooter({ text: `Image ${randomIndex + 1}/${posts.length}` });
+    embed.setTimestamp(post.created_at);
 
     try {
         await interaction.respond({
