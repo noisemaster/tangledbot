@@ -18,7 +18,8 @@ export const sendE621Embed = async (interaction: Interaction) => {
     if (posts.length === 0) {
         await interaction.respond({
             content: `Nothing found for ${tags}`
-        })
+        });
+        return;
     }
 
     const randomIndex = Math.floor(Math.random() * posts.length);
