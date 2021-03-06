@@ -22,7 +22,7 @@ export const fetchQuote = async (interaction: Interaction) => {
         type: InteractionResponseType.ACK_WITH_SOURCE,
     });
 
-    if (result.length === 0 || result[0].quoteType === 'MUTUALFUND') {
+    if (result.length === 0 || (result[0].quoteType === 'MUTUALFUND' && !result[0].marketCap)) {
         stockResp = await fetch(url + '-USD');
         stock = await stockResp.json();
         result = stock.quoteResponse.result;
