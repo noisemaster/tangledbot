@@ -8,6 +8,7 @@ import { sendValorantFixtureEmbed } from "./commands/valorant.ts";
 import { generateIsThisImage } from "./commands/image/isthis.ts";
 import { sendShowEmbed } from "./commands/frinkiac.ts";
 import { fetchQuote } from "./commands/stock.ts";
+import { logInteraction } from "./commands/lib/log.ts";
 
 const client = new Client();
 
@@ -16,7 +17,7 @@ client.on('ready', () => {
 });
 
 client.on('interactionCreate', async (interaction: Interaction) => {
-    console.log(interaction.data);
+    logInteraction(interaction.data);
 
     switch (interaction.data.name) {
         case 'nfl':
