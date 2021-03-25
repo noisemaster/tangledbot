@@ -1,4 +1,4 @@
-import { SlashCommandOptionType, SlashCommandPartial } from "https://deno.land/x/harmony@v1.0.0/src/types/slash.ts";
+import { SlashCommandOptionType, SlashCommandPartial } from "https://deno.land/x/harmony@v1.1.4/src/types/slash.ts";
 
 export const RedditCommandSchema: SlashCommandPartial = {
     "name": "reddit",

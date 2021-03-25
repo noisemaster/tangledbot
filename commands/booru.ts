@@ -1,4 +1,4 @@
-import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.0.0/mod.ts'
+import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.1.4/mod.ts'
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 
 export const sendE621Embed = async (interaction: Interaction) => {

@@ -1,9 +1,9 @@
-import { Interaction } from "https://deno.land/x/harmony@v1.0.0/src/structures/slash.ts";
-import { InteractionResponseType } from "https://deno.land/x/harmony@v1.0.0/src/types/slash.ts";
+import { Interaction } from "https://deno.land/x/harmony@v1.1.4/src/structures/slash.ts";
+import { InteractionResponseType } from "https://deno.land/x/harmony@v1.1.4/src/types/slash.ts";
 import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
-import { Embed } from "https://deno.land/x/harmony@v1.0.0/src/structures/embed.ts";
-import { MessageAttachment } from "https://deno.land/x/harmony@v1.0.0/mod.ts";
-import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v1.0.0/src/structures/webhook.ts";
+import { Embed } from "https://deno.land/x/harmony@v1.1.4/src/structures/embed.ts";
+import { MessageAttachment } from "https://deno.land/x/harmony@v1.1.4/mod.ts";
+import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v1.1.4/src/structures/webhook.ts";
 
 export const fetchQuote = async (interaction: Interaction) => {
     const symbolOption = interaction.data.options.find(option => option.name === 'symbol');
@@ -80,7 +80,8 @@ export const fetchQuote = async (interaction: Interaction) => {
         });
     }
 
-    await interaction.send(payload);
+    const message = await interaction.send(payload);
+    console.log(message.embeds);
 }
 
 const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array> => {
