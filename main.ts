@@ -16,39 +16,43 @@ const client = new Client();
 client.on('ready', async () => {
     console.log(`Ready - ${client.user?.tag}`);
 
-    const id = client.applicationID || '';
+    // const id = client.applicationID || '';
 
-    await client.rest.api.applications[id].commands.put(GlobalCommandSchemas);
-    console.log(`Synced ${GlobalCommandSchemas.length} slash commands with Discord`);
+    // await client.rest.api.applications[id].commands.put(GlobalCommandSchemas);
+    // console.log(`Synced ${GlobalCommandSchemas.length} slash commands with Discord`);
 });
 
 client.on('interactionCreate', async (interaction: Interaction) => {
     logInteraction(interaction.data);
 
-    switch (interaction.data.name) {
-        case 'nfl':
-            await sendNFLEmbed(interaction);
-            break;
-        case 'reddit':
-            await sendRedditEmbed(interaction);
-            break;
-        case 'e621':
-            await sendE621Embed(interaction);
-            break;
-        case 'valorant':
-            await sendValorantFixtureEmbed(interaction);
-            break;
-        case 'isthis':
-            await generateIsThisImage(interaction);
-            break;
-        case 'show':
-            await sendShowEmbed(interaction);
-            break;
-        case 'stock':
-            await fetchQuote(interaction);
-            break;
-        default:
-            break;
+    try {
+        switch (interaction.data.name) {
+            case 'nfl':
+                await sendNFLEmbed(interaction);
+                break;
+            case 'reddit':
+                await sendRedditEmbed(interaction);
+                break;
+            case 'e621':
+                await sendE621Embed(interaction);
+                break;
+            case 'valorant':
+                await sendValorantFixtureEmbed(interaction);
+                break;
+            case 'isthis':
+                await generateIsThisImage(interaction);
+                break;
+            case 'show':
+                await sendShowEmbed(interaction);
+                break;
+            case 'stock':
+                await fetchQuote(interaction);
+                break;
+            default:
+                break;
+        }
+    } catch (err) {
+        console.log(err);
     }
 });
 
