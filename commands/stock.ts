@@ -80,8 +80,7 @@ export const fetchQuote = async (interaction: Interaction) => {
         });
     }
 
-    const message = await interaction.send(payload);
-    console.log(message.embeds);
+    await interaction.send(payload);
 }
 
 const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array> => {
