@@ -9,11 +9,15 @@ import { generateIsThisImage } from "./commands/image/isthis.ts";
 import { sendShowEmbed } from "./commands/frinkiac.ts";
 import { fetchQuote } from "./commands/stock.ts";
 import { logInteraction } from "./commands/lib/log.ts";
+import { GlobalCommandSchemas } from './commands/schemas/index.ts';
 
 const client = new Client();
 
-client.on('ready', () => {
-    console.log(`Ready - ${client.user?.tag}`)
+client.on('ready', async () => {
+    console.log(`Ready - ${client.user?.tag}`);
+
+    await client.slash.commands.bulkEdit(GlobalCommandSchemas);
+    console.log(`Synced ${GlobalCommandSchemas.length} slash commands with Discord`);
 });
 
 client.on('interactionCreate', async (interaction: Interaction) => {
@@ -58,4 +62,4 @@ client.on('messageReactionRemove', async (reaction, user) => {
     }
 });
 
-client.connect(config.discord.token, Intents.All);
+client.connect(config.discord.token, Intents.NonPrivileged);
