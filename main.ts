@@ -16,7 +16,9 @@ const client = new Client();
 client.on('ready', async () => {
     console.log(`Ready - ${client.user?.tag}`);
 
-    await client.slash.commands.bulkEdit(GlobalCommandSchemas);
+    const id = client.applicationID || '';
+
+    await client.rest.api.applications[id].commands.put(GlobalCommandSchemas);
     console.log(`Synced ${GlobalCommandSchemas.length} slash commands with Discord`);
 });
 
