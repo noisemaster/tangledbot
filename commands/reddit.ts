@@ -2,6 +2,7 @@ import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'h
 import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { trim } from "./lib/trim.ts";
+import { sendInteraction } from "./lib/sendInteraction.ts";
 
 interface redditPost {
     data: {
@@ -90,8 +91,15 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
         return;
     }
 
-    const messageResponse = await interaction.send({
-        embed: postEmbed,
+    // const messageResponse = await interaction.send({
+    //     embed: postEmbed,
+    //     allowedMentions: {
+    //         users: []
+    //     }
+    // });
+
+    const messageResponse = await sendInteraction(interaction, {
+        embeds: [postEmbed],
         allowedMentions: {
             users: []
         }

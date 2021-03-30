@@ -1,6 +1,15 @@
 import { Interaction, Message, TextChannel, User } from "https://deno.land/x/harmony@v1.1.5/mod.ts";
 import { WebhookMessageOptions } from "https://deno.land/x/harmony@v1.1.5/src/structures/webhook.ts";
 
+/**
+ * Stripped down replacement for the currently broken interaction.send function
+ * which didn't use the application id, using the bot's id instead. Which is broken on
+ * some applications.
+ * 
+ * @param interaction
+ * @param payload
+ * @returns Promise<Message>
+ */
 export const sendInteraction = async (interaction: Interaction, payload: WebhookMessageOptions | string) => {
     const { client } = interaction;
     const appID = client.applicationID;

@@ -4,6 +4,7 @@ import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { Embed } from "https://deno.land/x/harmony@v1.1.5/src/structures/embed.ts";
 import { MessageAttachment } from "https://deno.land/x/harmony@v1.1.5/mod.ts";
 import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v1.1.5/src/structures/webhook.ts";
+import { sendInteraction } from "./lib/sendInteraction.ts";
 
 export const fetchQuote = async (interaction: Interaction) => {
     const symbolOption = interaction.data.options.find(option => option.name === 'symbol');
@@ -80,7 +81,8 @@ export const fetchQuote = async (interaction: Interaction) => {
         });
     }
 
-    await interaction.send(payload);
+    // await interaction.send(payload);
+    await sendInteraction(interaction, payload);
 }
 
 const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array> => {

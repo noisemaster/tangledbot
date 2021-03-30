@@ -2,6 +2,7 @@ import { Interaction, InteractionResponseType } from 'https://deno.land/x/harmon
 import { encode, addPaddingToBase64url } from "https://deno.land/std@0.85.0/encoding/base64url.ts";
 import { Buffer } from "https://deno.land/std@0.85.0/node/buffer.ts";
 import wrap from 'https://deno.land/x/word_wrap/mod.ts';
+import { sendInteraction } from "./lib/sendInteraction.ts";
 
 const showURLMap: {[show: string]: string} = {
     'simpsons': 'https://frinkiac.com',
@@ -47,7 +48,8 @@ export const sendShowEmbed = async (interaction: Interaction) => {
     const frames: Frames[] = await framesRequest.json();
 
     if (frames.length === 0) {
-        await interaction.send("No images found");
+        // await interaction.send("No images found");
+        await sendInteraction(interaction, "No images found");
         return;
     }
 
@@ -64,19 +66,22 @@ export const sendShowEmbed = async (interaction: Interaction) => {
     const [imgFrame = {RepresentativeTimestamp: selectedFrame.Timestamp}] = frameRange;
 
     if (type === 'frame') {
-        await interaction.send(`${urlBase}/img/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg`);
+        // await interaction.send(`${urlBase}/img/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg`);
+        await sendInteraction(interaction, `${urlBase}/img/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg`);
         return;
     }
 
     if (type === 'subtitle' && textOverride) {
         const wrappedCaption = wrap(subtitleOverride, {width: 24});
         const b64lines = addPaddingToBase64url(encode(Buffer.from(wrappedCaption, 'utf-8')));
-        await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`);
+        // await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`);
+        await sendInteraction(interaction, `${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`);
         return;
     }
 
     if (type === 'subtitle') {
-        await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`);
+        // await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`);
+        await sendInteraction(interaction, `${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`);
         return;
     }
 
@@ -89,6 +94,7 @@ export const sendShowEmbed = async (interaction: Interaction) => {
             b64lines = addPaddingToBase64url(encode(Buffer.from(wrapOverride, 'utf-8')));
         }
 
-        await interaction.send(`${urlBase}/mp4/${startFrame.Episode}/${startFrame.StartTimestamp}/${endFrame.EndTimestamp}.mp4?b64lines=${b64lines}`)
+        // await interaction.send(`${urlBase}/mp4/${startFrame.Episode}/${startFrame.StartTimestamp}/${endFrame.EndTimestamp}.mp4?b64lines=${b64lines}`)
+        await sendInteraction(interaction, `${urlBase}/mp4/${startFrame.Episode}/${startFrame.StartTimestamp}/${endFrame.EndTimestamp}.mp4?b64lines=${b64lines}`);
     }
 }

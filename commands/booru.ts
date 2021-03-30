@@ -1,5 +1,6 @@
 import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.1.5/mod.ts'
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
+import { sendInteraction } from "./lib/sendInteraction.ts";
 
 export const sendE621Embed = async (interaction: Interaction) => {
     const tagOption = interaction.data.options.find(option => option.name === 'tag');
@@ -10,15 +11,23 @@ export const sendE621Embed = async (interaction: Interaction) => {
         queryTags += '+rating:safe';
     }
 
+    try {
+        await interaction.respond({
+            type: InteractionResponseType.ACK_WITH_SOURCE,
+        });
+    } catch (error) {
+        console.error(error);
+        return;
+    }
+
     const request = await fetch(`https://e621.net/posts.json?tags=${queryTags}`);
     const postData = await request.json();
 
     const posts = postData.posts;
 
     if (posts.length === 0) {
-        await interaction.respond({
-            content: `Nothing found for ${tags}`
-        });
+        // await interaction.send(`Nothing found for ${tags}`);
+        await sendInteraction(interaction, `Nothing found for ${tags}`);
         return;
     }
 
@@ -74,17 +83,14 @@ export const sendE621Embed = async (interaction: Interaction) => {
     embed.setFooter({ text: `Image ${randomIndex + 1}/${posts.length}` });
     embed.setTimestamp(post.created_at);
 
-    try {
-        await interaction.respond({
-            type: InteractionResponseType.ACK_WITH_SOURCE,
-        });
-    } catch (error) {
-        console.error(error);
-        return;
-    }
-
-    const messageResponse = await interaction.send({
-        embed: embed,
+    // const messageResponse = await interaction.send({
+    //     embed: embed,
+    //     allowedMentions: {
+    //         users: []
+    //     }
+    // });
+    const messageResponse = await sendInteraction(interaction, {
+        embeds: [embed],
         allowedMentions: {
             users: []
         }
