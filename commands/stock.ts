@@ -85,7 +85,7 @@ export const fetchQuote = async (interaction: Interaction) => {
 
 const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array> => {
     const badger = Deno.run({
-        cmd: ["python", "./helpers/badger.py", symbol, timeRange],
+        cmd: ["python3", "./helpers/badger.py", symbol, timeRange],
         stdout: 'piped'
     });
 
