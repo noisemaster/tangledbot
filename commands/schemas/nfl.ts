@@ -1,4 +1,4 @@
-import { SlashCommandPartial } from "https://deno.land/x/harmony@v1.1.4/src/types/slash.ts";
+import { SlashCommandPartial } from "https://deno.land/x/harmony@v1.1.5/src/types/slash.ts";
 
 export const NFLCommandSchema: SlashCommandPartial = {
     "name": "nfl",

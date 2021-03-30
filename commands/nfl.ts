@@ -1,5 +1,5 @@
-import { Embed, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.1.4/mod.ts'
-import { EmbedField } from "https://deno.land/x/harmony@v1.1.4/src/types/channel.ts";
+import { Embed, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.1.5/mod.ts'
+import { EmbedField } from "https://deno.land/x/harmony@v1.1.5/src/types/channel.ts";
 import { sub, differenceInDays, format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 
 export const sendNFLEmbed = async (interaction: Interaction) => {
