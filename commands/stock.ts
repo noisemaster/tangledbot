@@ -13,15 +13,15 @@ export const fetchQuote = async (interaction: Interaction) => {
     const timeRangeOption = interaction.data.options.find(option => option.name === 'timerange');
     const timeRange: string = timeRangeOption ? timeRangeOption.value : '1d';
 
+    await interaction.respond({
+        type: InteractionResponseType.ACK_WITH_SOURCE,
+    });
+
     const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`
 
     let stockResp = await fetch(url);
     let stock = await stockResp.json();
     let {result} = stock.quoteResponse;
-
-    await interaction.respond({
-        type: InteractionResponseType.ACK_WITH_SOURCE,
-    });
 
     if (result.length === 0 || (result[0].quoteType === 'MUTUALFUND' && !result[0].marketCap)) {
         stockResp = await fetch(url + '-USD');
@@ -29,7 +29,8 @@ export const fetchQuote = async (interaction: Interaction) => {
         result = stock.quoteResponse.result;
 
         if (result.length === 0) {
-            await interaction.send(`${symbol} not found`);
+            // await interaction.send(`${symbol} not found`);
+            await sendInteraction(interaction, `${symbol} not found`);
             return;
         }
     }
@@ -38,7 +39,8 @@ export const fetchQuote = async (interaction: Interaction) => {
     const {symbol: returnedSymbol, exchange, quoteType, coinImageUrl, fromCurrency, longName, shortName, regularMarketPrice, regularMarketChange, regularMarketChangePercent, regularMarketTime} = data;
 
     if (!regularMarketTime) {
-        await interaction.send(`${symbol} not found`);
+        // await interaction.send(`${symbol} not found`);
+        await sendInteraction(interaction, `${symbol} not found`);
         return;
     }
 

@@ -50,7 +50,7 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
     );
 
     if (posts.length === 0) {
-        await interaction.send('No posts found');
+        await sendInteraction(interaction, 'No posts found');
         return;
     }
 
@@ -87,7 +87,7 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
     }
 
     if (post.over_18 && !interaction.channel.nsfw) {
-        await interaction.send('This channel is not a NSFW channel');
+        await sendInteraction(interaction, 'This channel is not a NSFW channel');
         return;
     }
 
