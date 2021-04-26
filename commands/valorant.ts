@@ -44,8 +44,12 @@ interface RiotFixture {
     };
 }
 
-const regions = {
+// Challengers, Regional Masters, and International Masters have different leagues setup for them in the site
+const regionLeagueMap = {
     na: [],
+    eu: [],
+    kr: [],
+    br: [],
 };
 
 export const sendValorantFixtureEmbed = async (interaction: Interaction) => {

@@ -8,6 +8,7 @@ import { sendValorantFixtureEmbed } from "./commands/valorant.ts";
 import { generateIsThisImage } from "./commands/image/isthis.ts";
 import { sendShowEmbed } from "./commands/frinkiac.ts";
 import { fetchQuote } from "./commands/stock.ts";
+import { fetchMovie } from "./commands/tmdb.ts";
 import { logInteraction } from "./commands/lib/log.ts";
 import { GlobalCommandSchemas } from './commands/schemas/index.ts';
 
@@ -47,6 +48,9 @@ client.on('interactionCreate', async (interaction: Interaction) => {
                 break;
             case 'stock':
                 await fetchQuote(interaction);
+                break;
+            case 'movie':
+                await fetchMovie(interaction);
                 break;
             default:
                 break;

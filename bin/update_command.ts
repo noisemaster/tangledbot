@@ -1,5 +1,5 @@
 import config from '../config.ts';
-import {StockCommandSchema as commandRequest} from '../commands/schemas/stock.ts';
+import {MovieCommandSchema as commandRequest} from '../commands/schemas/tmdb.ts';
 
 const url = `https://discord.com/api/v8/applications/${config.discord.appID}/commands`;
 // const url = `https://discord.com/api/v8/applications/${config.discord.appID}/guilds/${config.discord.testingGuildID}/commands`;
