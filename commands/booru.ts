@@ -97,12 +97,21 @@ export const sendE621Embed = async (interaction: Interaction) => {
 
     const internalMessageId = v4.generate();
 
-    const messageResponse = await sendInteraction(interaction, {
+    addHideablePost(internalMessageId, {
+        details: {
+            imageUrl: post.file.url
+        },
+        embedMessage: embed,
+        poster: interaction.user.id,
+        visible: true
+    });
+
+    await sendInteraction(interaction, {
         embeds: [embed],
         allowedMentions: {
             users: []
         },
-        components: {
+        components: [{
             type: 1,
             components: [{
                 type: 2,
@@ -110,16 +119,6 @@ export const sendE621Embed = async (interaction: Interaction) => {
                 label: 'Show/Hide Image',
                 custom_id: `hideable_${internalMessageId}`,
             }]
-        }
+        }]
     } as any);
-
-    
-    addHideablePost(messageResponse.id, {
-        details: {
-            imageUrl: post.file.url
-        },
-        embedMessage: embed,
-        poster: interaction.user.id,
-        visible: true
-    })
 }
