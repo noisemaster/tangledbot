@@ -9,7 +9,8 @@ export interface hideablePost {
         imageUrl: string,
     },
     poster: string,
-    embedMessage: Embed
+    embedMessage: Embed,
+    visible: boolean,
 }
 
 // In-Memory post detail store
@@ -41,5 +42,36 @@ export const showPost = async (reaction: MessageReaction, reactingUser: User) =>
         embed.setImage({url: postData.details.imageUrl});
         console.log(embed);
         await reaction.message.edit('', {embed})
+    }
+}
+
+export const togglePost = async (interaction: Interaction) => {
+    if (!interaction.data) {
+        return;
+    }
+
+    await interaction.respond({
+        type: 6,
+    })
+    const {custom_id: customId} = interaction.data as unknown as {custom_id: string};
+    const messageId = customId.replace('hideable_', '');
+    const reactingUser = interaction.user;
+
+    const postData = hideablePosts[messageId];
+    if (postData && postData.poster === reactingUser.id) {
+        const embed = postData.embedMessage;
+
+        if (postData.visible) {
+            embed.image = undefined;
+        } else {
+            embed.setImage({url: postData.details.imageUrl});
+        }
+
+        postData.visible = !postData.visible;
+        console.log(embed);
+
+        if (interaction.message) {
+            await interaction.message.edit('', {embed})
+        }
     }
 }
