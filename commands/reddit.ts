@@ -91,7 +91,7 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
         })
     }
 
-    if (post.over_18 && interaction.channel && (interaction.channel as GuildTextChannel).nsfw) {
+    if (post.over_18 && interaction.channel && !(interaction.channel as GuildTextChannel).nsfw) {
         await sendInteraction(interaction, 'This channel is not a NSFW channel');
         return;
     }
