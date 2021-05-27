@@ -71,7 +71,24 @@ export const togglePost = async (interaction: Interaction) => {
         console.log(embed);
 
         if (interaction.message) {
-            await interaction.message.edit('', {embed})
+            const webhookEditRequest = interaction.client.rest.api.webhooks[interaction.applicationID][interaction.token].messages[interaction.message.id];
+            await webhookEditRequest.patch({
+                embeds: [embed],
+                allowedMentions: {
+                    users: []
+                },
+                components: [{
+                    type: 1,
+                    components: [{
+                        type: 2,
+                        style: 2,
+                        label: `${postData.visible ? 'Hide' : 'Show'} Image`,
+                        custom_id: customId,
+                    }]
+                }]
+            });
+            
+            // await interaction.message.edit('', {embed, })
         }
     }
 }

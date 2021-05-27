@@ -107,7 +107,7 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
             components: [{
                 type: 2,
                 style: 2,
-                label: 'Show/Hide Image',
+                label: 'Hide Image',
                 custom_id: `hideable_${internalMessageId}`,
             }]
         });
