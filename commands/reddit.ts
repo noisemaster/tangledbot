@@ -3,6 +3,7 @@ import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { trim } from "./lib/trim.ts";
 import { sendInteraction } from "./lib/sendInteraction.ts";
+import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
 
 interface redditPost {
     data: {
@@ -22,6 +23,10 @@ interface redditPost {
 }
 
 export const sendRedditEmbed = async (interaction: Interaction) => {
+    if (!interaction.data) {
+        return;
+    }
+
     const subredditOption = interaction.data.options.find(option => option.name === 'subreddit');
     const isImageOption = interaction.data.options.find(option => option.name === 'image');
 
@@ -30,7 +35,7 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
 
     try {
         await interaction.respond({
-            type: InteractionResponseType.ACK_WITH_SOURCE,
+            type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE,
         });
     } catch (error) {
         console.error(error);
@@ -86,35 +91,42 @@ export const sendRedditEmbed = async (interaction: Interaction) => {
         })
     }
 
-    if (post.over_18 && !interaction.channel.nsfw) {
+    if (post.over_18 && interaction.channel && (interaction.channel as GuildTextChannel).nsfw) {
         await sendInteraction(interaction, 'This channel is not a NSFW channel');
         return;
     }
 
-    // const messageResponse = await interaction.send({
-    //     embed: postEmbed,
-    //     allowedMentions: {
-    //         users: []
-    //     }
-    // });
-
-    const messageResponse = await sendInteraction(interaction, {
-        embeds: [postEmbed],
-        allowedMentions: {
-            users: []
-        }
-    });
+    // temp workaround as harmony lacks message components
+    const components: any[] = [];
 
     if (isPostImage) {
-        const channel = await messageResponse.client.channels.get(messageResponse.channelID);
-        await (channel as GuildTextChannel).addReaction(messageResponse.id, '🙅');
+        const internalMessageId = v4.generate();
 
-        addHideablePost(messageResponse.id, {
+        components.push({
+            type: 1,
+            components: [{
+                type: 2,
+                style: 2,
+                label: 'Show/Hide Image',
+                custom_id: `hideable_${internalMessageId}`,
+            }]
+        });
+
+        addHideablePost(internalMessageId, {
             details: {
                 imageUrl: post.url
             },
             embedMessage: postEmbed,
-            poster: interaction.user.id
-        })
+            poster: interaction.user.id,
+            visible: true
+        });
     }
+
+    await sendInteraction(interaction, {
+        embeds: [postEmbed],
+        allowedMentions: {
+            users: []
+        },
+        components
+    } as any);
 }

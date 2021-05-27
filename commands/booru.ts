@@ -1,6 +1,7 @@
 import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { sendInteraction } from "./lib/sendInteraction.ts";
+import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
 
 export const sendE621Embed = async (interaction: Interaction) => {
     if (!interaction.data) {
@@ -93,16 +94,26 @@ export const sendE621Embed = async (interaction: Interaction) => {
     //         users: []
     //     }
     // });
+
+    const internalMessageId = v4.generate();
+
     const messageResponse = await sendInteraction(interaction, {
         embeds: [embed],
         allowedMentions: {
             users: []
+        },
+        components: {
+            type: 1,
+            components: [{
+                type: 2,
+                style: 2,
+                label: 'Show/Hide Image',
+                custom_id: `hideable_${internalMessageId}`,
+            }]
         }
-    });
+    } as any);
 
-    const channel = await messageResponse.client.channels.get(messageResponse.channelID);
-    await (channel as GuildTextChannel).addReaction(messageResponse.id, '🙅');
-
+    
     addHideablePost(messageResponse.id, {
         details: {
             imageUrl: post.file.url
