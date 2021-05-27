@@ -1,12 +1,14 @@
-import { Interaction } from "https://deno.land/x/harmony@v1.1.5/src/structures/slash.ts";
-import { InteractionResponseType } from "https://deno.land/x/harmony@v1.1.5/src/types/slash.ts";
+import { Embed, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
 import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
-import { Embed } from "https://deno.land/x/harmony@v1.1.5/src/structures/embed.ts";
-import { MessageAttachment } from "https://deno.land/x/harmony@v1.1.5/mod.ts";
-import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v1.1.5/src/structures/webhook.ts";
+import { MessageAttachment } from "https://deno.land/x/harmony@v2.0.0-rc1/mod.ts";
+import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc1/src/structures/webhook.ts";
 import { sendInteraction } from "./lib/sendInteraction.ts";
 
 export const fetchQuote = async (interaction: Interaction) => {
+    if (!interaction.data) {
+        return;
+    }
+
     const symbolOption = interaction.data.options.find(option => option.name === 'symbol');
     const symbol: string = symbolOption ? symbolOption.value : '';
 
@@ -14,7 +16,7 @@ export const fetchQuote = async (interaction: Interaction) => {
     const timeRange: string = timeRangeOption ? timeRangeOption.value : '1d';
 
     await interaction.respond({
-        type: InteractionResponseType.ACK_WITH_SOURCE,
+        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE,
     });
 
     const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`

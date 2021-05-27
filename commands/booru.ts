@@ -1,19 +1,23 @@
-import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.1.5/mod.ts'
+import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { sendInteraction } from "./lib/sendInteraction.ts";
 
 export const sendE621Embed = async (interaction: Interaction) => {
+    if (!interaction.data) {
+        return;
+    }
+
     const tagOption = interaction.data.options.find(option => option.name === 'tag');
     const tags: string = tagOption ? tagOption.value : '';
     let queryTags = tags.replace(/\s/g, '+');
 
-    if (!interaction.channel.nsfw) {
+    if (interaction.channel && !(interaction.channel as GuildTextChannel).nsfw) {
         queryTags += '+rating:safe';
     }
 
     try {
         await interaction.respond({
-            type: InteractionResponseType.ACK_WITH_SOURCE,
+            type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE,
         });
     } catch (error) {
         console.error(error);
@@ -104,6 +108,7 @@ export const sendE621Embed = async (interaction: Interaction) => {
             imageUrl: post.file.url
         },
         embedMessage: embed,
-        poster: interaction.user.id
+        poster: interaction.user.id,
+        visible: true
     })
 }

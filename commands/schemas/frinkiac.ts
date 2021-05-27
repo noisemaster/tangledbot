@@ -1,4 +1,4 @@
-import { SlashCommandOptionType, SlashCommandPartial } from "https://deno.land/x/harmony@v1.1.5/src/types/slash.ts";
+import { SlashCommandOptionType, SlashCommandPartial } from "https://deno.land/x/harmony@v2.0.0-rc1/mod.ts";
 
 export const FrinkiacCommandSchema: SlashCommandPartial = {
     name: "show",

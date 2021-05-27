@@ -1,6 +1,7 @@
-import { Embed } from "https://deno.land/x/harmony@v1.1.5/src/structures/embed.ts";
-import { MessageReaction } from "https://deno.land/x/harmony@v1.1.5/src/structures/messageReaction.ts";
-import { User } from "https://deno.land/x/harmony@v1.1.5/src/structures/user.ts";
+import { Interaction } from "https://deno.land/x/harmony@v2.0.0-rc1/mod.ts";
+import { Embed } from "https://deno.land/x/harmony@v2.0.0-rc1/src/structures/embed.ts";
+import { MessageReaction } from "https://deno.land/x/harmony@v2.0.0-rc1/src/structures/messageReaction.ts";
+import { User } from "https://deno.land/x/harmony@v2.0.0-rc1/src/structures/user.ts";
 
 // Contains hideable content in details, original post information
 export interface hideablePost {

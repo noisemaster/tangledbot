@@ -1,4 +1,4 @@
-import { Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.1.5/mod.ts'
+import { Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
 import { Image } from 'https://deno.land/x/imagescript@1.1.16/mod.ts';
 import { Buffer } from "https://deno.land/std@0.80.0/node/buffer.ts";
 import { sendInteraction } from "../lib/sendInteraction.ts";
@@ -14,7 +14,11 @@ export const generateIsThisImage = async (interaction: Interaction) => {
     const textPosY = 675;
     const fontSize = 40;
 
-    const [{value: textContent}] = interaction.options;
+    if (!interaction.data) {
+        return;
+    }
+
+    const [{value: textContent}] = interaction.data.options;
     const background = await Image.decode(baseImage);
     const overlaidText = Image.renderText(font, fontSize, textContent, 0xffffffff);
 
@@ -33,7 +37,7 @@ export const generateIsThisImage = async (interaction: Interaction) => {
     background.composite(overlaidText, textPosX, textPosY);
 
     await interaction.respond({
-        type: InteractionResponseType.ACK_WITH_SOURCE
+        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE
     });
 
     const encodedImage = await background.encode();

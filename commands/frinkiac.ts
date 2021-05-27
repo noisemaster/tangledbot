@@ -1,4 +1,4 @@
-import { Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v1.1.5/mod.ts'
+import { Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
 import { encode, addPaddingToBase64url } from "https://deno.land/std@0.85.0/encoding/base64url.ts";
 import { Buffer } from "https://deno.land/std@0.85.0/node/buffer.ts";
 import wrap from 'https://deno.land/x/word_wrap/mod.ts';
@@ -31,6 +31,10 @@ interface CaptionRequest {
 type requestType = 'frame' | 'gif' | 'subtitle';
 
 export const sendShowEmbed = async (interaction: Interaction) => {
+    if (!interaction.data) {
+        return;
+    }
+
     const showOption: string = interaction.data.options.find(option => option.name === 'show')!.value;
     const phrase: string = interaction.data.options.find(option => option.name === 'phrase')!.value;
     const typeOption = interaction.data.options.find(option => option.name === 'type');
@@ -40,7 +44,7 @@ export const sendShowEmbed = async (interaction: Interaction) => {
     const subtitleOverride: string = textOverride ? textOverride.value : '';
 
     await interaction.respond({
-        type: InteractionResponseType.ACK_WITH_SOURCE
+        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE
     });
 
     const urlBase: string = showURLMap[showOption];

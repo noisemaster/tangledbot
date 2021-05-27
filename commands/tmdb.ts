@@ -1,11 +1,13 @@
-import { Interaction } from "https://deno.land/x/harmony@v1.1.5/src/structures/slash.ts";
-import { InteractionResponseType } from "https://deno.land/x/harmony@v1.1.5/src/types/slash.ts";
-import { Embed } from "https://deno.land/x/harmony@v1.1.5/src/structures/embed.ts";
-import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v1.1.5/src/structures/webhook.ts";
+import { Embed, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
+import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc1/src/structures/webhook.ts";
 import { sendInteraction } from "./lib/sendInteraction.ts";
 import config from '../config.ts';
 
 export const fetchMovie = async (interaction: Interaction) => {
+    if (!interaction.data) {
+        return;
+    }
+
     const titleOption = interaction.data.options.find(option => option.name === 'title');
     const title: string = titleOption ? titleOption.value : '';
 
@@ -13,7 +15,7 @@ export const fetchMovie = async (interaction: Interaction) => {
     const year: string = yearOption ? yearOption.value : '';
 
     await interaction.respond({
-        type: InteractionResponseType.ACK_WITH_SOURCE,
+        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE,
     });
 
     const url = `https://api.themoviedb.org/3/search/movie?api_key=${config.tmdb.apiKey}&language=en-US&query=${title}&page=1&include_adult=false${year ? `&year=${year}`: ''}`;
