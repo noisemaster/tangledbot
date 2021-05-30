@@ -1,5 +1,5 @@
-import { Embed, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
-import { EmbedField } from "https://deno.land/x/harmony@v2.0.0-rc1/src/types/channel.ts";
+import { Embed, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
+import { EmbedField } from "https://deno.land/x/harmony@v2.0.0-rc2/src/types/channel.ts";
 import { sub, differenceInDays, format, isAfter } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 
 // Format shared between League and Valorant's esport sites
@@ -52,7 +52,7 @@ const regionLeagueMap = {
     br: [],
 };
 
-export const sendValorantFixtureEmbed = async (interaction: Interaction) => {
+export const sendValorantFixtureEmbed = async (interaction: SlashCommandInteraction) => {
     if (!interaction.data) {
         return;
     }

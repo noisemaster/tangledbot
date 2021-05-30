@@ -1,4 +1,4 @@
-import { Client, Intents, Interaction, InteractionType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
+import { Client, Intents, Interaction, InteractionApplicationCommandData, InteractionType, MessageComponentInteraction, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 import { sendNFLEmbed } from "./commands/nfl.ts";
 import { sendRedditEmbed } from "./commands/reddit.ts";
 import { hidePost, isPostHideable, showPost, togglePost } from "./handlers/imagePostHandler.ts";
@@ -26,30 +26,32 @@ client.on('ready', async () => {
 client.on('interactionCreate', async (interaction: Interaction) => {
     if (interaction.type === InteractionType.APPLICATION_COMMAND && interaction.data) {
         try {
-            switch (interaction.data.name) {
+            const slashInteraction = interaction as SlashCommandInteraction;
+
+            switch (slashInteraction.data.name) {
                 case 'nfl':
-                    await sendNFLEmbed(interaction);
+                    await sendNFLEmbed(slashInteraction);
                     break;
                 case 'reddit':
-                    await sendRedditEmbed(interaction);
+                    await sendRedditEmbed(slashInteraction);
                     break;
                 case 'e621':
-                    await sendE621Embed(interaction);
+                    await sendE621Embed(slashInteraction);
                     break;
                 case 'valorant':
-                    await sendValorantFixtureEmbed(interaction);
+                    await sendValorantFixtureEmbed(slashInteraction);
                     break;
                 case 'isthis':
-                    await generateIsThisImage(interaction);
+                    await generateIsThisImage(slashInteraction);
                     break;
                 case 'show':
-                    await sendShowEmbed(interaction);
+                    await sendShowEmbed(slashInteraction);
                     break;
                 case 'stock':
-                    await fetchQuote(interaction);
+                    await fetchQuote(slashInteraction);
                     break;
                 case 'movie':
-                    await fetchMovie(interaction);
+                    await fetchMovie(slashInteraction);
                     break;
                 default:
                     break;
@@ -60,12 +62,13 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         }
     }
 
-    // Button Responses
-    if (interaction.type === 3 && interaction.data) {
-        console.log(interaction);
-        const {custom_id: customId} = interaction.data as unknown as {custom_id: string}; /// @ts-ignore Harmony currently lacks Button information
+    // Component Responses
+    if (interaction.type === InteractionType.MESSAGE_COMPONENT && interaction.data) {
+        const componentInteraction = interaction as MessageComponentInteraction;
+        const { custom_id: customId } = componentInteraction.data;
+
         if (customId.startsWith('hideable_')) {
-            await togglePost(interaction);
+            await togglePost(componentInteraction);
         }
     }
 });

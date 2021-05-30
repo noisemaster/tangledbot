@@ -1,9 +1,9 @@
-import { Embed, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
-import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc1/src/structures/webhook.ts";
+import { Embed, Interaction, InteractionApplicationCommandData, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
+import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/webhook.ts";
 import { sendInteraction } from "./lib/sendInteraction.ts";
 import config from '../config.ts';
 
-export const fetchMovie = async (interaction: Interaction) => {
+export const fetchMovie = async (interaction: SlashCommandInteraction) => {
     if (!interaction.data) {
         return;
     }

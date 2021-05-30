@@ -1,10 +1,10 @@
-import { Embed, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
+import { Embed, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
-import { MessageAttachment } from "https://deno.land/x/harmony@v2.0.0-rc1/mod.ts";
-import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc1/src/structures/webhook.ts";
+import { MessageAttachment } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
+import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/webhook.ts";
 import { sendInteraction } from "./lib/sendInteraction.ts";
 
-export const fetchQuote = async (interaction: Interaction) => {
+export const fetchQuote = async (interaction: SlashCommandInteraction) => {
     if (!interaction.data) {
         return;
     }

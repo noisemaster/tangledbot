@@ -1,4 +1,4 @@
-import { Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
+import { Interaction, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 import { encode, addPaddingToBase64url } from "https://deno.land/std@0.85.0/encoding/base64url.ts";
 import { Buffer } from "https://deno.land/std@0.85.0/node/buffer.ts";
 import wrap from 'https://deno.land/x/word_wrap/mod.ts';
@@ -30,7 +30,7 @@ interface CaptionRequest {
 
 type requestType = 'frame' | 'gif' | 'subtitle';
 
-export const sendShowEmbed = async (interaction: Interaction) => {
+export const sendShowEmbed = async (interaction: SlashCommandInteraction) => {
     if (!interaction.data) {
         return;
     }

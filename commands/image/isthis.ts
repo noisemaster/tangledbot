@@ -1,9 +1,9 @@
-import { Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
+import { InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 import { Image } from 'https://deno.land/x/imagescript@1.1.16/mod.ts';
 import { Buffer } from "https://deno.land/std@0.80.0/node/buffer.ts";
 import { sendInteraction } from "../lib/sendInteraction.ts";
 
-export const generateIsThisImage = async (interaction: Interaction) => {
+export const generateIsThisImage = async (interaction: SlashCommandInteraction) => {
     const [baseImage, font] = await Promise.all([
         Deno.readFile('./storage/IsThis.png'),
         Deno.readFile('./storage/Lato-Regular.ttf'),

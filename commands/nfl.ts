@@ -1,8 +1,8 @@
-import { Embed, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
-import { EmbedField } from "https://deno.land/x/harmony@v2.0.0-rc1/src/types/channel.ts";
+import { Embed, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
+import { EmbedField } from "https://deno.land/x/harmony@v2.0.0-rc2/src/types/channel.ts";
 import { sub, differenceInDays, format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 
-export const sendNFLEmbed = async (interaction: Interaction) => {
+export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
     const request = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
     const scoreboard = await request.json();
 

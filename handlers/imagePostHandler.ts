@@ -1,7 +1,7 @@
-import { Interaction } from "https://deno.land/x/harmony@v2.0.0-rc1/mod.ts";
-import { Embed } from "https://deno.land/x/harmony@v2.0.0-rc1/src/structures/embed.ts";
-import { MessageReaction } from "https://deno.land/x/harmony@v2.0.0-rc1/src/structures/messageReaction.ts";
-import { User } from "https://deno.land/x/harmony@v2.0.0-rc1/src/structures/user.ts";
+import { MessageComponentInteraction } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
+import { Embed } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/embed.ts";
+import { MessageReaction } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/messageReaction.ts";
+import { User } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/user.ts";
 
 // Contains hideable content in details, original post information
 export interface hideablePost {
@@ -45,15 +45,12 @@ export const showPost = async (reaction: MessageReaction, reactingUser: User) =>
     }
 }
 
-export const togglePost = async (interaction: Interaction) => {
-    if (!interaction.data) {
-        return;
-    }
-
+export const togglePost = async (interaction: MessageComponentInteraction) => {
     await interaction.respond({
         type: 6,
     })
-    const {custom_id: customId} = interaction.data as unknown as {custom_id: string};
+
+    const {custom_id: customId} = interaction.data;
     const messageId = customId.replace('hideable_', '');
     const reactingUser = interaction.user;
 
@@ -71,10 +68,9 @@ export const togglePost = async (interaction: Interaction) => {
         console.log(embed);
 
         if (interaction.message) {
-            const webhookEditRequest = interaction.client.rest.api.webhooks[interaction.applicationID][interaction.token].messages[interaction.message.id];
-            await webhookEditRequest.patch({
+            await interaction.editMessage(interaction.message, {
                 embeds: [embed],
-                allowedMentions: {
+                allowed_mentions: {
                     users: []
                 },
                 components: [{
@@ -83,12 +79,10 @@ export const togglePost = async (interaction: Interaction) => {
                         type: 2,
                         style: 2,
                         label: `${postData.visible ? 'Hide' : 'Show'} Image`,
-                        custom_id: customId,
+                        customID: customId,
                     }]
                 }]
             });
-            
-            // await interaction.message.edit('', {embed, })
         }
     }
 }

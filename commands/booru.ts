@@ -1,9 +1,9 @@
-import { Embed, GuildTextChannel, Interaction, InteractionResponseType } from 'https://deno.land/x/harmony@v2.0.0-rc1/mod.ts'
+import { Embed, GuildTextChannel, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { sendInteraction } from "./lib/sendInteraction.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
 
-export const sendE621Embed = async (interaction: Interaction) => {
+export const sendE621Embed = async (interaction: SlashCommandInteraction) => {
     if (!interaction.data) {
         return;
     }

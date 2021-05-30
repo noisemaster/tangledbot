@@ -1,4 +1,4 @@
-import { InteractionApplicationCommandData } from "https://deno.land/x/harmony@v2.0.0-rc1/mod.ts";
+import { InteractionApplicationCommandData } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
 import { green, brightRed, gray, bold } from "https://deno.land/std@0.90.0/fmt/colors.ts"
 
 export const logInteraction = (data: InteractionApplicationCommandData | undefined) => {
