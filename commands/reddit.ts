@@ -55,7 +55,7 @@ export const sendRedditEmbed = async (interaction: SlashCommandInteraction) => {
     );
 
     if (posts.length === 0) {
-        await sendInteraction(interaction, 'No posts found');
+        await interaction.send('No posts found');
         return;
     }
 
@@ -92,7 +92,7 @@ export const sendRedditEmbed = async (interaction: SlashCommandInteraction) => {
     }
 
     if (post.over_18 && interaction.channel && !(interaction.channel as GuildTextChannel).nsfw) {
-        await sendInteraction(interaction, 'This channel is not a NSFW channel');
+        await interaction.send('This channel is not a NSFW channel');
         return;
     }
 
@@ -122,11 +122,11 @@ export const sendRedditEmbed = async (interaction: SlashCommandInteraction) => {
         });
     }
 
-    await sendInteraction(interaction, {
+    await interaction.send({
         embeds: [postEmbed],
         allowedMentions: {
             users: []
         },
         components
-    } as any);
+    });
 }

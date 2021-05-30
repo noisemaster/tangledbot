@@ -31,8 +31,7 @@ export const fetchQuote = async (interaction: SlashCommandInteraction) => {
         result = stock.quoteResponse.result;
 
         if (result.length === 0) {
-            // await interaction.send(`${symbol} not found`);
-            await sendInteraction(interaction, `${symbol} not found`);
+            await interaction.send(`${symbol} not found`);
             return;
         }
     }
@@ -41,8 +40,7 @@ export const fetchQuote = async (interaction: SlashCommandInteraction) => {
     const {symbol: returnedSymbol, exchange, quoteType, coinImageUrl, fromCurrency, longName, shortName, regularMarketPrice, regularMarketChange, regularMarketChangePercent, regularMarketTime} = data;
 
     if (!regularMarketTime) {
-        // await interaction.send(`${symbol} not found`);
-        await sendInteraction(interaction, `${symbol} not found`);
+        await interaction.send(`${symbol} not found`);
         return;
     }
 
@@ -85,8 +83,7 @@ export const fetchQuote = async (interaction: SlashCommandInteraction) => {
         });
     }
 
-    // await interaction.send(payload);
-    await sendInteraction(interaction, payload);
+    await interaction.send(payload);
 }
 
 const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array> => {

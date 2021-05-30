@@ -42,8 +42,7 @@ export const generateIsThisImage = async (interaction: SlashCommandInteraction) 
 
     const encodedImage = await background.encode();
 
-    // await interaction.send({
-    await sendInteraction(interaction, {
+    await interaction.send({
         file: {
             name: 'isthis.jpg',
             blob: new Blob([Buffer.from(encodedImage)])

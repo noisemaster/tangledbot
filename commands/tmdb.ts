@@ -46,8 +46,8 @@ export const fetchMovie = async (interaction: SlashCommandInteraction) => {
             embeds: [embed],
         };
 
-        await sendInteraction(interaction, payload);
+        await interaction.send(payload);
     } else {
-        await sendInteraction(interaction, 'No movies found');
+        await interaction.send('No movies found');
     }
 }

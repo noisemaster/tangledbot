@@ -32,7 +32,7 @@ export const sendE621Embed = async (interaction: SlashCommandInteraction) => {
 
     if (posts.length === 0) {
         // await interaction.send(`Nothing found for ${tags}`);
-        await sendInteraction(interaction, `Nothing found for ${tags}`);
+        await interaction.send(`Nothing found for ${tags}`);
         return;
     }
 
@@ -106,7 +106,7 @@ export const sendE621Embed = async (interaction: SlashCommandInteraction) => {
         visible: true
     });
 
-    await sendInteraction(interaction, {
+    await interaction.send({
         embeds: [embed],
         allowedMentions: {
             users: []
@@ -117,8 +117,8 @@ export const sendE621Embed = async (interaction: SlashCommandInteraction) => {
                 type: 2,
                 style: 2,
                 label: 'Hide Image',
-                custom_id: `hideable_${internalMessageId}`,
+                customID: `hideable_${internalMessageId}`,
             }]
         }]
-    } as any);
+    });
 }
