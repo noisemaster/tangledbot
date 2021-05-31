@@ -1,4 +1,4 @@
-import { MessageComponentInteraction } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
+import { MessageComponentInteraction, InteractionResponseType, InteractionResponseFlags } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
 import { Embed } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/embed.ts";
 import { MessageReaction } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/messageReaction.ts";
 import { User } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/user.ts";
@@ -46,16 +46,17 @@ export const showPost = async (reaction: MessageReaction, reactingUser: User) =>
 }
 
 export const togglePost = async (interaction: MessageComponentInteraction) => {
-    await interaction.respond({
-        type: 6,
-    })
-
     const {custom_id: customId} = interaction.data;
     const messageId = customId.replace('hideable_', '');
     const reactingUser = interaction.user;
 
     const postData = hideablePosts[messageId];
-    if (postData && postData.poster === reactingUser.id) {
+
+    if (!postData) {
+        return;
+    }
+
+    if (postData.poster === reactingUser.id) {
         const embed = postData.embedMessage;
 
         if (postData.visible) {
@@ -68,9 +69,10 @@ export const togglePost = async (interaction: MessageComponentInteraction) => {
         console.log(embed);
 
         if (interaction.message) {
-            await interaction.editMessage(interaction.message, {
+            await interaction.respond({
+                type: InteractionResponseType.UPDATE_MESSAGE,
                 embeds: [embed],
-                allowed_mentions: {
+                allowedMentions: {
                     users: []
                 },
                 components: [{
@@ -84,5 +86,11 @@ export const togglePost = async (interaction: MessageComponentInteraction) => {
                 }]
             });
         }
+    } else {
+        await interaction.respond({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            flags: InteractionResponseFlags.EPHEMERAL,
+            content: `Only the orignal poster can ${postData.visible ? 'hide' : 'show'} this message`
+        });
     }
 }
