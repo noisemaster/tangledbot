@@ -1,4 +1,4 @@
-import { ButtonStyle, Embed, InteractionResponseType, MessageComponentInteraction, MessageComponentType } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
+import { ButtonStyle, Embed, InteractionResponseFlags, InteractionResponseType, MessageComponentInteraction, MessageComponentType } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
 
 // custom id structure
 // pagination_[command]_[action = prev|next]
@@ -27,9 +27,6 @@ export const updatePage = async (interaction: MessageComponentInteraction) => {
     const [_componentId, _commandInvoker, _action, messageId] = customId.split('_');
     const reactingUser = interaction.user;
     const postData: paginationPost<Pageable> = postPages[messageId];
-    await interaction.respond({
-        type: InteractionResponseType.DEFERRED_MESSAGE_UPDATE
-    });
 
     if (!postData) {
         console.log(`${customId}: message not found`)
@@ -37,7 +34,16 @@ export const updatePage = async (interaction: MessageComponentInteraction) => {
     }
 
     if (postData.poster === reactingUser.id) {
+        await interaction.respond({
+            type: InteractionResponseType.DEFERRED_MESSAGE_UPDATE
+        });
         await postData.paginationHandler(interaction, postData);
+    } else {
+        await interaction.respond({
+            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+            flags: InteractionResponseFlags.EPHEMERAL,
+            content: 'Only the orignal poster can interact with this message'
+        });
     }
 }
 
