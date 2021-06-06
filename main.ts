@@ -9,8 +9,10 @@ import { generateIsThisImage } from "./commands/image/isthis.ts";
 import { sendShowEmbed } from "./commands/frinkiac.ts";
 import { fetchQuote } from "./commands/stock.ts";
 import { fetchMovie } from "./commands/tmdb.ts";
+import { sendCryptoEmbed } from "./commands/crypto.ts";
 import { logInteraction } from "./commands/lib/log.ts";
 import { GlobalCommandSchemas } from './commands/schemas/index.ts';
+import { updatePage } from "./handlers/paginationHandler.ts";
 
 const client = new Client();
 
@@ -25,9 +27,9 @@ client.on('ready', async () => {
 
 client.on('interactionCreate', async (interaction: Interaction) => {
     if (interaction.type === InteractionType.APPLICATION_COMMAND && interaction.data) {
-        try {
-            const slashInteraction = interaction as SlashCommandInteraction;
+        const slashInteraction = interaction as SlashCommandInteraction;
 
+        try {
             switch (slashInteraction.data.name) {
                 case 'nfl':
                     await sendNFLEmbed(slashInteraction);
@@ -53,11 +55,14 @@ client.on('interactionCreate', async (interaction: Interaction) => {
                 case 'movie':
                     await fetchMovie(slashInteraction);
                     break;
+                case 'crypto':
+                    await sendCryptoEmbed(slashInteraction);
+                    break;
                 default:
                     break;
             }
         } catch (err) {
-            console.log(interaction);
+            console.log(slashInteraction);
             console.log(err);
         }
     }
@@ -69,6 +74,10 @@ client.on('interactionCreate', async (interaction: Interaction) => {
 
         if (customId.startsWith('hideable_')) {
             await togglePost(componentInteraction);
+        }
+
+        if (customId.startsWith('pageable_')) {
+            await updatePage(componentInteraction);
         }
     }
 });
