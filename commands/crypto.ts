@@ -142,13 +142,13 @@ const generateCryptoQuoteEmbed = async (coin: cmcCoin) => {
     const dayDiffColor = dayChangePercent > 0 ? 0x44bd32 : 0xe74c3c;
 
     const hourChange = Math.abs(price * (hourChangePercent / 100));
-    const hourDiffSymbol = hourChangePercent > 0 ? '🔺' : '🔻';
+    const hourDiffSymbol = hourChangePercent > 0 ? '<:small_green_triangle:851144859103395861>' : '🔻';
 
     const dayChange = Math.abs(price * (dayChangePercent / 100));
-    const dayDiffSymbol = dayChangePercent > 0 ? '🔺' : '🔻';
+    const dayDiffSymbol = dayChangePercent > 0 ? '<:small_green_triangle:851144859103395861>' : '🔻';
 
     const weekChange = Math.abs(price * (weekChangePercent / 100));
-    const weekDiffSymbol = weekChangePercent > 0 ? '🔺' : '🔻';
+    const weekDiffSymbol = weekChangePercent > 0 ? '<:small_green_triangle:851144859103395861>' : '🔻';
 
     embed.setColor(dayDiffColor);
     embed.setFields([

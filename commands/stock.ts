@@ -46,7 +46,7 @@ export const fetchQuote = async (interaction: SlashCommandInteraction) => {
 
     const lastRefresh = new Date(regularMarketTime * 1000);
     const lastRefreshFormat = format(lastRefresh, "yyyy-MM-dd'T'HH:mm:ssxxx", undefined);
-    const diffSymbol = regularMarketChange > 0 ? '🔺' : '🔻';
+    const diffSymbol = regularMarketChange > 0 ? '<:small_green_triangle:851144859103395861>' : '🔻';
     const diffColor = regularMarketChange > 0 ? 0x44bd32 : 0xe74c3c;
     
     const image = await fetchChart(returnedSymbol, timeRange).catch(err => {
