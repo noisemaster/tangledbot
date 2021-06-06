@@ -58,7 +58,7 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
             users: []
         },
         embed,
-        components: generatePageButtons('crypto', postData, internalMessageId),
+        components: coinsMatchingSymbol.length > 1 ? generatePageButtons('crypto', postData, internalMessageId): [],
     });
 
     setPageablePost(internalMessageId, postData);
