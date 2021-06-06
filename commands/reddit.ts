@@ -1,4 +1,4 @@
-import { Embed, GuildTextChannel, Interaction, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
+import { ButtonStyle, Embed, GuildTextChannel, Interaction, InteractionResponseType, MessageComponentType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { trim } from "./lib/trim.ts";
@@ -103,10 +103,10 @@ export const sendRedditEmbed = async (interaction: SlashCommandInteraction) => {
         const internalMessageId = v4.generate();
 
         components.push({
-            type: 1,
+            type: MessageComponentType.ActionRow,
             components: [{
-                type: 2,
-                style: 2,
+                type: MessageComponentType.Button,
+                style: ButtonStyle.SECONDARY,
                 label: 'Hide Image',
                 custom_id: `hideable_${internalMessageId}`,
             }]

@@ -1,4 +1,4 @@
-import { Embed, GuildTextChannel, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
+import { ButtonStyle, Embed, GuildTextChannel, InteractionResponseType, MessageComponentType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { sendInteraction } from "./lib/sendInteraction.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
@@ -112,10 +112,10 @@ export const sendE621Embed = async (interaction: SlashCommandInteraction) => {
             users: []
         },
         components: [{
-            type: 1,
+            type: MessageComponentType.ActionRow,
             components: [{
-                type: 2,
-                style: 2,
+                type: MessageComponentType.Button,
+                style: ButtonStyle.SECONDARY,
                 label: 'Hide Image',
                 customID: `hideable_${internalMessageId}`,
             }]
