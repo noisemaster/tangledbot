@@ -32,7 +32,7 @@ export const sendE621Embed = async (interaction: SlashCommandInteraction) => {
 
     if (posts.length === 0) {
         // await interaction.send(`Nothing found for ${tags}`);
-        await interaction.send(`Nothing found for ${tags}`);
+        await interaction.send(`Nothing found for ${tags}`, {});
         return;
     }
 

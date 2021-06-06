@@ -48,6 +48,6 @@ export const fetchMovie = async (interaction: SlashCommandInteraction) => {
 
         await interaction.send(payload);
     } else {
-        await interaction.send('No movies found');
+        await interaction.send('No movies found', {});
     }
 }

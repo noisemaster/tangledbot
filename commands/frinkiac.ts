@@ -69,19 +69,19 @@ export const sendShowEmbed = async (interaction: SlashCommandInteraction) => {
     const [imgFrame = {RepresentativeTimestamp: selectedFrame.Timestamp}] = frameRange;
 
     if (type === 'frame') {
-        await interaction.send(`${urlBase}/img/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg`);
+        await interaction.send(`${urlBase}/img/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg`, {});
         return;
     }
 
     if (type === 'subtitle' && textOverride) {
         const wrappedCaption = wrap(subtitleOverride, {width: 24});
         const b64lines = addPaddingToBase64url(encode(Buffer.from(wrappedCaption, 'utf-8')));
-        await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`);
+        await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`, {});
         return;
     }
 
     if (type === 'subtitle') {
-        await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`);
+        await interaction.send(`${urlBase}/meme/${selectedFrame.Episode}/${imgFrame.RepresentativeTimestamp}.jpg?b64lines=${b64lines}`, {});
         return;
     }
 
@@ -94,6 +94,6 @@ export const sendShowEmbed = async (interaction: SlashCommandInteraction) => {
             b64lines = addPaddingToBase64url(encode(Buffer.from(wrapOverride, 'utf-8')));
         }
 
-        await interaction.send(`${urlBase}/mp4/${startFrame.Episode}/${startFrame.StartTimestamp}/${endFrame.EndTimestamp}.mp4?b64lines=${b64lines}`)
+        await interaction.send(`${urlBase}/mp4/${startFrame.Episode}/${startFrame.StartTimestamp}/${endFrame.EndTimestamp}.mp4?b64lines=${b64lines}, {}`)
     }
 }
