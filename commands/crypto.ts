@@ -3,25 +3,22 @@ import { Embed, InteractionResponseType, MessageComponentInteraction, SlashComma
 // import { MessageAttachment } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
 import { Pageable, paginationPost, setPageablePost, generatePageButtons } from "../handlers/paginationHandler.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
-import querystring from "https://deno.land/std@0.97.0/node/querystring.ts";
-import config from "../config.ts"
 
-interface cmcCoin extends Pageable {
-    id: number;
-    name: string;
+interface cgCoin extends Pageable {
+    id: string;
     symbol: string;
-    slug: string;
-    is_active: number;
-    status: string;
-    rank: number;
+    name: string;
+    platforms: {
+        [networkId: string]: string
+    };
 }
 
 // Should be cached in redis at some point
-let cryptoMap: cmcCoin[] = [];
+let cryptoMap: cgCoin[] = [];
 
 export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
     const symbolOption = interaction.data.options.find(option => option.name === 'symbol');
-    const symbol: string = symbolOption ? symbolOption.value : '';
+    const symbol: string = symbolOption ? symbolOption.value.toLowerCase() : '';
 
     // const timeRangeOption = interaction.data.options.find(option => option.name === 'timerange');
     // const timeRange: string = timeRangeOption ? timeRangeOption.value : '1d';
@@ -34,18 +31,24 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
         await fetchCryptoMap();
     }
 
-    const coinsMatchingSymbol = cryptoMap.filter(coin => coin.symbol.toLowerCase().startsWith(symbol.toLowerCase()));
+    const coinsMatchingSymbol = cryptoMap.filter(coin => coin.symbol.toLowerCase().startsWith(symbol));
 
     if (coinsMatchingSymbol.length === 0) {
         await interaction.send('No coin found', {});
         return;
     }
 
+    coinsMatchingSymbol.sort((x, y) => {
+        if (x.symbol === symbol || y.symbol === symbol) {
+            return y.symbol === x.symbol ? 1 : -1;
+        }
+        return -1;
+    });
     const [firstCoin] = coinsMatchingSymbol;
     const internalMessageId = v4.generate();
     const embed = await generateCryptoQuoteEmbed(firstCoin);
 
-    const postData: paginationPost<cmcCoin> = {
+    const postData: paginationPost<cgCoin> = {
         pages: coinsMatchingSymbol,
         poster: interaction.user.id,
         embedMessage: embed,
@@ -65,17 +68,15 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
 }
 
 const fetchCryptoMap = async () => {
-    const url = 'https://api.coinmarketcap.com/data-api/v3/map/all?cryptoAux=is_active,status&exchangeAux=is_active,status&listing_status=active,untracked';
+    const url = 'https://api.coingecko.com/api/v3/coins/list?include_platform=true';
 
     const request = await fetch(url);
-    const json = await request.json();
+    const coinMap = await request.json();
 
-    const {data: {cryptoCurrencyMap}} = json;
-
-    cryptoMap = cryptoCurrencyMap;
+    cryptoMap = coinMap;
 }
 
-const cryptoPageHandler = async (interaction: MessageComponentInteraction, postData: paginationPost<cmcCoin>) => {
+const cryptoPageHandler = async (interaction: MessageComponentInteraction, postData: paginationPost<cgCoin>) => {
     const {custom_id: customId} = interaction.data;
     const [_componentId, _commandInvoker, action, messageId] = customId.split('_');
 
@@ -109,36 +110,17 @@ const cryptoPageHandler = async (interaction: MessageComponentInteraction, postD
     setPageablePost(messageId, postData);
 }
 
-const generateCryptoQuoteEmbed = async (coin: cmcCoin) => {
-    const embed = new Embed({
-        author: {
-            icon_url: `https://s2.coinmarketcap.com/static/img/coins/128x128/${coin.id}.png`,
-            name: `${coin.name} (${coin.symbol})`,
-            url: `https://coinmarketcap.com/currencies/${coin.slug}`
-        },
-    });
+const generateCryptoQuoteEmbed = async (coin: cgCoin) => {
+    const quoteRequest = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}?localization=false`);
+    const coinQuoteData = await quoteRequest.json();
 
-    // const currencyInfo = await fetch('https://pro-api.coinmarketcap.com/v1/cryptocurrency/info', {
-    //     headers: {
-    //         'X-CMC_PRO_API_KEY': config.cmc.apiKey
-    //     }
-    // });
+    const { market_data: marketData, ...coinData } = coinQuoteData;
+    const price = marketData.current_price.usd;
+    const hourChangePercent = marketData.price_change_percentage_1h_in_currency.usd || 0;
+    const dayChangePercent = marketData.price_change_percentage_24h_in_currency.usd || 0;
+    const weekChangePercent = marketData.price_change_percentage_7d_in_currency.usd || 0;
+    const marketCap = marketData.market_cap.usd;
 
-    const query = querystring.stringify({
-        id: coin.id,
-        aux: 'num_market_pairs,cmc_rank,date_added,tags,platform,max_supply,circulating_supply,total_supply,market_cap_by_total_supply,volume_24h_reported,volume_7d,volume_7d_reported,volume_30d,volume_30d_reported,is_active,is_fiat'
-    });
-
-    const currencyQuote = await fetch(`https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?${query}`, {
-        headers: {
-            'X-CMC_PRO_API_KEY': config.cmc.apiKey
-        }
-    });
-
-    const {data} = await currencyQuote.json();
-    const coinQuoteData = data[`${coin.id}`];
-
-    const { price, percent_change_1h: hourChangePercent, percent_change_24h: dayChangePercent, percent_change_7d: weekChangePercent, market_cap: marketCap } = coinQuoteData.quote.USD;
     const dayDiffColor = dayChangePercent > 0 ? 0x44bd32 : 0xe74c3c;
 
     const hourChange = Math.abs(price * (hourChangePercent / 100));
@@ -150,11 +132,21 @@ const generateCryptoQuoteEmbed = async (coin: cmcCoin) => {
     const weekChange = Math.abs(price * (weekChangePercent / 100));
     const weekDiffSymbol = weekChangePercent > 0 ? '<:small_green_triangle:851144859103395861>' : '🔻';
 
-    embed.setColor(dayDiffColor);
+    console.log(coinData);
+
+    const embed = new Embed({
+        author: {
+            icon_url: coinData.image.large,
+            name: `${coin.name} (${coin.symbol.toUpperCase()})`,
+            url: `https://www.coingecko.com/en/coins/${coin.id}`
+        },
+        color: dayDiffColor,
+    });
+
     embed.setFields([
         {
             name: 'Current Price',
-            value: `${price > 5 ? price.toFixed(2) : price.toFixed(5)}`,
+            value: `${price}`,
             inline: false,
         },
         {
@@ -178,8 +170,8 @@ const generateCryptoQuoteEmbed = async (coin: cmcCoin) => {
             inline: false
         }
     ]);
-    embed.setTimestamp(coinQuoteData.last_updated);
-    embed.setFooter(`CMC Rank: ${coinQuoteData.cmc_rank}`);
+    embed.setTimestamp(marketData.last_updated);
+    embed.setFooter(`CoinGecko Rank: ${coinQuoteData.coingecko_rank}`);
 
     return embed;
 }
