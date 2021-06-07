@@ -72,12 +72,17 @@ client.on('interactionCreate', async (interaction: Interaction) => {
         const componentInteraction = interaction as MessageComponentInteraction;
         const { custom_id: customId } = componentInteraction.data;
 
-        if (customId.startsWith('hideable_')) {
-            await togglePost(componentInteraction);
-        }
-
-        if (customId.startsWith('pageable_')) {
-            await updatePage(componentInteraction);
+        try {
+            if (customId.startsWith('hideable_')) {
+                await togglePost(componentInteraction);
+            }
+            
+            if (customId.startsWith('pageable_')) {
+                await updatePage(componentInteraction);
+            }
+        } catch (err) {
+            console.log(componentInteraction);
+            console.log(err);
         }
     }
 });
