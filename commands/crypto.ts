@@ -3,7 +3,7 @@ import { Embed, InteractionResponseType, MessageComponentInteraction, SlashComma
 // import { MessageAttachment } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
 import { Pageable, paginationPost, setPageablePost, generatePageButtons } from "../handlers/paginationHandler.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
-import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/webhook.ts";
+import { WebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/webhook.ts";
 
 interface cgCoin extends Pageable {
     id: string;
@@ -12,6 +12,10 @@ interface cgCoin extends Pageable {
     platforms: {
         [networkId: string]: string
     };
+}
+
+interface webhookOptionsWithAttachments extends WebhookMessageOptions {
+    attachments: MessageAttachment[]
 }
 
 // Should be cached in redis at some point
@@ -107,7 +111,7 @@ const cryptoPageHandler = async (interaction: MessageComponentInteraction, postD
                 allowed_mentions: {
                     users: []
                 },
-                components: newComponents
+                components: newComponents,
             }
         );
     }
@@ -181,8 +185,9 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
         console.log(err);
     });
 
-    const payload: AllWebhookMessageOptions = {
+    const payload: webhookOptionsWithAttachments = {
         embeds: [embed],
+        attachments: []
     };
 
     if (image) {
