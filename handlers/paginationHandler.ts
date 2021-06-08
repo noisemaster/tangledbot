@@ -13,6 +13,7 @@ export interface paginationPost<T extends Pageable> {
     pages: T[];
     currentPage: number;
     paginationHandler(interaction: MessageComponentInteraction, postData: paginationPost<T>): Promise<void>;
+    interactionData: any;
 }
 
 // In-Memory post detail store

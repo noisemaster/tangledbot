@@ -1,8 +1,9 @@
-import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction, MessageComponentType, ButtonStyle } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
+import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction, MessageComponentType, ButtonStyle, MessageAttachment } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 // import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 // import { MessageAttachment } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
 import { Pageable, paginationPost, setPageablePost, generatePageButtons } from "../handlers/paginationHandler.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
+import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/webhook.ts";
 
 interface cgCoin extends Pageable {
     id: string;
@@ -20,8 +21,8 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
     const symbolOption = interaction.data.options.find(option => option.name === 'symbol');
     const symbol: string = symbolOption ? symbolOption.value.toLowerCase() : '';
 
-    // const timeRangeOption = interaction.data.options.find(option => option.name === 'timerange');
-    // const timeRange: string = timeRangeOption ? timeRangeOption.value : '1d';
+    const timeRangeOption = interaction.data.options.find(option => option.name === 'timerange');
+    const timeRange: string = timeRangeOption ? timeRangeOption.value : '1';
 
     await interaction.respond({
         type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE,
@@ -46,21 +47,24 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
     });
     const [firstCoin] = coinsMatchingSymbol;
     const internalMessageId = v4.generate();
-    const embed = await generateCryptoQuoteEmbed(firstCoin);
+    const embed = await generateCryptoQuoteEmbed(firstCoin, timeRange);
 
     const postData: paginationPost<cgCoin> = {
         pages: coinsMatchingSymbol,
         poster: interaction.user.id,
-        embedMessage: embed,
+        embedMessage: embed.embeds![0],
         currentPage: 1,
-        paginationHandler: cryptoPageHandler
+        paginationHandler: cryptoPageHandler,
+        interactionData: {
+            timeRange,
+        }
     }
 
     await interaction.send({
         allowedMentions: {
             users: []
         },
-        embed,
+        ...embed,
         components: coinsMatchingSymbol.length > 1 ? generatePageButtons('crypto', postData, internalMessageId): [],
     });
 
@@ -93,13 +97,13 @@ const cryptoPageHandler = async (interaction: MessageComponentInteraction, postD
     }        
     
     const page = postData.pages[postData.currentPage - 1];
-    const newEmbed = await generateCryptoQuoteEmbed(page);
+    const newEmbed = await generateCryptoQuoteEmbed(page, postData.interactionData.timeRange);
     const newComponents = generatePageButtons('crypto', postData, messageId);
 
     if (interaction.message) {
         await interaction.editMessage(
             interaction.message, {
-                embeds: [newEmbed],
+                ...newEmbed,
                 allowed_mentions: {
                     users: []
                 },
@@ -110,7 +114,7 @@ const cryptoPageHandler = async (interaction: MessageComponentInteraction, postD
     setPageablePost(messageId, postData);
 }
 
-const generateCryptoQuoteEmbed = async (coin: cgCoin) => {
+const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
     const quoteRequest = await fetch(`https://api.coingecko.com/api/v3/coins/${coin.id}?localization=false`);
     const coinQuoteData = await quoteRequest.json();
 
@@ -173,5 +177,38 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin) => {
     embed.setTimestamp(marketData.last_updated);
     embed.setFooter(`CoinGecko Rank: ${coinQuoteData.coingecko_rank}`);
 
-    return embed;
+    const image = await fetchChart(coin.id, timeRange).catch(err => {
+        console.log(err);
+    });
+
+    const payload: AllWebhookMessageOptions = {
+        embeds: [embed],
+    };
+
+    if (image) {
+        const imageAttach = new MessageAttachment(`${coin.id}.png`, image);
+        payload.file = imageAttach;
+
+        embed.setImage({
+            url: `attachment://${coin.id}.png`
+        });
+    }
+
+    return payload;
+}
+
+const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array> => {
+    const hololynx = Deno.run({
+        cmd: ["python3", "./helpers/hololynx.py", symbol, timeRange],
+        stdout: 'piped'
+    });
+
+    const output = await hololynx.output();
+    const { code } = await hololynx.status();
+    
+    if (code !== 0) {
+        throw new Error('Candlesticks chart not generated')
+    }
+
+    return output;
 }
