@@ -10,24 +10,21 @@ export const CryptoCommandSchema: SlashCommandPartial = {
             type: SlashCommandOptionType.STRING,
             required: true
         },
-        // {
-        //     name: 'timerange',
-        //     description: 'Chart time range',
-        //     type: SlashCommandOptionType.STRING,
-        //     choices: [
-        //         { name: "1 Day", value: "1d" },
-        //         { name: "5 Days", value: "5d" },
-        //         { name: "1 Month", value: "1mo" },
-        //         { name: "3 Months", value: "3mo" },
-        //         { name: "6 Months", value: "6mo" },
-        //         { name: "1 Year", value: "1y" },
-        //         { name: "2 Years", value: "2y" },
-        //         { name: "5 Years", value: "5y" },
-        //         { name: "10 Years", value: "10y" },
-        //         { name: "Year to Date", value: "ytd" },
-        //         { name: "Max", value: "max" }
-        //     ],
-        //     required: false
-        // }
+        {
+            name: 'timerange',
+            description: 'Chart time range',
+            type: SlashCommandOptionType.STRING,
+            choices: [
+                { name: "1 Day", value: "1" },
+                { name: "7 Days", value: "7" },
+                { name: "2 Weeks", value: "14" },
+                { name: "1 Month", value: "30" },
+                { name: "3 Months", value: "90" },
+                { name: "6 Months", value: "180" },
+                { name: "1 Year", value: "365" },
+                { name: "Max", value: "max" }
+            ],
+            required: false
+        }
     ]
 }
