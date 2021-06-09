@@ -24,9 +24,9 @@ def getStock(coinId: str, timeRange: str):
 
     timestamps = map(lambda column: datetime.fromtimestamp(column[0] / 1000), data)
     quoteOpen = map(lambda column: column[1], data)
-    close = map(lambda column: column[2], data)
-    high = map(lambda column: column[3], data)
-    low = map(lambda column: column[4], data)
+    high = map(lambda column: column[2], data)
+    low = map(lambda column: column[3], data)
+    close = map(lambda column: column[4], data)
 
     return {
         "timestamps": timestamps,
