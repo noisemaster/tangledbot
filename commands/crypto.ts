@@ -36,19 +36,18 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
         await fetchCryptoMap();
     }
 
-    const coinsMatchingSymbol = cryptoMap.filter(coin => coin.symbol.toLowerCase().startsWith(symbol));
+    let coinsMatchingSymbol = cryptoMap.filter(coin => coin.symbol.toLowerCase().startsWith(symbol));
 
     if (coinsMatchingSymbol.length === 0) {
         await interaction.send('No coin found', {});
         return;
     }
 
-    coinsMatchingSymbol.sort((x, y) => {
-        if (x.symbol === symbol || y.symbol === symbol) {
-            return y.symbol === x.symbol ? 1 : -1;
-        }
-        return -1;
-    });
+    coinsMatchingSymbol = [
+        ...coinsMatchingSymbol.filter(coin => coin.symbol === symbol),
+        ...coinsMatchingSymbol.filter(coin => coin.symbol !== symbol).sort((x, y) => x.symbol.localeCompare(y.symbol))
+    ]
+
     const [firstCoin] = coinsMatchingSymbol;
     const internalMessageId = v4.generate();
     const embed = await generateCryptoQuoteEmbed(firstCoin, timeRange);
@@ -139,8 +138,6 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
 
     const weekChange = Math.abs(price * (weekChangePercent / 100));
     const weekDiffSymbol = weekChangePercent > 0 ? '<:small_green_triangle:851144859103395861>' : '🔻';
-
-    console.log(coinData);
 
     const embed = new Embed({
         author: {
