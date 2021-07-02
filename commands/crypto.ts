@@ -1,4 +1,4 @@
-import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction, MessageComponentType, ButtonStyle, MessageAttachment } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
+import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction, MessageAttachment, MessageComponentOption } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 // import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 // import { MessageAttachment } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
 import { Pageable, paginationPost, setPageablePost, generatePageButtons } from "../handlers/paginationHandler.ts";
@@ -58,10 +58,13 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
         embedMessage: embed.embeds![0],
         currentPage: 1,
         paginationHandler: cryptoPageHandler,
+        pageGenerator: cryptoPageSelectGenerator,
         interactionData: {
             timeRange,
         }
     }
+
+    console.log(generatePageButtons('crypto', postData, internalMessageId)[0].components[1]);
 
     await interaction.send({
         allowedMentions: {
@@ -97,7 +100,10 @@ const cryptoPageHandler = async (interaction: MessageComponentInteraction, postD
         postData.currentPage = 1;
     } else if (action === 'next') {
         postData.currentPage += 1;
-    }        
+    } else if (action === 'select') {
+        const [page] = (interaction.data as any).values;
+        postData.currentPage = parseInt(page);
+    }
     
     const page = postData.pages[postData.currentPage - 1];
     const newEmbed = await generateCryptoQuoteEmbed(page, postData.interactionData.timeRange);
@@ -213,4 +219,12 @@ const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array
     }
 
     return output;
+}
+
+const cryptoPageSelectGenerator = (pages: cgCoin[]): MessageComponentOption[] => {
+    return pages.slice(0, 25).map((page, index) => ({
+        label: page.symbol.toUpperCase(),
+        description: page.name,
+        value: `${index + 1}`
+    }));
 }

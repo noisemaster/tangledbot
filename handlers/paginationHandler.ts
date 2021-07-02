@@ -1,4 +1,4 @@
-import { ButtonStyle, Embed, InteractionResponseFlags, InteractionResponseType, MessageComponentInteraction, MessageComponentType } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
+import { ButtonStyle, Embed, InteractionResponseFlags, InteractionResponseType, MessageComponentInteraction, MessageComponentOption, MessageComponentType } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
 
 // custom id structure
 // pagination_[command]_[action = prev|next]
@@ -13,6 +13,7 @@ export interface paginationPost<T extends Pageable> {
     pages: T[];
     currentPage: number;
     paginationHandler(interaction: MessageComponentInteraction, postData: paginationPost<T>): Promise<void>;
+    pageGenerator(pages: T[]): MessageComponentOption[];
     interactionData: any;
 }
 
@@ -49,32 +50,40 @@ export const updatePage = async (interaction: MessageComponentInteraction) => {
 }
 
 export const generatePageButtons = (command: string, pageData: paginationPost<Pageable>, internalMessageId: string) => {
-    return [{
-        type: MessageComponentType.ActionRow,
-        components: [
-            {
-                type: MessageComponentType.Button,
-                style: ButtonStyle.SECONDARY,
-                emoji: {
-                    name: "⬅"
+    return [
+        {
+            type: MessageComponentType.ActionRow,
+            components: [
+                {
+                    type: MessageComponentType.Select,
+                    placeholder: `Page ${pageData.currentPage}/${pageData.pages.length >= 25 ? 25 : pageData.pages.length}`,
+                    customID: `pageable_${command}_select_${internalMessageId}`,
+                    options: pageData.pageGenerator(pageData.pages),
+                    minValues: 1,
+                    maxValues: 1,
+                }
+            ]
+        },
+        {
+            type: MessageComponentType.ActionRow,
+            components: [
+                {
+                    type: MessageComponentType.Button,
+                    style: ButtonStyle.SECONDARY,
+                    emoji: {
+                        name: "⬅"
+                    },
+                    customID: `pageable_${command}_prev_${internalMessageId}`,
                 },
-                customID: `pageable_${command}_prev_${internalMessageId}`,
-            },
-            {
-                type: MessageComponentType.Button,
-                style: ButtonStyle.SECONDARY,
-                disabled: true,
-                label: `Page ${pageData.currentPage}/${pageData.pages.length}`,
-                customID: `pageable_${command}_info_${internalMessageId}`,
-            },
-            {
-                type: MessageComponentType.Button,
-                style: ButtonStyle.SECONDARY,
-                emoji: {
-                    name: "➡"
-                },
-                customID: `pageable_${command}_next_${internalMessageId}`,
-            }
-        ]
-    }]
+                {
+                    type: MessageComponentType.Button,
+                    style: ButtonStyle.SECONDARY,
+                    emoji: {
+                        name: "➡"
+                    },
+                    customID: `pageable_${command}_next_${internalMessageId}`,
+                }
+            ]
+        }
+    ]
 }
