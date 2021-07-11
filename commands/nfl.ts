@@ -1,6 +1,6 @@
 import { Embed, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 import { EmbedField } from "https://deno.land/x/harmony@v2.0.0-rc2/src/types/channel.ts";
-import { sub, differenceInDays, format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
+import { sub, differenceInDays } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 
 export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
     const request = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
@@ -16,7 +16,7 @@ export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
         const visitingTeam = game.competitions[0].competitors.find((team: {homeAway: string}) => team.homeAway === 'away');
 		const homeTeam = game.competitions[0].competitors.find((team: {homeAway: string}) => team.homeAway === 'home');
         let scoreString = '';
-        let timeString = `${format(gameDate, 'MMMM d, yyyy h:mma', undefined)} (Eastern)`;
+        let timeString = `<t:${gameDate.valueOf()/1000}:>`;
         
         if (now.valueOf() > gameDate.valueOf()) {
             scoreString = visitingTeam.team.abbreviation + " " + visitingTeam.score + " - " + homeTeam.team.abbreviation + " " + homeTeam.score;
