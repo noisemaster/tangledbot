@@ -24,6 +24,10 @@ export const setPageablePost = (messageId: string, pageablePost: paginationPost<
     postPages[messageId] = pageablePost;
 }
 
+export function getPageablePost<T extends Pageable>(messageId: string): paginationPost<T> {
+    return postPages[messageId] as paginationPost<T>;
+}
+
 export const updatePage = async (interaction: MessageComponentInteraction) => {
     const {custom_id: customId} = interaction.data;
     const [_componentId, _commandInvoker, _action, messageId] = customId.split('_');

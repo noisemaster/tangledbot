@@ -13,6 +13,7 @@ import { sendCryptoEmbed } from "./commands/crypto.ts";
 import { logInteraction } from "./commands/lib/log.ts";
 import { GlobalCommandSchemas } from './commands/schemas/index.ts';
 import { updatePage } from "./handlers/paginationHandler.ts";
+import { updateTimerange } from "./handlers/timerangeHandler.ts";
 
 const client = new Client();
 
@@ -79,6 +80,10 @@ client.on('interactionCreate', async (interaction: Interaction) => {
             
             if (customId.startsWith('pageable_')) {
                 await updatePage(componentInteraction);
+            }
+
+            if (customId.startsWith('timerange_')) {
+                await updateTimerange(componentInteraction);
             }
         } catch (err) {
             console.log(componentInteraction);

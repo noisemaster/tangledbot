@@ -1,11 +1,12 @@
 import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction, MessageAttachment, MessageComponentOption } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 // import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 // import { MessageAttachment } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
-import { Pageable, paginationPost, setPageablePost, generatePageButtons } from "../handlers/paginationHandler.ts";
+import { Pageable, paginationPost, setPageablePost, generatePageButtons, getPageablePost } from "../handlers/paginationHandler.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
 import { WebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/webhook.ts";
+import { generateTimerangeButtons, getTimerangePost, HasTimerange, setTimerangePost, timerangePost } from "../handlers/timerangeHandler.ts";
 
-interface cgCoin extends Pageable {
+interface cgCoin extends Pageable, HasTimerange {
     id: string;
     symbol: string;
     name: string;
@@ -17,6 +18,17 @@ interface cgCoin extends Pageable {
 interface webhookOptionsWithAttachments extends WebhookMessageOptions {
     attachments: MessageAttachment[]
 }
+
+const coinGeckoTimeRanges = [
+    { name: "1 Day", value: "1" },
+    { name: "7 Days", value: "7" },
+    { name: "2 Weeks", value: "14" },
+    { name: "1 Month", value: "30" },
+    { name: "3 Months", value: "90" },
+    { name: "6 Months", value: "180" },
+    { name: "1 Year", value: "365" },
+    { name: "Max", value: "max" },
+]
 
 // Should be cached in redis at some point
 let cryptoMap: cgCoin[] = [];
@@ -52,7 +64,7 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
     const internalMessageId = v4.generate();
     const embed = await generateCryptoQuoteEmbed(firstCoin, timeRange);
 
-    const postData: paginationPost<cgCoin> = {
+    const pageData: paginationPost<cgCoin> = {
         pages: coinsMatchingSymbol,
         poster: interaction.user.id,
         embedMessage: embed.embeds![0],
@@ -64,17 +76,34 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
         }
     }
 
-    console.log(generatePageButtons('crypto', postData, internalMessageId)[0].components[1]);
+    const timerangeData: timerangePost<cgCoin> = {
+        poster: interaction.user.id,
+        embedMessage: embed.embeds![0],
+        timeRangeHandler: cryptoTimerangeHandler,
+        currentTime: timeRange,
+        timeRanges: coinGeckoTimeRanges,
+        interactionData: {
+            timeRange,
+        }
+    }
+
+    console.log(generatePageButtons('crypto', pageData, internalMessageId)[0].components[1]);
+
+    const components = [
+        ...(coinsMatchingSymbol.length > 1 ? generatePageButtons('crypto', pageData, internalMessageId): []),
+        ...(generateTimerangeButtons('crypto', timerangeData, internalMessageId))
+    ]
 
     await interaction.send({
         allowedMentions: {
             users: []
         },
         ...embed,
-        components: coinsMatchingSymbol.length > 1 ? generatePageButtons('crypto', postData, internalMessageId): [],
+        components
     });
 
-    setPageablePost(internalMessageId, postData);
+    setPageablePost(internalMessageId, pageData);
+    setTimerangePost(internalMessageId, timerangeData)
 }
 
 const fetchCryptoMap = async () => {
@@ -86,28 +115,32 @@ const fetchCryptoMap = async () => {
     cryptoMap = coinMap;
 }
 
-const cryptoPageHandler = async (interaction: MessageComponentInteraction, postData: paginationPost<cgCoin>) => {
+const cryptoPageHandler = async (interaction: MessageComponentInteraction, pageData: paginationPost<cgCoin>) => {
     const {custom_id: customId} = interaction.data;
     const [_componentId, _commandInvoker, action, messageId] = customId.split('_');
 
     console.log(customId);
     
-    if (action === 'prev' && postData.currentPage === 1) {
-        postData.currentPage = postData.pages.length;
+    if (action === 'prev' && pageData.currentPage === 1) {
+        pageData.currentPage = pageData.pages.length;
     } else if (action === 'prev') {
-        postData.currentPage -= 1;        
-    } else if (action === 'next' && postData.currentPage === postData.pages.length) {
-        postData.currentPage = 1;
+        pageData.currentPage -= 1;        
+    } else if (action === 'next' && pageData.currentPage === pageData.pages.length) {
+        pageData.currentPage = 1;
     } else if (action === 'next') {
-        postData.currentPage += 1;
+        pageData.currentPage += 1;
     } else if (action === 'select') {
         const [page] = (interaction.data as any).values;
-        postData.currentPage = parseInt(page);
+        pageData.currentPage = parseInt(page);
     }
     
-    const page = postData.pages[postData.currentPage - 1];
-    const newEmbed = await generateCryptoQuoteEmbed(page, postData.interactionData.timeRange);
-    const newComponents = generatePageButtons('crypto', postData, messageId);
+    const page = pageData.pages[pageData.currentPage - 1];
+    const timerangeData = getTimerangePost<cgCoin>(messageId);
+    const newEmbed = await generateCryptoQuoteEmbed(page, timerangeData.currentTime);
+    const newComponents = [
+        ...generatePageButtons('crypto', pageData, messageId),
+        ...generateTimerangeButtons('crypto', timerangeData, messageId),
+    ]
 
     if (interaction.message) {
         await interaction.editMessage(
@@ -120,7 +153,42 @@ const cryptoPageHandler = async (interaction: MessageComponentInteraction, postD
             }
         );
     }
-    setPageablePost(messageId, postData);
+
+    setPageablePost(messageId, pageData);
+    setTimerangePost(messageId, timerangeData);
+}
+
+const cryptoTimerangeHandler = async (interaction: MessageComponentInteraction, pageData: timerangePost<cgCoin>) => {
+    const {custom_id: customId} = interaction.data;
+    const [_componentId, _commandInvoker, action, messageId] = customId.split('_');
+
+    console.log(customId);
+
+    const [timerange] = (interaction.data as any).values;
+    pageData.currentTime = timerange;
+
+    const cryptoPages = getPageablePost<cgCoin>(messageId);
+    const newEmbed = await generateCryptoQuoteEmbed(cryptoPages.pages[cryptoPages.currentPage - 1], pageData.currentTime);
+    const pageComponents = cryptoPages.pages.length > 1 ? generatePageButtons('crypto', cryptoPages, messageId) : [];
+    const timerangeComponents = generateTimerangeButtons('crypto', pageData, messageId);
+
+    if (interaction.message) {
+        await interaction.editMessage(
+            interaction.message, {
+                ...newEmbed,
+                allowed_mentions: {
+                    users: []
+                },
+                components: [
+                    ...pageComponents,
+                    ...timerangeComponents
+                ],
+            }
+        );
+    }
+
+    setPageablePost(messageId, cryptoPages);
+    setTimerangePost(messageId, pageData);
 }
 
 const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
