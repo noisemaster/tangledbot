@@ -6,6 +6,7 @@ export interface HasTimerange {
 
 export interface timerangePost<T extends HasTimerange> {
     poster: string;
+    data: T,
     embedMessage: Embed;
     currentTime: string;
     timeRangeHandler(interaction: MessageComponentInteraction, postData: timerangePost<T>): Promise<void>;
@@ -20,8 +21,8 @@ export const setTimerangePost = (messageId: string, timerangePost: timerangePost
     timerangePosts[messageId] = timerangePost;
 }
 
-export function getTimerangePost<T extends HasTimerange> (messageId: string): timerangePost<T> {
-    return timerangePosts[messageId];
+export function getTimerangePost<T extends HasTimerange>(messageId: string): timerangePost<T> {
+    return timerangePosts[messageId] as timerangePost<T>;
 }
 
 export const updateTimerange = async (interaction: MessageComponentInteraction) => {
