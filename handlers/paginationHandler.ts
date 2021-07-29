@@ -39,18 +39,18 @@ export const updatePage = async (interaction: MessageComponentInteraction) => {
         return;
     }
 
-    if (postData.poster === reactingUser.id) {
-        await interaction.respond({
-            type: InteractionResponseType.DEFERRED_MESSAGE_UPDATE
-        });
-        await postData.paginationHandler(interaction, postData);
-    } else {
-        await interaction.respond({
-            type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-            flags: InteractionResponseFlags.EPHEMERAL,
-            content: 'Only the orignal poster can interact with this message'
-        });
-    }
+    // if (postData.poster === reactingUser.id) {
+    await interaction.respond({
+        type: InteractionResponseType.DEFERRED_MESSAGE_UPDATE
+    });
+    await postData.paginationHandler(interaction, postData);
+    // } else {
+    //     await interaction.respond({
+    //         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+    //         flags: InteractionResponseFlags.EPHEMERAL,
+    //         content: 'Only the orignal poster can interact with this message'
+    //     });
+    // }
 }
 
 export const generatePageButtons = (command: string, pageData: paginationPost<Pageable>, internalMessageId: string) => {
