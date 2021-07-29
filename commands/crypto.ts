@@ -3,8 +3,8 @@ import { Embed, InteractionResponseType, MessageComponentInteraction, SlashComma
 // import { MessageAttachment } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
 import { Pageable, paginationPost, setPageablePost, generatePageButtons, getPageablePost } from "../handlers/paginationHandler.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
-import { WebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/webhook.ts";
 import { generateTimerangeButtons, getTimerangePost, HasTimerange, setTimerangePost, timerangePost } from "../handlers/timerangeHandler.ts";
+import { webhookOptionsWithAttachments } from '../interfaces/webhookOptionsWithAttachments.ts';
 
 interface cgCoin extends Pageable, HasTimerange {
     id: string;
@@ -13,10 +13,6 @@ interface cgCoin extends Pageable, HasTimerange {
     platforms: {
         [networkId: string]: string
     };
-}
-
-interface webhookOptionsWithAttachments extends WebhookMessageOptions {
-    attachments: MessageAttachment[]
 }
 
 const coinGeckoTimeRanges = [
@@ -78,6 +74,7 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
 
     const timerangeData: timerangePost<cgCoin> = {
         poster: interaction.user.id,
+        data: firstCoin,
         embedMessage: embed.embeds![0],
         timeRangeHandler: cryptoTimerangeHandler,
         currentTime: timeRange,
@@ -136,6 +133,7 @@ const cryptoPageHandler = async (interaction: MessageComponentInteraction, pageD
     
     const page = pageData.pages[pageData.currentPage - 1];
     const timerangeData = getTimerangePost<cgCoin>(messageId);
+    timerangeData.data = page;
     const newEmbed = await generateCryptoQuoteEmbed(page, timerangeData.currentTime);
     const newComponents = [
         ...generatePageButtons('crypto', pageData, messageId),
@@ -168,7 +166,7 @@ const cryptoTimerangeHandler = async (interaction: MessageComponentInteraction, 
     pageData.currentTime = timerange;
 
     const cryptoPages = getPageablePost<cgCoin>(messageId);
-    const newEmbed = await generateCryptoQuoteEmbed(cryptoPages.pages[cryptoPages.currentPage - 1], pageData.currentTime);
+    const newEmbed = await generateCryptoQuoteEmbed(pageData.data, pageData.currentTime);
     const pageComponents = cryptoPages.pages.length > 1 ? generatePageButtons('crypto', cryptoPages, messageId) : [];
     const timerangeComponents = generateTimerangeButtons('crypto', pageData, messageId);
 
