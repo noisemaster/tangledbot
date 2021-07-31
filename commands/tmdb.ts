@@ -39,10 +39,7 @@ export const fetchMovie = async (interaction: SlashCommandInteraction) => {
     const request = await fetch(url);
     const response = await request.json();
     
-    console.log(url);
-    console.log(response);
     const {results}: {results: TMDBResult[]} = response;
-
 
     if (results.length > 0) {
         const [movie] = results;
@@ -129,9 +126,14 @@ const generateTMDBEmbed = (result: TMDBResult) => {
 }
 
 const generateTMDBPages = (pages: TMDBResult[]): MessageComponentOption[] => {
-    return pages.map((page, index) => ({
-        label: page.title,
-        description: `${new Date(page.release_date).getFullYear()}`,
-        value: `${index + 1}`
-    }));
+    return pages.map((page, index) => {
+        const releaseYear = new Date(page.release_date).getFullYear();
+        const releaseYearString = isNaN(releaseYear) ? "None" : `${releaseYear}`;
+        
+        return {
+            label: `Page ${index + 1}`,
+            description: page.title.length > 40 ? `${page.title.substr(0, 40)}... (${releaseYearString})` : `${page.title} (${releaseYearString})`,
+            value: `${index + 1}`
+        }
+    });
 }
