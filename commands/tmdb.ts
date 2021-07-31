@@ -1,7 +1,23 @@
-import { Embed, Interaction, InteractionApplicationCommandData, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
+import { Embed, InteractionResponseType, MessageComponentInteraction, MessageComponentOption, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/webhook.ts";
-import { sendInteraction } from "./lib/sendInteraction.ts";
 import config from '../config.ts';
+import { generatePageButtons, Pageable, paginationPost, setPageablePost } from "../handlers/paginationHandler.ts";
+import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
+
+interface TMDBResult extends Pageable {
+    "backdrop_path": string;
+    id: number;
+    "original_language": string;
+    "original_title": string;
+    overview: string;
+    popularity: number;
+    "poster_path": string;
+    "release_date": string;
+    title: string;
+    video: boolean;
+    "vote_average": number;
+    "vote_count": number;
+}
 
 export const fetchMovie = async (interaction: SlashCommandInteraction) => {
     if (!interaction.data) {
@@ -22,32 +38,100 @@ export const fetchMovie = async (interaction: SlashCommandInteraction) => {
 
     const request = await fetch(url);
     const response = await request.json();
+    
+    console.log(url);
+    console.log(response);
+    const {results}: {results: TMDBResult[]} = response;
 
-    const {results} = response;
 
     if (results.length > 0) {
         const [movie] = results;
+        const internalMessageId = v4.generate();
+        const embed = generateTMDBEmbed(movie);
 
-        const embed = new Embed({
-            title: movie.title === movie.original_title ? movie.title : `${movie.title} (${movie.original_title})`,
-            url: `https://www.themoviedb.org/movie/${movie.id}`,
-            description: movie.overview,
-            timestamp: movie.release_date,
-            image: {
-                url: movie.backdrop_path ? `https://image.tmdb.org/t/p/original/${movie.backdrop_path}` : `https://image.tmdb.org/t/p/original/${movie.poster_path}`
-            },
-            footer: {
-                text: 'via themoviedb.org'
-            },
-            color: 0x032541
+        const pageData: paginationPost<TMDBResult> = {
+            pages: results,
+            poster: interaction.user.id,
+            embedMessage: embed.embeds![0],
+            currentPage: 1,
+            paginationHandler: tmdbPageHandler,
+            pageGenerator: generateTMDBPages,
+            interactionData: {}
+        }
+
+        const components = [
+            ...(results.length > 1 ? generatePageButtons('results', pageData, internalMessageId): []),
+        ];
+            
+        await interaction.send({
+            ...embed,
+            components
         });
 
-        const payload: AllWebhookMessageOptions = {
-            embeds: [embed],
-        };
-
-        await interaction.send(payload);
+        setPageablePost(internalMessageId, pageData);
     } else {
         await interaction.send('No movies found', {});
     }
+}
+
+const tmdbPageHandler = async (interaction: MessageComponentInteraction, pageData: paginationPost<TMDBResult>) =>  {
+    const {custom_id: customId} = interaction.data;
+    const [_componentId, _commandInvoker, action, messageId] = customId.split('_');
+
+    console.log(customId);
+    
+    if (action === 'select') {
+        const [page] = (interaction.data as any).values;
+        pageData.currentPage = parseInt(page);
+    }
+    
+    const page = pageData.pages[pageData.currentPage - 1];
+    const newEmbed = generateTMDBEmbed(page);
+    const newComponents = [
+        ...generatePageButtons('tmdb', pageData, messageId),
+    ]
+
+    if (interaction.message) {
+        await interaction.editMessage(
+            interaction.message, {
+                ...newEmbed,
+                allowed_mentions: {
+                    users: []
+                },
+                components: newComponents,
+            }
+        );
+    }
+
+    setPageablePost(messageId, pageData);
+}
+
+const generateTMDBEmbed = (result: TMDBResult) => {
+    const embed = new Embed({
+        title: result.title === result.original_title ? result.title : `${result.title} (${result.original_title})`,
+        url: `https://www.themoviedb.org/result/${result.id}`,
+        description: result.overview,
+        timestamp: result.release_date,
+        image: {
+            url: result.backdrop_path ? `https://image.tmdb.org/t/p/original/${result.backdrop_path}` : `https://image.tmdb.org/t/p/original/${result.poster_path}`
+        },
+        footer: {
+            text: 'via themoviedb.org'
+        },
+        color: 0x032541
+    });
+
+    const payload: AllWebhookMessageOptions = {
+        embeds: [embed],
+    };
+
+    return payload;
+}
+
+const generateTMDBPages = (pages: TMDBResult[]): MessageComponentOption[] => {
+    return pages.map((page, index) => ({
+        label: page.title,
+        description: `${new Date(page.release_date).getFullYear()}`,
+        value: `${index + 1}`
+    }));
 }
