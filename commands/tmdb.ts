@@ -77,7 +77,15 @@ const tmdbPageHandler = async (interaction: MessageComponentInteraction, pageDat
 
     console.log(customId);
     
-    if (action === 'select') {
+    if (action === 'prev' && pageData.currentPage === 1) {
+        pageData.currentPage = pageData.pages.length;
+    } else if (action === 'prev') {
+        pageData.currentPage -= 1;        
+    } else if (action === 'next' && pageData.currentPage === pageData.pages.length) {
+        pageData.currentPage = 1;
+    } else if (action === 'next') {
+        pageData.currentPage += 1;
+    } else if (action === 'select') {
         const [page] = (interaction.data as any).values;
         pageData.currentPage = parseInt(page);
     }
