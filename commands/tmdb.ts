@@ -114,7 +114,7 @@ const tmdbPageHandler = async (interaction: MessageComponentInteraction, pageDat
 const generateTMDBEmbed = (result: TMDBResult) => {
     const embed = new Embed({
         title: result.title === result.original_title ? result.title : `${result.title} (${result.original_title})`,
-        url: `https://www.themoviedb.org/result/${result.id}`,
+        url: `https://www.themoviedb.org/movie/${result.id}`,
         description: result.overview,
         timestamp: result.release_date,
         image: {

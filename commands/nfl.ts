@@ -16,7 +16,7 @@ export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
         const visitingTeam = game.competitions[0].competitors.find((team: {homeAway: string}) => team.homeAway === 'away');
 		const homeTeam = game.competitions[0].competitors.find((team: {homeAway: string}) => team.homeAway === 'home');
         let scoreString = '';
-        let timeString = `<t:${gameDate.valueOf()/1000}:>`;
+        let timeString = `<t:${gameDate.valueOf()/1000}>`;
         
         if (now.valueOf() > gameDate.valueOf()) {
             scoreString = visitingTeam.team.abbreviation + " " + visitingTeam.score + " - " + homeTeam.team.abbreviation + " " + homeTeam.score;
