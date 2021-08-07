@@ -57,7 +57,7 @@ export const fetchMovie = async (interaction: SlashCommandInteraction) => {
         }
 
         const components = [
-            ...(results.length > 1 ? generatePageButtons('results', pageData, internalMessageId): []),
+            ...(results.length > 1 ? generatePageButtons('tmdb', pageData, internalMessageId): []),
         ];
             
         await interaction.send({
@@ -139,8 +139,8 @@ const generateTMDBPages = (pages: TMDBResult[]): MessageComponentOption[] => {
         const releaseYearString = isNaN(releaseYear) ? "None" : `${releaseYear}`;
         
         return {
-            label: `Page ${index + 1}`,
-            description: page.title.length > 40 ? `${page.title.substr(0, 40)}... (${releaseYearString})` : `${page.title} (${releaseYearString})`,
+            label: page.title.length > 97 ? `${page.title.substr(0, 97)}...` : page.title,
+            description: `${releaseYearString}`,
             value: `${index + 1}`
         }
     });

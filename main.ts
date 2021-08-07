@@ -63,7 +63,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
                     break;
             }
         } catch (err) {
-            console.log(slashInteraction);
+            // console.log(slashInteraction);
             console.log(err);
         }
     }
@@ -86,7 +86,7 @@ client.on('interactionCreate', async (interaction: Interaction) => {
                 await updateTimerange(componentInteraction);
             }
         } catch (err) {
-            console.log(componentInteraction);
+            // console.log(componentInteraction);
             console.log(err);
         }
     }
