@@ -21,8 +21,8 @@ export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
         if (now.valueOf() > gameDate.valueOf()) {
             scoreString = visitingTeam.team.abbreviation + " " + visitingTeam.score + " - " + homeTeam.team.abbreviation + " " + homeTeam.score;
             if (game.competitions[0].status.type.state !== "pre" && !game.competitions[0].status.type.completed) {
-                const networks = game.competitions[0].broadcasts[0].names.join(", ")
-                timeString = "<:live:668567946997792800> LIVE " + networks + ":"
+                const networks = (game.competitions[0]?.broadcasts[0]?.names || []).join(", ");
+                timeString = `<:live:668567946997792800> LIVE ${networks} ${networks !== '' ? ':' : ''}`;
             }
         }
 
