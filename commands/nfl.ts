@@ -7,6 +7,9 @@ export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
     const scoreboard = await request.json();
 
     const scoreboardFields: EmbedField[] = [];
+    const seasonTypeNo = scoreboard.season.type;
+    const seasonType = scoreboard.leagues[0].calendar.find((entry: any) => parseInt(entry.value) === seasonTypeNo);
+    const seasonWeek = seasonType.entries.find((entry: any) => parseInt(entry.value) === scoreboard.week.number);
 
     for (const game of scoreboard.events) {
         const gameDate = Date.parse(game.date);
@@ -42,7 +45,7 @@ export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
     }
 
     const embed = new Embed({
-        title: `NFL Week ${scoreboard.week.number}`,
+        title: `NFL ${seasonWeek.label}`,
         fields: scoreboardFields
     });
 
