@@ -1,7 +1,7 @@
-import { Client, Intents, Interaction, InteractionApplicationCommandData, InteractionType, MessageComponentInteraction, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
+import { Client, event, Intents, InteractionType, MessageComponentInteraction, slash, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
 import { sendNFLEmbed } from "./commands/nfl.ts";
 import { sendRedditEmbed } from "./commands/reddit.ts";
-import { hidePost, isPostHideable, showPost, togglePost } from "./handlers/imagePostHandler.ts";
+import { togglePost } from "./handlers/imagePostHandler.ts";
 import config from './config.ts';
 import { sendE621Embed } from "./commands/booru.ts";
 import { sendValorantFixtureEmbed } from "./commands/valorant.ts";
@@ -10,98 +10,84 @@ import { sendShowEmbed } from "./commands/frinkiac.ts";
 import { fetchQuote } from "./commands/stock.ts";
 import { fetchMovie } from "./commands/tmdb.ts";
 import { sendCryptoEmbed } from "./commands/crypto.ts";
-import { logInteraction } from "./commands/lib/log.ts";
 import { GlobalCommandSchemas } from './commands/schemas/index.ts';
 import { updatePage } from "./handlers/paginationHandler.ts";
 import { updateTimerange } from "./handlers/timerangeHandler.ts";
 
-const client = new Client();
+class TangledClient extends Client {
+    @event() ready() {
+        console.log(`Ready - ${client.user?.tag}`);
+    }
 
-client.on('ready', async () => {
-    console.log(`Ready - ${client.user?.tag}`);
+    @slash() async nfl(interaction: SlashCommandInteraction) {
+        await sendNFLEmbed(interaction)
+            .catch(err => console.log(err));
+    }
 
-    // const id = client.applicationID || '';
+    @slash() async reddit(interaction: SlashCommandInteraction) {
+        await sendRedditEmbed(interaction)
+            .catch(err => console.log(err));
+    }
 
-    // await client.rest.api.applications[id].commands.put(GlobalCommandSchemas);
-    // console.log(`Synced ${GlobalCommandSchemas.length} slash commands with Discord`);
-});
+    @slash() async e621(interaction: SlashCommandInteraction) {
+        await sendE621Embed(interaction)
+            .catch(err => console.log(err));
+    }
 
-client.on('interactionCreate', async (interaction: Interaction) => {
-    if (interaction.type === InteractionType.APPLICATION_COMMAND && interaction.data) {
-        const slashInteraction = interaction as SlashCommandInteraction;
+    @slash() async valorant(interaction: SlashCommandInteraction) {
+        await sendValorantFixtureEmbed(interaction)
+            .catch(err => console.log(err));
+    }
 
-        try {
-            switch (slashInteraction.data.name) {
-                case 'nfl':
-                    await sendNFLEmbed(slashInteraction);
-                    break;
-                case 'reddit':
-                    await sendRedditEmbed(slashInteraction);
-                    break;
-                case 'e621':
-                    await sendE621Embed(slashInteraction);
-                    break;
-                case 'valorant':
-                    await sendValorantFixtureEmbed(slashInteraction);
-                    break;
-                case 'isthis':
-                    await generateIsThisImage(slashInteraction);
-                    break;
-                case 'show':
-                    await sendShowEmbed(slashInteraction);
-                    break;
-                case 'stock':
-                    await fetchQuote(slashInteraction);
-                    break;
-                case 'movie':
-                    await fetchMovie(slashInteraction);
-                    break;
-                case 'crypto':
-                    await sendCryptoEmbed(slashInteraction);
-                    break;
-                default:
-                    break;
+    @slash() async isthis(interaction: SlashCommandInteraction) {
+        await generateIsThisImage(interaction)
+            .catch(err => console.log(err));
+    }
+
+    @slash() async show(interaction: SlashCommandInteraction) {
+        await sendShowEmbed(interaction)
+            .catch(err => console.log(err));
+    }
+
+    @slash() async stock(interaction: SlashCommandInteraction) {
+        await fetchQuote(interaction)
+            .catch(err => console.log(err));
+    }
+
+    @slash() async movie(interaction: SlashCommandInteraction) {
+        await fetchMovie(interaction)
+            .catch(err => console.log(err));
+    }
+
+    @slash() async crypto(interaction: SlashCommandInteraction) {
+        await sendCryptoEmbed(interaction)
+            .catch(err => console.log(err));
+    }
+
+    @event() async interactionCreate(interaction: MessageComponentInteraction) {
+        if (interaction.type === InteractionType.MESSAGE_COMPONENT && interaction.data) {
+            const { custom_id: customId } = interaction.data;
+    
+            try {
+                if (customId.startsWith('hideable_')) {
+                    await togglePost(interaction);
+                }
+                
+                if (customId.startsWith('pageable_')) {
+                    await updatePage(interaction);
+                }
+    
+                if (customId.startsWith('timerange_')) {
+                    await updateTimerange(interaction);
+                }
+            } catch (err) {
+                // console.log(componentInteraction);
+                console.log(err);
             }
-        } catch (err) {
-            // console.log(slashInteraction);
-            console.log(err);
         }
     }
+}
 
-    // Component Responses
-    if (interaction.type === InteractionType.MESSAGE_COMPONENT && interaction.data) {
-        const componentInteraction = interaction as MessageComponentInteraction;
-        const { custom_id: customId } = componentInteraction.data;
-
-        try {
-            if (customId.startsWith('hideable_')) {
-                await togglePost(componentInteraction);
-            }
-            
-            if (customId.startsWith('pageable_')) {
-                await updatePage(componentInteraction);
-            }
-
-            if (customId.startsWith('timerange_')) {
-                await updateTimerange(componentInteraction);
-            }
-        } catch (err) {
-            // console.log(componentInteraction);
-            console.log(err);
-        }
-    }
-});
-
-client.on('messageReactionAdd', async (reaction, user) => {
-    if (isPostHideable(reaction.message.id)) {
-        await hidePost(reaction, user);
-    }
-});
-
-client.on('messageReactionRemove', async (reaction, user) => {
-    if (isPostHideable(reaction.message.id)) {
-        await showPost(reaction, user);
-    }
-});
+const client = new TangledClient();
 
 client.connect(config.discord.token, Intents.NonPrivileged);
