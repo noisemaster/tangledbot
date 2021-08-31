@@ -77,11 +77,19 @@ export const sendE621Embed = async (interaction: SlashCommandInteraction) => {
     embed.addField('ID', post.id, true);
     embed.addField('Score', post.score.total, true);
 
-    embed.addField(
-        post.tags.artist.length === 1 ? 'Artist' : 'Artists',
-        post.tags.artist.length === 1 ? post.tags.artist[0] : post.tags.artist.join(', '),
-        true
-    );
+    if (post.tags.artist.length > 0) {
+        embed.addField(
+            post.tags.artist.length === 1 ? 'Artist' : 'Artists',
+            post.tags.artist.length === 1 ? post.tags.artist[0] : post.tags.artist.join(', '),
+            true
+        );
+    } else {
+        embed.addField(
+            'Artist',
+            'Unknown',
+            true
+        );
+    }
 
     embed.setDescription(`[Post Link](https://e621.net/posts/${post.id})`);
     embed.setImage({ url: post.file.url });
