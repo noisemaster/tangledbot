@@ -1,5 +1,5 @@
-import { Client, event, Intents, InteractionType, MessageComponentInteraction, slash, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
-import { sendNFLEmbed } from "./commands/nfl.ts";
+import { Client, event, Intents, InteractionType, MessageComponentInteraction, slash, SlashCommandInteraction, subslash } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
+import { sendNFLEmbed, sendNFLGameDetails } from "./commands/nfl.ts";
 import { sendRedditEmbed } from "./commands/reddit.ts";
 import { togglePost } from "./handlers/imagePostHandler.ts";
 import config from './config.ts';
@@ -19,8 +19,13 @@ class TangledClient extends Client {
         console.log(`Ready - ${client.user?.tag}`);
     }
 
-    @slash() async nfl(interaction: SlashCommandInteraction) {
+    @subslash('nfl', 'this-week') async nflThisWeek(interaction: SlashCommandInteraction) {
         await sendNFLEmbed(interaction)
+            .catch(err => console.log(err));
+    }
+
+    @subslash('nfl', 'details') async nflGameDetails(interaction: SlashCommandInteraction) {
+        await sendNFLGameDetails(interaction)
             .catch(err => console.log(err));
     }
 

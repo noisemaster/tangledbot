@@ -1,4 +1,4 @@
-import { SlashCommandOptionType, SlashCommandPartial } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
+import { SlashCommandOptionType, SlashCommandPartial } from "https://deno.land/x/harmony@v2.1.3/mod.ts";
 
 export const StockCommandSchema: SlashCommandPartial = {
     name: "stock",

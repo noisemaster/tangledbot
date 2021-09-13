@@ -1,5 +1,5 @@
-import { Embed, InteractionResponseType, MessageComponentInteraction, MessageComponentOption, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.0.0-rc2/mod.ts'
-import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/webhook.ts";
+import { Embed, InteractionResponseType, MessageComponentInteraction, MessageComponentOption, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
+import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.1.3/src/structures/webhook.ts";
 import config from '../config.ts';
 import { generatePageButtons, Pageable, paginationPost, setPageablePost } from "../handlers/paginationHandler.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";

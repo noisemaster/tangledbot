@@ -1,5 +1,5 @@
-import { Interaction, Message, TextChannel, User } from "https://deno.land/x/harmony@v2.0.0-rc2/mod.ts";
-import { WebhookMessageOptions } from "https://deno.land/x/harmony@v2.0.0-rc2/src/structures/webhook.ts";
+import { Interaction, Message, TextChannel, User } from "https://deno.land/x/harmony@v2.1.3/mod.ts";
+import { WebhookMessageOptions } from "https://deno.land/x/harmony@v2.1.3/src/structures/webhook.ts";
 
 /**
  * Stripped down replacement for the currently broken interaction.send function
