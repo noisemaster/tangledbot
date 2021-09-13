@@ -95,21 +95,28 @@ export const sendNFLGameDetails = async (interaction: SlashCommandInteraction) =
     const homeTeam = game.competitions[0].competitors.find((team: {homeAway: string}) => team.homeAway === 'home');
 
     const selectedTeamObj = homeTeam.team.abbreviation.toLowerCase() === selectedTeam ? homeTeam : visitingTeam;
+    const gameDate = Date.parse(game.date);
+    const timeString = `<t:${gameDate.valueOf()/1000}>`;
+
     console.log(selectedTeamObj.team.color);
 
     const embed = new Embed({
         title: game.name,
         fields: [
             {
+                name: 'Game Start Time',
+                value: timeString,
+            },
+            {
                 name: 'Score',
                 value: `${visitingTeam.team.abbreviation} ${visitingTeam.score} - ${homeTeam.team.abbreviation} ${homeTeam.score}`,
                 inline: true,
             },
-            {
+            ...(events.length > 0 ? [{
                 name: 'Recent Events',
                 value: events.map(x => `**${x.gameTime} - ${x.type}**\n${x.text}`).join('\n\n'),
                 inline: false
-            }
+            }] : [])
         ],
         color: parseInt(selectedTeamObj.team.color, 16)
     });
