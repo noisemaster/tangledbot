@@ -1,6 +1,13 @@
 import { Embed, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
 import { EmbedField } from "https://deno.land/x/harmony@v2.1.3/src/types/channel.ts";
 import { sub, differenceInDays } from "https://deno.land/x/date_fns@v2.15.0/index.js";
+import { teams } from "../nfl/teams.ts";
+
+interface parsedEvents {
+    gameTime: string,
+    type: string,
+    text: string,
+}
 
 export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
     const request = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
@@ -54,3 +61,85 @@ export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE
     });
 };
+
+export const sendNFLGameDetails = async (interaction: SlashCommandInteraction) => {
+    const subOptions = interaction.data.options[0];
+    const teamOption = subOptions.options!.find(option => option.name === 'team');
+    const selectedTeam: string = teamOption ? teamOption.value.trim().toLowerCase() : '';
+
+    await interaction.respond({
+        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE,
+        ephemeral: true,
+    });
+
+    if (!teams.map((x: any) => x.abbr).includes(selectedTeam)) {
+        console.log(teams.map((x: any) => x.abbr))
+        await interaction.send('Team not found')
+        return;
+    }
+
+    const request = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
+    const scoreboard = await request.json();
+
+    const game = scoreboard.events.find((event: any) => {
+        return !!event.competitions[0].competitors.find(({team}: any) => team.abbreviation.toLowerCase() === selectedTeam)
+    });
+    
+    if (!game) {
+        await interaction.send('Game not found')
+        return
+    }
+
+    const events = await getGameEvents(game.id).then(results => results.reverse().slice(0, 5));
+    const visitingTeam = game.competitions[0].competitors.find((team: {homeAway: string}) => team.homeAway === 'away');
+    const homeTeam = game.competitions[0].competitors.find((team: {homeAway: string}) => team.homeAway === 'home');
+
+    const selectedTeamObj = homeTeam.team.abbreviation.toLowerCase() === selectedTeam ? homeTeam : visitingTeam;
+    console.log(selectedTeamObj.team.color);
+
+    const embed = new Embed({
+        title: game.name,
+        fields: [
+            {
+                name: 'Score',
+                value: `${visitingTeam.team.abbreviation} ${visitingTeam.score} - ${homeTeam.team.abbreviation} ${homeTeam.score}`,
+                inline: true,
+            },
+            {
+                name: 'Recent Events',
+                value: events.map(x => `**${x.gameTime} - ${x.type}**\n${x.text}`).join('\n\n'),
+                inline: false
+            }
+        ],
+        color: parseInt(selectedTeamObj.team.color, 16)
+    });
+    
+    await interaction.send({
+        embeds: [embed]
+    });
+};
+
+const getGameEvents = async (espnId: string) => {
+    const eventUrl = `https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/${espnId}/competitions/${espnId}/plays?limit=500`;
+    const events: parsedEvents[] = [];
+
+    const eventRequest = await fetch(eventUrl);
+    const rawEvents = await eventRequest.json(); 
+
+    for (let event of rawEvents.items) {
+        let gameTime = `Quarter ${event.period.number}`;
+        if (event.period.number === 0) {
+            gameTime = 'Pre Game';
+        } else if (event.period.number > 4) {
+            gameTime = 'Overtime';
+        }
+
+        events.push({
+            gameTime,
+            text: event.text,
+            type: event.type.text,
+        })
+    }
+    
+    return events;
+}

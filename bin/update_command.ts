@@ -1,8 +1,8 @@
 import config from '../config.ts';
 import {NFLCommandSchema as commandRequest} from '../commands/schemas/nfl.ts';
 
-// const url = `https://discord.com/api/v8/applications/${config.discord.appID}/commands`;
-const url = `https://discord.com/api/v8/applications/${config.discord.appID}/guilds/${config.discord.testingGuildID}/commands`;
+const url = `https://discord.com/api/v8/applications/${config.discord.appID}/commands`;
+// const url = `https://discord.com/api/v8/applications/${config.discord.appID}/guilds/${config.discord.testingGuildID}/commands`;
 
 const headers = {
     "Authorization": `Bot ${config.discord.token}`,
