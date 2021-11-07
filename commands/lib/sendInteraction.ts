@@ -40,3 +40,17 @@ export const sendInteraction = async (interaction: Interaction, payload: Webhook
     await res.mentions.fromPayload(rawData)
     return res;
 }
+
+/**
+ * Callback response for autocompletes
+ */
+ export const autoCompleteCallback = async (interaction: Interaction, choices: any[]) => {
+    const callback = interaction.client.rest.api.interactions[interaction.id][interaction.token].callback;
+
+    let rawData: any = {
+        type: 8,
+        data: {choices}
+    };
+
+    await callback.post(rawData);
+}

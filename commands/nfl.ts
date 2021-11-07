@@ -1,7 +1,11 @@
-import { Embed, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
+import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
 import { EmbedField } from "https://deno.land/x/harmony@v2.1.3/src/types/channel.ts";
 import { sub, differenceInDays } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { teams } from "../nfl/teams.ts";
+
+// @deno-types="https://deno.land/x/fuse@v6.4.1/dist/fuse.d.ts"
+import Fuse from 'https://deno.land/x/fuse@v6.4.1/dist/fuse.esm.min.js'
+import { autoCompleteCallback } from "./lib/sendInteraction.ts";
 
 interface parsedEvents {
     gameTime: string,
@@ -72,12 +76,6 @@ export const sendNFLGameDetails = async (interaction: SlashCommandInteraction) =
         ephemeral: true,
     });
 
-    if (!teams.map((x: any) => x.abbr).includes(selectedTeam)) {
-        console.log(teams.map((x: any) => x.abbr))
-        await interaction.send('Team not found')
-        return;
-    }
-
     const request = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
     const scoreboard = await request.json();
 
@@ -125,6 +123,26 @@ export const sendNFLGameDetails = async (interaction: SlashCommandInteraction) =
         embeds: [embed]
     });
 };
+
+export const handleTeamAutocomplete = async (interaction: MessageComponentInteraction) => {
+    const interactionData: any = interaction.data;
+    const detailsOption = interactionData.options.find((option: any) => option.name === 'details');
+    const searchTeamOption: any = detailsOption ? detailsOption.options.find((option: any) => option.name === 'team') : null;
+    const searchTeam: string = searchTeamOption ? searchTeamOption.value : '';
+
+    const fuse = new Fuse(teams, {
+        keys: ['name', 'abbr']
+    });
+
+    const searchResults = fuse.search(searchTeam);
+
+    const formattedResults = searchResults.map(results => ({
+        name: results.item.name,
+        value: results.item.espnAbbr
+    })).slice(0, 25);
+
+    await autoCompleteCallback(interaction, formattedResults);
+}
 
 const getGameEvents = async (espnId: string) => {
     const eventUrl = `https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/${espnId}/competitions/${espnId}/plays?limit=500`;

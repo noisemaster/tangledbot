@@ -1,5 +1,5 @@
 import { Client, event, Intents, InteractionType, MessageComponentInteraction, slash, SlashCommandInteraction, subslash } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
-import { sendNFLEmbed, sendNFLGameDetails } from "./commands/nfl.ts";
+import { handleTeamAutocomplete, sendNFLEmbed, sendNFLGameDetails } from "./commands/nfl.ts";
 import { sendRedditEmbed } from "./commands/reddit.ts";
 import { togglePost } from "./handlers/imagePostHandler.ts";
 import config from './config.ts';
@@ -70,25 +70,32 @@ class TangledClient extends Client {
     }
 
     @event() async interactionCreate(interaction: MessageComponentInteraction) {
-        if (interaction.type === InteractionType.MESSAGE_COMPONENT && interaction.data) {
-            const { custom_id: customId } = interaction.data;
-    
-            try {
-                if (customId.startsWith('hideable_')) {
-                    await togglePost(interaction);
+        try {
+            if (interaction.type === InteractionType.MESSAGE_COMPONENT && interaction.data) {
+                const { custom_id: customId } = interaction.data;
+        
+                    if (customId.startsWith('hideable_')) {
+                        await togglePost(interaction);
+                    }
+                    
+                    if (customId.startsWith('pageable_')) {
+                        await updatePage(interaction);
+                    }
+        
+                    if (customId.startsWith('timerange_')) {
+                        await updateTimerange(interaction);
+                    }
+            //@ts-ignore Autocomplete Interaction Type
+            } else if (interaction.type === 4) {
+                const interactionData: any = interaction.data;
+
+                if (interactionData.name === 'nfl') {
+                    await handleTeamAutocomplete(interaction);
                 }
-                
-                if (customId.startsWith('pageable_')) {
-                    await updatePage(interaction);
-                }
-    
-                if (customId.startsWith('timerange_')) {
-                    await updateTimerange(interaction);
-                }
-            } catch (err) {
-                // console.log(componentInteraction);
-                console.log(err);
             }
+        } catch (err) {
+            // console.log(interaction);
+            console.log(err);
         }
     }
 }

@@ -15,9 +15,11 @@ export const NFLCommandSchema: SlashCommandPartial = {
             description: 'Get details for a team\'s game',
             options: [{
                 name: "team",
-                description: "Team abbreviation | (WSH = Washington Football Team)",
+                description: "Team name or abbreviation",
                 type: SlashCommandOptionType.STRING,
                 required: true,
+                // @ts-ignore Experimental autocomplete option
+                autocomplete: true
             }]
         }
     ]
