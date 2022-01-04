@@ -1,4 +1,4 @@
-import { Embed, InteractionResponseType, MessageComponentInteraction, MessageComponentOption, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
+import { Embed, EmbedField, InteractionResponseType, MessageComponentInteraction, MessageComponentOption, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
 import { AllWebhookMessageOptions } from "https://deno.land/x/harmony@v2.1.3/src/structures/webhook.ts";
 import config from '../config.ts';
 import { generatePageButtons, Pageable, paginationPost, setPageablePost } from "../handlers/paginationHandler.ts";
@@ -44,7 +44,7 @@ export const fetchMovie = async (interaction: SlashCommandInteraction) => {
     if (results.length > 0) {
         const [movie] = results;
         const internalMessageId = v4.generate();
-        const embed = generateTMDBEmbed(movie);
+        const embed = await generateTMDBEmbed(movie);
 
         const pageData: paginationPost<TMDBResult> = {
             pages: results,
@@ -91,7 +91,7 @@ const tmdbPageHandler = async (interaction: MessageComponentInteraction, pageDat
     }
     
     const page = pageData.pages[pageData.currentPage - 1];
-    const newEmbed = generateTMDBEmbed(page);
+    const newEmbed = await generateTMDBEmbed(page);
     const newComponents = [
         ...generatePageButtons('tmdb', pageData, messageId),
     ]
@@ -111,7 +111,28 @@ const tmdbPageHandler = async (interaction: MessageComponentInteraction, pageDat
     setPageablePost(messageId, pageData);
 }
 
-const generateTMDBEmbed = (result: TMDBResult) => {
+const generateTMDBEmbed = async (result: TMDBResult) => {
+    const fullDetails = await fetch(`https://api.themoviedb.org/3/movie/${result.id}?api_key=${config.tmdb.apiKey}`)
+        .then(res => res.json());
+
+    const possibleOptionalFields: EmbedField[] = [];
+
+    if (fullDetails.production_companies.length > 0) {
+        possibleOptionalFields.push({
+            name: 'Production Companies',
+            value: fullDetails.production_companies.map((x: any) => x.name).join('\n'),
+            inline: true,
+        });
+    }
+
+    if (fullDetails.genres.length > 0) {
+        possibleOptionalFields.push({
+            name: 'Genres',
+            value: fullDetails.genres.map((x: any) => x.name).join('\n'),
+            inline: true,
+        });
+    }
+
     const embed = new Embed({
         title: result.title === result.original_title ? result.title : `${result.title} (${result.original_title})`,
         url: `https://www.themoviedb.org/movie/${result.id}`,
@@ -120,6 +141,14 @@ const generateTMDBEmbed = (result: TMDBResult) => {
         image: {
             url: result.backdrop_path ? `https://image.tmdb.org/t/p/original/${result.backdrop_path}` : `https://image.tmdb.org/t/p/original/${result.poster_path}`
         },
+        fields: [
+            {
+                name: 'Runtime',
+                value: fullDetails.runtime > 60 ? `${Math.floor(fullDetails.runtime / 60)}h ${fullDetails.runtime % 60}m` : `${fullDetails.runtime}m`,
+                inline: false,
+            },
+            ...possibleOptionalFields
+        ],
         footer: {
             text: 'via themoviedb.org'
         },
