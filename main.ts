@@ -1,4 +1,4 @@
-import { Client, event, Intents, InteractionType, MessageComponentInteraction, slash, SlashCommandInteraction, subslash } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
+import { Client, event, Intents, InteractionType, MessageComponentInteraction, slash, SlashCommandInteraction, subslash } from 'https://deno.land/x/harmony@v2.5.0/mod.ts'
 import { handleTeamAutocomplete, sendNFLEmbed, sendNFLGameDetails } from "./commands/nfl.ts";
 import { sendRedditEmbed } from "./commands/reddit.ts";
 import { togglePost } from "./handlers/imagePostHandler.ts";

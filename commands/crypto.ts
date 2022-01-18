@@ -1,6 +1,6 @@
-import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction, MessageAttachment, MessageComponentOption } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
+import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction, MessageAttachment, MessageComponentOption } from 'https://deno.land/x/harmony@v2.5.0/mod.ts'
 // import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
-// import { MessageAttachment } from "https://deno.land/x/harmony@v2.1.3/mod.ts";
+// import { MessageAttachment } from "https://deno.land/x/harmony@v2.5.0/mod.ts";
 import { Pageable, paginationPost, setPageablePost, generatePageButtons, getPageablePost } from "../handlers/paginationHandler.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
 import { generateTimerangeButtons, getTimerangePost, HasTimerange, setTimerangePost, timerangePost } from "../handlers/timerangeHandler.ts";

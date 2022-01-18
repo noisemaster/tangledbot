@@ -1,5 +1,5 @@
-import { Embed, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
-import { EmbedField } from "https://deno.land/x/harmony@v2.1.3/src/types/channel.ts";
+import { Embed, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.5.0/mod.ts'
+import { EmbedField } from "https://deno.land/x/harmony@v2.5.0/src/types/channel.ts";
 import { sub, differenceInDays, format, isAfter } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 
 // Format shared between League and Valorant's esport sites

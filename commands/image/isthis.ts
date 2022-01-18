@@ -1,4 +1,4 @@
-import { InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
+import { InteractionResponseType, MessageAttachment, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.5.0/mod.ts'
 import { Image } from 'https://deno.land/x/imagescript@1.1.16/mod.ts';
 import { Buffer } from "https://deno.land/std@0.80.0/node/buffer.ts";
 import { sendInteraction } from "../lib/sendInteraction.ts";
@@ -41,11 +41,9 @@ export const generateIsThisImage = async (interaction: SlashCommandInteraction) 
     });
 
     const encodedImage = await background.encode();
+    const image = new MessageAttachment('isthis.jpg', new Blob([Buffer.from(encodedImage)]));
 
     await interaction.send({
-        file: {
-            name: 'isthis.jpg',
-            blob: new Blob([Buffer.from(encodedImage)])
-        }
+        file: image
     });
 }

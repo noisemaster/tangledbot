@@ -1,4 +1,4 @@
-import { Interaction, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.1.3/mod.ts'
+import { Interaction, InteractionResponseType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.5.0/mod.ts'
 import { encode, addPaddingToBase64url } from "https://deno.land/std@0.85.0/encoding/base64url.ts";
 import { Buffer } from "https://deno.land/std@0.85.0/node/buffer.ts";
 import wrap from 'https://deno.land/x/word_wrap/mod.ts';
