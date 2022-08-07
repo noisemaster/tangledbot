@@ -1,5 +1,5 @@
-import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.5.0/mod.ts'
-import { EmbedField } from "https://deno.land/x/harmony@v2.5.0/src/types/channel.ts";
+import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.6.0/mod.ts'
+import { EmbedField } from "https://deno.land/x/harmony@v2.6.0/src/types/channel.ts";
 import { sub, differenceInDays } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { teams } from "../nfl/teams.ts";
 

@@ -1,4 +1,4 @@
-import { ButtonStyle, Embed, InteractionResponseFlags, InteractionResponseType, MessageComponentInteraction, MessageComponentOption, MessageComponentType } from "https://deno.land/x/harmony@v2.5.0/mod.ts";
+import { ButtonStyle, Embed, InteractionResponseFlags, InteractionResponseType, MessageComponentInteraction, MessageComponentOption, MessageComponentType } from "https://deno.land/x/harmony@v2.6.0/mod.ts";
 
 // custom id structure
 // pagination_[command]_[action = prev|next]

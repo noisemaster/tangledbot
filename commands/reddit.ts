@@ -1,4 +1,4 @@
-import { ButtonStyle, Embed, GuildTextChannel, Interaction, InteractionResponseType, MessageComponentType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.5.0/mod.ts'
+import { ButtonStyle, Embed, GuildTextChannel, Interaction, InteractionResponseType, MessageComponentType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.6.0/mod.ts'
 import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { trim } from "./lib/trim.ts";
