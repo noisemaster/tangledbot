@@ -34,7 +34,7 @@ interface TMDBResult extends Pageable {
     "vote_count": number;
 }
 
-export const fetchMovie = async (bot: Bot, interaction: Interaction) => {
+const fetchMovie = async (bot: Bot, interaction: Interaction) => {
     if (!interaction.data) {
         return;
     }
