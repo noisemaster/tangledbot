@@ -85,21 +85,15 @@ const fetchMovie = async (bot: Bot, interaction: Interaction) => {
                 : []),
         ];
 
-        await bot.helpers.sendFollowupMessage(interaction.token, {
-            type: InteractionResponseTypes.ChannelMessageWithSource,
-            data: {
-                embeds: [embed],
-                components,
-            },
+        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+            embeds: [embed],
+            components,
         });
 
         setPageablePost(internalMessageId, pageData);
     } else {
-        await bot.helpers.sendFollowupMessage(interaction.token, {
-            type: InteractionResponseTypes.UpdateMessage,
-            data: {
-                content: "No movies found",
-            },
+        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+            content: "No movies found",
         });
     }
 };

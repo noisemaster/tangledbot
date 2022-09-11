@@ -86,11 +86,8 @@ export const sendNFLGameDetails = async (bot: Bot, interaction: Interaction) => 
     });
     
     if (!game) {
-        await bot.helpers.sendFollowupMessage(interaction.token, {
-            data: {
-                content: 'Game not found'
-            },
-            type: InteractionResponseTypes.ChannelMessageWithSource
+        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+            content: 'Game not found'
         })
         return
     }
@@ -126,11 +123,8 @@ export const sendNFLGameDetails = async (bot: Bot, interaction: Interaction) => 
         color: parseInt(selectedTeamObj.team.color, 16)
     };
   
-    await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-        data: {
-            embeds: [embed],
-        },
-        type: InteractionResponseTypes.DeferredChannelMessageWithSource
+    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        embeds: [embed]
     });
 };
 

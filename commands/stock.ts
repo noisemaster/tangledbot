@@ -125,14 +125,11 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
         internalMessageId,
     );
 
-    await bot.helpers.sendFollowupMessage(interaction.token, {
-        type: InteractionResponseTypes.ChannelMessageWithSource,
-        data: {
-            ...payload,
-            components: [
-                ...timerangeComponents,
-            ],
-        },
+    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        ...payload,
+        components: [
+            ...timerangeComponents,
+        ],
     });
 
     setTimerangePost(internalMessageId, timerangeData);
