@@ -1,7 +1,6 @@
 import config from './config.ts';
 import { createBot, GatewayIntents, startBot } from 'discordeno/mod.ts';
 import { fastFileLoader } from 'discordeno/plugins/fileloader/mod.ts';
-import { importDirectory } from './helpers/file.ts';
 import { events } from "./events/mod.ts";
 
 const paths = [
