@@ -3,7 +3,8 @@
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { trim } from "./lib/trim.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
-import { Bot, ButtonStyles, Embed, Interaction, InteractionResponseTypes, MessageComponentTypes } from "discordeno/mod.ts";
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, ButtonStyles, Embed, Interaction, InteractionResponseTypes, MessageComponentTypes } from "discordeno/mod.ts";
+import { createCommand } from "./mod.ts";
 
 interface redditPost {
     data: {
@@ -135,3 +136,24 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
         components
     });
 }
+
+createCommand({
+    name: 'reddit',
+    description: 'Fetch a random post from Reddit',
+    type: ApplicationCommandTypes.ChatInput,
+    options: [
+        {
+            name: 'subreddit',
+            description: 'Subreddit to get posts from',
+            type: ApplicationCommandOptionTypes.String,
+            required: true
+        },
+        {
+            name: 'image',
+            description: 'Fetch a random image from the subreddit',
+            required: false,
+            type: ApplicationCommandOptionTypes.Boolean
+        }
+    ],
+    execute: sendRedditEmbed
+})
