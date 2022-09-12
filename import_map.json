@@ -1,5 +1,5 @@
 {
   "imports": {
-    "discordeno/": "https://deno.land/x/discordeno@14.0.0/"
+    "discordeno/": "https://deno.land/x/discordeno@14.0.1/"
   }
 }
