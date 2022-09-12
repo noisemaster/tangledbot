@@ -1,6 +1,7 @@
-import { Bot, ButtonStyles, Embed, Interaction, InteractionResponseTypes, MessageComponentTypes } from 'discordeno/mod.ts';
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, ButtonStyles, Embed, Interaction, InteractionResponseTypes, MessageComponentTypes } from 'discordeno/mod.ts';
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
+import { createCommand } from './mod.ts';
 
 export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
     if (!interaction.data) {
@@ -138,3 +139,18 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
         }]
     });
 }
+
+createCommand({
+    name: 'e621',
+    description: 'Fetch a random image from E621 (sends safe images only outside of NSFW channels)',
+    options: [
+        {
+            name: 'tag',
+            description: 'Set of space separated tags to search for (use _ for tags with spaces)',
+            required: true,
+            type: ApplicationCommandOptionTypes.String
+        }
+    ],
+    execute: sendE621Embed,
+    type: ApplicationCommandTypes.ChatInput
+})
