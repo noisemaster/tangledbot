@@ -128,25 +128,30 @@ export const sendNFLGameDetails = async (bot: Bot, interaction: Interaction) => 
     });
 };
 
-// export const handleTeamAutocomplete = async (interaction: MessageComponentInteraction) => {
-//     const interactionData: any = interaction.data;
-//     const detailsOption = interactionData.options.find((option: any) => option.name === 'details');
-//     const searchTeamOption: any = detailsOption ? detailsOption.options.find((option: any) => option.name === 'team') : null;
-//     const searchTeam: string = searchTeamOption ? searchTeamOption.value : '';
+export const handleTeamAutocomplete = async (bot: Bot, interaction: Interaction) => {
+    const interactionData: any = interaction.data;
+    const detailsOption = interactionData.options.find((option: any) => option.name === 'details');
+    const searchTeamOption: any = detailsOption ? detailsOption.options.find((option: any) => option.name === 'team') : null;
+    const searchTeam: string = searchTeamOption ? searchTeamOption.value : '';
 
-//     const fuse = new Fuse(teams, {
-//         keys: ['name', 'abbr']
-//     });
+    const fuse = new Fuse(teams, {
+        keys: ['name', 'abbr']
+    });
 
-//     const searchResults = fuse.search(searchTeam);
+    const searchResults = fuse.search(searchTeam);
 
-//     const formattedResults = searchResults.map(results => ({
-//         name: results.item.name,
-//         value: results.item.espnAbbr
-//     })).slice(0, 25);
-
-//     await autoCompleteCallback(interaction, formattedResults);
-// }
+    const formattedResults = searchResults.map(results => ({
+        name: results.item.name,
+        value: results.item.espnAbbr
+    })).slice(0, 25);
+    
+    await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+        type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
+        data: {
+            choices: formattedResults
+        }
+    })
+}
 
 const getGameEvents = async (espnId: string) => {
     const eventUrl = `https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/${espnId}/competitions/${espnId}/plays?limit=500`;
