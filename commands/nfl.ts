@@ -13,7 +13,7 @@ interface parsedEvents {
     text: string,
 }
 
-const sendNFLDetails = async (bot: Bot, interaction: Interaction) => {
+const sendNFLScoreboard = async (bot: Bot, interaction: Interaction) => {
     const request = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
     const scoreboard = await request.json();
 
@@ -176,26 +176,14 @@ const getGameEvents = async (espnId: string) => {
 const thisWeekCommand: subCommand = {
     name: 'this-week',
     description: 'Get this week\'s games',
-    execute: async (bot, interaction) => {
-        await bot.helpers.sendInteractionResponse(
-            interaction.id,
-            interaction.token,
-            {
-                type: InteractionResponseTypes.ChannelMessageWithSource,
-                data: {
-                    embeds: [],
-                },
-            }
-        )
-    },
+    execute: sendNFLScoreboard,
     type: ApplicationCommandTypes.Message,
-
 }
 
 const detailsCommand: subCommand = {
     name: 'details',
     description: 'Get details for a team\'s game',
-    execute: sendNFLDetails,
+    execute: sendNFLGameDetails,
     type: ApplicationCommandTypes.Message,
     options: [{
         name: "team",
