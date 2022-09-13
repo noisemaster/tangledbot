@@ -1,10 +1,11 @@
-import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction, MessageAttachment, MessageComponentOption } from 'https://deno.land/x/harmony@v2.6.0/mod.ts'
+// import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction, MessageAttachment, MessageComponentOption } from 'https://deno.land/x/harmony@v2.6.0/mod.ts'
 // import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 // import { MessageAttachment } from "https://deno.land/x/harmony@v2.6.0/mod.ts";
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, Embed, FileContent, Interaction, InteractionCallbackData, InteractionResponseTypes, SelectOption } from 'discordeno/mod.ts';
 import { Pageable, paginationPost, setPageablePost, generatePageButtons, getPageablePost } from "../handlers/paginationHandler.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
 import { generateTimerangeButtons, getTimerangePost, HasTimerange, setTimerangePost, timerangePost } from "../handlers/timerangeHandler.ts";
-import { webhookOptionsWithAttachments } from '../interfaces/webhookOptionsWithAttachments.ts';
+import { createCommand } from "./mod.ts";
 
 interface cgCoin extends Pageable, HasTimerange {
     id: string;
@@ -29,15 +30,15 @@ const coinGeckoTimeRanges = [
 // Should be cached in redis at some point
 let cryptoMap: cgCoin[] = [];
 
-export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
-    const symbolOption = interaction.data.options.find(option => option.name === 'symbol');
-    const symbol: string = symbolOption ? symbolOption.value.toLowerCase() : '';
+export const sendCryptoEmbed = async (bot: Bot, interaction: Interaction) => {
+    const symbolOption = interaction.data!.options!.find(option => option.name === 'symbol');
+    const symbol: string = symbolOption ? String(symbolOption.value).toLowerCase() : '';
 
-    const timeRangeOption = interaction.data.options.find(option => option.name === 'timerange');
-    const timeRange: string = timeRangeOption ? timeRangeOption.value : '1';
+    const timeRangeOption = interaction.data!.options!.find(option => option.name === 'timerange');
+    const timeRange: string = timeRangeOption ? timeRangeOption.value as string : '1';
 
-    await interaction.respond({
-        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE,
+    await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+        type: InteractionResponseTypes.DeferredChannelMessageWithSource,
     });
 
     if (cryptoMap.length === 0) {
@@ -47,7 +48,9 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
     let coinsMatchingSymbol = cryptoMap.filter(coin => coin.symbol.toLowerCase().startsWith(symbol));
 
     if (coinsMatchingSymbol.length === 0) {
-        await interaction.send('No coin found', {});
+        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+            content: 'No coin found'
+        });
         return;
     }
 
@@ -91,10 +94,7 @@ export const sendCryptoEmbed = async (interaction: SlashCommandInteraction) => {
         ...(generateTimerangeButtons('crypto', timerangeData, internalMessageId))
     ]
 
-    await interaction.send({
-        allowedMentions: {
-            users: []
-        },
+    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
         ...embed,
         components
     });
@@ -112,9 +112,9 @@ const fetchCryptoMap = async () => {
     cryptoMap = coinMap;
 }
 
-const cryptoPageHandler = async (interaction: MessageComponentInteraction, pageData: paginationPost<cgCoin>) => {
-    const {custom_id: customId} = interaction.data;
-    const [_componentId, _commandInvoker, action, messageId] = customId.split('_');
+const cryptoPageHandler = async (bot: Bot, interaction: Interaction, pageData: paginationPost<cgCoin>) => {
+    const {customId} = interaction.data!;
+    const [_componentId, _commandInvoker, action, messageId] = customId!.split('_');
 
     console.log(customId);
     
@@ -141,12 +141,9 @@ const cryptoPageHandler = async (interaction: MessageComponentInteraction, pageD
     ]
 
     if (interaction.message) {
-        await interaction.editMessage(
-            interaction.message, {
+        await bot.helpers.editOriginalInteractionResponse(
+            interaction.token, {
                 ...newEmbed,
-                allowed_mentions: {
-                    users: []
-                },
                 components: newComponents,
             }
         );
@@ -156,9 +153,9 @@ const cryptoPageHandler = async (interaction: MessageComponentInteraction, pageD
     setTimerangePost(messageId, timerangeData);
 }
 
-const cryptoTimerangeHandler = async (interaction: MessageComponentInteraction, pageData: timerangePost<cgCoin>) => {
-    const {custom_id: customId} = interaction.data;
-    const [_componentId, _commandInvoker, action, messageId] = customId.split('_');
+const cryptoTimerangeHandler = async (bot: Bot, interaction: Interaction, pageData: timerangePost<cgCoin>) => {
+    const { customId } = interaction.data!;
+    const [_componentId, _commandInvoker, action, messageId] = customId!.split('_');
 
     console.log(customId);
 
@@ -171,12 +168,9 @@ const cryptoTimerangeHandler = async (interaction: MessageComponentInteraction, 
     const timerangeComponents = generateTimerangeButtons('crypto', pageData, messageId);
 
     if (interaction.message) {
-        await interaction.editMessage(
-            interaction.message, {
+        await bot.helpers.editOriginalInteractionResponse(
+            interaction.token, {
                 ...newEmbed,
-                allowed_mentions: {
-                    users: []
-                },
                 components: [
                     ...pageComponents,
                     ...timerangeComponents
@@ -211,16 +205,16 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
     const weekChange = Math.abs(price * (weekChangePercent / 100));
     const weekDiffSymbol = weekChangePercent > 0 ? '<:small_green_triangle:851144859103395861>' : '🔻';
 
-    const embed = new Embed({
+    const embed: Embed = {
         author: {
-            icon_url: coinData.image.large,
+            iconUrl: coinData.image.large,
             name: `${coin.name} (${coin.symbol.toUpperCase()})`,
             url: `https://www.coingecko.com/en/coins/${coin.id}`
         },
         color: dayDiffColor,
-    });
+    };
 
-    embed.setFields([
+    embed.fields = [
         {
             name: 'Current Price',
             value: `${price}`,
@@ -246,26 +240,30 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
             value: `$${marketCap.toLocaleString()}`,
             inline: false
         }
-    ]);
-    embed.setTimestamp(marketData.last_updated);
-    embed.setFooter(`CoinGecko Rank: ${coinQuoteData.coingecko_rank}`);
+    ];
+    embed.timestamp = marketData.last_updated;
+    embed.footer = {
+        text: `CoinGecko Rank: ${coinQuoteData.coingecko_rank}`
+    };
 
     const image = await fetchChart(coin.id, timeRange).catch(err => {
         console.log(err);
     });
 
-    const payload: webhookOptionsWithAttachments = {
-        embeds: [embed],
-        attachments: []
+    const payload: InteractionCallbackData = {
+        embeds: [embed]
     };
 
     if (image) {
-        const imageAttach = new MessageAttachment(`${coin.id}.png`, image);
+        const imageAttach: FileContent = {
+            name: `${coin.id}.png`,
+            blob: new Blob([image])
+        };
         payload.file = imageAttach;
 
-        embed.setImage({
+        embed.image = {
             url: `attachment://${coin.id}.png`
-        });
+        };
     }
 
     return payload;
@@ -287,10 +285,41 @@ const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array
     return output;
 }
 
-const cryptoPageSelectGenerator = (pages: cgCoin[]): MessageComponentOption[] => {
+const cryptoPageSelectGenerator = (pages: cgCoin[]): SelectOption[] => {
     return pages.slice(0, 25).map((page, index) => ({
         label: page.symbol.toUpperCase(),
         description: page.name,
         value: `${index + 1}`
     }));
 }
+
+createCommand({
+    name: "crypto",
+    description: "Get cryptocurrency information",
+    options: [
+        {
+            name: 'symbol',
+            description: 'Coin Symbol',
+            type: ApplicationCommandOptionTypes.String,
+            required: true
+        },
+        {
+            name: 'timerange',
+            description: 'Chart time range',
+            type: ApplicationCommandOptionTypes.String,
+            required: false,
+            choices: [
+                { name: "1 Day", value: "1" },
+                { name: "7 Days", value: "7" },
+                { name: "2 Weeks", value: "14" },
+                { name: "1 Month", value: "30" },
+                { name: "3 Months", value: "90" },
+                { name: "6 Months", value: "180" },
+                { name: "1 Year", value: "365" },
+                { name: "Max", value: "max" }
+            ]
+        }
+    ],
+    type: ApplicationCommandTypes.ChatInput,
+    execute: sendCryptoEmbed,
+})
