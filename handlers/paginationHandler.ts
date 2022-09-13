@@ -1,4 +1,4 @@
-import { Bot, Interaction, ButtonStyles, MessageComponents, MessageComponentTypes, SelectOption, Embed, InteractionResponseTypes } from "https://deno.land/x/discordeno@14.0.0/mod.ts";
+import { Bot, Interaction, ButtonStyles, MessageComponents, MessageComponentTypes, SelectOption, Embed, InteractionResponseTypes } from "discordeno/mod.ts";
 
 // custom id structure
 // pagination_[command]_[action = prev|next]
