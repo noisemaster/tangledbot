@@ -192,7 +192,7 @@ const generateStockEmbed = async (
         // const imageAttach = (, image);
         const imageAttach: FileContent = {
             name: `${symbol}.png`,
-            blob: new Blob([image]),
+            blob: new Blob([image.buffer])
         };
         payload.file = imageAttach;
 

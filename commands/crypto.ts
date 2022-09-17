@@ -257,7 +257,7 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
     if (image) {
         const imageAttach: FileContent = {
             name: `${coin.id}.png`,
-            blob: new Blob([image])
+            blob: new Blob([image.buffer])
         };
         payload.file = imageAttach;
 
