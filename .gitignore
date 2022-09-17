@@ -28,3 +28,4 @@ config.ts
 *.db
 
 debug
+fileloader.ts

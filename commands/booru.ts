@@ -1,24 +1,26 @@
-import { ButtonStyle, Embed, GuildTextChannel, InteractionResponseType, MessageComponentType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.6.0/mod.ts'
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, ButtonStyles, Embed, Interaction, InteractionResponseTypes, MessageComponentTypes } from 'discordeno/mod.ts';
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
-import { sendInteraction } from "./lib/sendInteraction.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
+import { createCommand } from './mod.ts';
 
-export const sendE621Embed = async (interaction: SlashCommandInteraction) => {
+export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
     if (!interaction.data) {
         return;
     }
 
-    const tagOption = interaction.data.options.find(option => option.name === 'tag');
-    const tags: string = tagOption ? tagOption.value : '';
+    const tagOption = interaction.data!.options!.find(option => option.name === 'tag');
+    const tags: string = tagOption ? tagOption.value as string : '';
     let queryTags = tags.replace(/\s/g, '+');
 
-    if (interaction.channel && !(interaction.channel as GuildTextChannel).nsfw) {
+    const channel = await bot.helpers.getChannel(interaction.channelId!);
+
+    if (!channel.nsfw) {
         queryTags += '+rating:safe';
     }
 
     try {
-        await interaction.respond({
-            type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE,
+        await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+            type: InteractionResponseTypes.DeferredChannelMessageWithSource,
         });
     } catch (error) {
         console.error(error);
@@ -32,26 +34,33 @@ export const sendE621Embed = async (interaction: SlashCommandInteraction) => {
 
     if (posts.length === 0) {
         // await interaction.send(`Nothing found for ${tags}`);
-        await interaction.send(`Nothing found for ${tags}`, {});
+        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+            content: `Nothing found for ${tags}`
+        });
         return;
     }
 
     const randomIndex = Math.floor(Math.random() * posts.length);
     const post = posts[randomIndex];
-    const embed = new Embed();
+    const embed: Embed = {
+        author: {
+            name: interaction.user.username,
+            iconUrl: bot.helpers.getAvatarURL(interaction.user.id, interaction.user.discriminator, {
+                size: 256,
+                avatar: interaction.user.avatar,
+                format: 'png'
+            })
+        },
+        fields: [],
+    };
 
     if (post.rating === "s") {
-		embed.setColor(0x009e51);
+		embed.color = 0x009e51;
 	} else if (post.rating === "q") {
-		embed.setColor(0xf9db43);
+		embed.color = 0xf9db43;
 	} else {
-		embed.setColor(0xf40804);
+		embed.color = 0xf40804;
 	}
-
-    embed.setAuthor({
-        name: interaction.user.username,
-        icon_url: interaction.user.avatarURL('png', 256)
-    });
 
     let postTags = post.tags.character.join(' ') + '\n' +
         post.tags.copyright.join(' ') + '\n' +
@@ -73,28 +82,28 @@ export const sendE621Embed = async (interaction: SlashCommandInteraction) => {
         postTags = `${tagCount} Tags`;
     }
 
-    embed.addField('Tags', postTags.replace(/_/g, '\\_'), false);
-    embed.addField('ID', post.id, true);
-    embed.addField('Score', post.score.total, true);
+    embed.fields!.push({name: 'Tags', value: postTags.replace(/_/g, '\\_'), inline: false});
+    embed.fields!.push({name: 'ID', value: post.id, inline: true});
+    embed.fields!.push({name: 'Score', value: post.score.total, inline: true});
 
     if (post.tags.artist.length > 0) {
-        embed.addField(
-            post.tags.artist.length === 1 ? 'Artist' : 'Artists',
-            post.tags.artist.length === 1 ? post.tags.artist[0] : post.tags.artist.join(', '),
-            true
-        );
+        embed.fields!.push({
+            name: post.tags.artist.length === 1 ? 'Artist' : 'Artists',
+            value: post.tags.artist.length === 1 ? post.tags.artist[0] : post.tags.artist.join(', '),
+            inline: true
+        });
     } else {
-        embed.addField(
-            'Artist',
-            'Unknown',
-            true
-        );
+        embed.fields!.push({
+            name: 'Artist',
+            value: 'Unknown',
+            inline: true
+        });
     }
 
-    embed.setDescription(`[Post Link](https://e621.net/posts/${post.id})`);
-    embed.setImage({ url: post.file.url });
-    embed.setFooter({ text: `Image ${randomIndex + 1}/${posts.length}` });
-    embed.setTimestamp(post.created_at);
+    embed.description = `[Post Link](https://e621.net/posts/${post.id})`;
+    embed.image = { url: post.file.url };
+    embed.footer = { text: `Image ${randomIndex + 1}/${posts.length}` };
+    embed.timestamp = post.created_at;
 
     // const messageResponse = await interaction.send({
     //     embed: embed,
@@ -114,19 +123,34 @@ export const sendE621Embed = async (interaction: SlashCommandInteraction) => {
         visible: true
     });
 
-    await interaction.send({
+    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
         embeds: [embed],
         allowedMentions: {
             users: []
         },
         components: [{
-            type: MessageComponentType.ActionRow,
+            type: MessageComponentTypes.ActionRow,
             components: [{
-                type: MessageComponentType.Button,
-                style: ButtonStyle.SECONDARY,
+                type: MessageComponentTypes.Button,
+                style: ButtonStyles.Secondary,
                 label: 'Hide Image',
-                customID: `hideable_${internalMessageId}`,
+                customId: `hideable_${internalMessageId}`,
             }]
         }]
     });
 }
+
+createCommand({
+    name: 'e621',
+    description: 'Fetch a random image from E621 (sends safe images only outside of NSFW channels)',
+    options: [
+        {
+            name: 'tag',
+            description: 'Set of space separated tags to search for (use _ for tags with spaces)',
+            required: true,
+            type: ApplicationCommandOptionTypes.String
+        }
+    ],
+    execute: sendE621Embed,
+    type: ApplicationCommandTypes.ChatInput
+})

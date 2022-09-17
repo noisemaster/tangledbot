@@ -1,9 +1,10 @@
-import { ButtonStyle, Embed, GuildTextChannel, Interaction, InteractionResponseType, MessageComponentType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.6.0/mod.ts'
-import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
+// import { ButtonStyle, Embed, GuildTextChannel, Interaction, InteractionResponseType, MessageComponentType, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.6.0/mod.ts'
+// import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { trim } from "./lib/trim.ts";
-import { sendInteraction } from "./lib/sendInteraction.ts";
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, ButtonStyles, Embed, Interaction, InteractionResponseTypes, MessageComponentTypes } from "discordeno/mod.ts";
+import { createCommand } from "./mod.ts";
 
 interface redditPost {
     data: {
@@ -22,20 +23,20 @@ interface redditPost {
     }
 }
 
-export const sendRedditEmbed = async (interaction: SlashCommandInteraction) => {
+export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
     if (!interaction.data) {
         return;
     }
 
-    const subredditOption = interaction.data.options.find(option => option.name === 'subreddit');
-    const isImageOption = interaction.data.options.find(option => option.name === 'image');
+    const subredditOption = interaction.data!.options!.find(option => option.name === 'subreddit');
+    const isImageOption = interaction.data!.options!.find(option => option.name === 'image');
 
-    const subreddit: string = subredditOption ? subredditOption.value : '';
-    const isImage: boolean = isImageOption ? isImageOption.value : false;
+    const subreddit: string = subredditOption ? subredditOption.value as string : '';
+    const isImage: boolean = isImageOption ? isImageOption.value as boolean : false;
 
     try {
-        await interaction.respond({
-            type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE,
+        await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+            type: InteractionResponseTypes.DeferredChannelMessageWithSource,
         });
     } catch (error) {
         console.error(error);
@@ -55,7 +56,9 @@ export const sendRedditEmbed = async (interaction: SlashCommandInteraction) => {
     );
 
     if (posts.length === 0) {
-        await interaction.send('No posts found', {});
+        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+            content: 'No posts found'
+        });
         return;
     }
 
@@ -63,9 +66,8 @@ export const sendRedditEmbed = async (interaction: SlashCommandInteraction) => {
     const post = posts[randomIndex].data;
 
     const isPostImage = isImage || post.url.includes('.jpg') || post.url.includes('.png') || post.url.includes('.jpeg') || post.url.includes('.gif')
-    const postDate = format(new Date(post.created_utc * 1000), "yyyy-MM-dd'T'HH:mm:ssxxx", undefined);
 
-    const postEmbed = new Embed({
+    const postEmbed: Embed = {
         title: post.title,
         url: post.url,
         author: {
@@ -82,17 +84,21 @@ export const sendRedditEmbed = async (interaction: SlashCommandInteraction) => {
         footer: {
             text: `Post ${randomIndex + 1}/${posts.length}`,
         },
-        timestamp: postDate
-    });
+        timestamp: post.created_utc * 1000
+    };
 
     if (isPostImage) {
-        postEmbed.setImage({
+        postEmbed.image = {
             url: post.url
-        })
+        };
     }
 
-    if (post.over_18 && interaction.channel && !(interaction.channel as GuildTextChannel).nsfw) {
-        await interaction.send('This channel is not a NSFW channel', {});
+    const channel = await bot.helpers.getChannel(interaction.channelId!);
+
+    if (post.over_18 && !channel.nsfw) {
+        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+            content: 'This channel is not a NSFW channel'
+        });
         return;
     }
 
@@ -103,10 +109,10 @@ export const sendRedditEmbed = async (interaction: SlashCommandInteraction) => {
         const internalMessageId = v4.generate();
 
         components.push({
-            type: MessageComponentType.ActionRow,
+            type: MessageComponentTypes.ActionRow,
             components: [{
-                type: MessageComponentType.Button,
-                style: ButtonStyle.SECONDARY,
+                type: MessageComponentTypes.Button,
+                style: ButtonStyles.Secondary,
                 label: 'Hide Image',
                 custom_id: `hideable_${internalMessageId}`,
             }]
@@ -122,7 +128,7 @@ export const sendRedditEmbed = async (interaction: SlashCommandInteraction) => {
         });
     }
 
-    await interaction.send({
+    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
         embeds: [postEmbed],
         allowedMentions: {
             users: []
@@ -130,3 +136,24 @@ export const sendRedditEmbed = async (interaction: SlashCommandInteraction) => {
         components
     });
 }
+
+createCommand({
+    name: 'reddit',
+    description: 'Fetch a random post from Reddit',
+    type: ApplicationCommandTypes.ChatInput,
+    options: [
+        {
+            name: 'subreddit',
+            description: 'Subreddit to get posts from',
+            type: ApplicationCommandOptionTypes.String,
+            required: true
+        },
+        {
+            name: 'image',
+            description: 'Fetch a random image from the subreddit',
+            required: false,
+            type: ApplicationCommandOptionTypes.Boolean
+        }
+    ],
+    execute: sendRedditEmbed
+})

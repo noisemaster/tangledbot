@@ -1,15 +1,15 @@
-import { ButtonStyle, Embed, InteractionResponseFlags, InteractionResponseType, MessageComponentInteraction, MessageComponentOption, MessageComponentType } from "https://deno.land/x/harmony@v2.6.0/mod.ts";
+import { Bot, Embed, Interaction, InteractionResponseTypes, MessageComponents, MessageComponentTypes } from 'discordeno/mod.ts';
 
 export interface HasTimerange {
     pagable: true
 }
 
 export interface timerangePost<T extends HasTimerange> {
-    poster: string;
+    poster: BigInt;
     data: T,
     embedMessage: Embed;
     currentTime: string;
-    timeRangeHandler(interaction: MessageComponentInteraction, postData: timerangePost<T>): Promise<void>;
+    timeRangeHandler(bot: Bot, interaction: Interaction, postData: timerangePost<T>): Promise<void>;
     timeRanges: {value: string, name: string}[];
     interactionData: any;
 }
@@ -25,9 +25,9 @@ export function getTimerangePost<T extends HasTimerange>(messageId: string): tim
     return timerangePosts[messageId] as timerangePost<T>;
 }
 
-export const updateTimerange = async (interaction: MessageComponentInteraction) => {
-    const {custom_id: customId} = interaction.data;
-    const [_componentId, _commandInvoker, _action, messageId] = customId.split('_');
+export const updateTimerange = async (bot: Bot, interaction: Interaction) => {
+    const {customId} = interaction.data!;
+    const [_componentId, _commandInvoker, _action, messageId] = customId!.split('_');
     const reactingUser = interaction.user;
     const postData: timerangePost<HasTimerange> = timerangePosts[messageId];
 
@@ -37,10 +37,10 @@ export const updateTimerange = async (interaction: MessageComponentInteraction) 
     }
 
     // if (postData.poster === reactingUser.id) {
-    await interaction.respond({
-        type: InteractionResponseType.DEFERRED_MESSAGE_UPDATE
+    await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+        type: InteractionResponseTypes.DeferredUpdateMessage
     });
-    await postData.timeRangeHandler(interaction, postData);
+    await postData.timeRangeHandler(bot, interaction, postData);
     // } else {
     //     await interaction.respond({
     //         type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -50,17 +50,17 @@ export const updateTimerange = async (interaction: MessageComponentInteraction) 
     // }
 }
 
-export const generateTimerangeButtons = (command: string, pageData: timerangePost<HasTimerange>, internalMessageId: string) => {
+export const generateTimerangeButtons = (command: string, pageData: timerangePost<HasTimerange>, internalMessageId: string): MessageComponents => {
     const currentLabel = pageData.timeRanges.find(val => val.value === pageData.currentTime)!;
     
     return [
         {
-            type: MessageComponentType.ActionRow,
+            type: MessageComponentTypes.ActionRow,
             components: [
                 {
-                    type: MessageComponentType.Select,
+                    type: MessageComponentTypes.SelectMenu,
                     placeholder: currentLabel.name,
-                    customID: `timerange_${command}_select_${internalMessageId}`,
+                    customId: `timerange_${command}_select_${internalMessageId}`,
                     options: pageData.timeRanges.map(x => ({
                         label: x.name,
                         value: x.value

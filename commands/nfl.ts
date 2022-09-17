@@ -1,11 +1,11 @@
-import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.6.0/mod.ts'
-import { EmbedField } from "https://deno.land/x/harmony@v2.6.0/src/types/channel.ts";
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, InteractionResponseTypes, Interaction, DiscordEmbedField, Embed } from "discordeno/mod.ts";
 import { sub, differenceInDays } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { teams } from "../nfl/teams.ts";
 
 // @deno-types="https://deno.land/x/fuse@v6.4.1/dist/fuse.d.ts"
 import Fuse from 'https://deno.land/x/fuse@v6.4.1/dist/fuse.esm.min.js'
-import { autoCompleteCallback } from "./lib/sendInteraction.ts";
+import { createCommand, subCommand } from "./mod.ts";
+// import { autoCompleteCallback } from "./lib/sendInteraction.ts";
 
 interface parsedEvents {
     gameTime: string,
@@ -13,11 +13,11 @@ interface parsedEvents {
     text: string,
 }
 
-export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
+const sendNFLScoreboard = async (bot: Bot, interaction: Interaction) => {
     const request = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
     const scoreboard = await request.json();
 
-    const scoreboardFields: EmbedField[] = [];
+    const scoreboardFields: DiscordEmbedField[] = [];
     const seasonTypeNo = scoreboard.season.type;
     const seasonType = scoreboard.leagues[0].calendar.find((entry: any) => parseInt(entry.value) === seasonTypeNo);
     const seasonWeek = seasonType.entries.find((entry: any) => parseInt(entry.value) === scoreboard.week.number);
@@ -46,7 +46,7 @@ export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
 			}
 		}
 
-        const scoreboardField: EmbedField = {
+        const scoreboardField: DiscordEmbedField = {
             name: game.name,
             value: `${timeString}\n${scoreString}`.trim(),
             inline: true,
@@ -55,26 +55,28 @@ export const sendNFLEmbed = async (interaction: SlashCommandInteraction) => {
         scoreboardFields.push(scoreboardField);
     }
 
-    const embed = new Embed({
+    const embed: Embed = {
         title: `NFL ${seasonWeek.label}`,
         fields: scoreboardFields
-    });
+    };
 
-    await interaction.respond({
-        embeds: [embed],
-        type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE
-    });
+    await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+        type: InteractionResponseTypes.ChannelMessageWithSource,
+        data: {
+            embeds: [embed]
+        }
+    })
 };
 
-export const sendNFLGameDetails = async (interaction: SlashCommandInteraction) => {
-    const subOptions = interaction.data.options[0];
+export const sendNFLGameDetails = async (bot: Bot, interaction: Interaction) => {
+    const subOptions = interaction.data!.options![0];
     const teamOption = subOptions.options!.find(option => option.name === 'team');
-    const selectedTeam: string = teamOption ? teamOption.value.trim().toLowerCase() : '';
+    const selectedTeam: string = teamOption ? (teamOption.value! as string).trim().toLowerCase() : '';
 
-    await interaction.respond({
-        type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE,
-        ephemeral: true,
+    await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+        type: InteractionResponseTypes.DeferredChannelMessageWithSource
     });
+
 
     const request = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
     const scoreboard = await request.json();
@@ -84,7 +86,9 @@ export const sendNFLGameDetails = async (interaction: SlashCommandInteraction) =
     });
     
     if (!game) {
-        await interaction.send('Game not found')
+        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+            content: 'Game not found'
+        })
         return
     }
 
@@ -98,7 +102,7 @@ export const sendNFLGameDetails = async (interaction: SlashCommandInteraction) =
 
     console.log(selectedTeamObj.team.color);
 
-    const embed = new Embed({
+    const embed: Embed = {
         title: game.name,
         fields: [
             {
@@ -117,14 +121,14 @@ export const sendNFLGameDetails = async (interaction: SlashCommandInteraction) =
             }] : [])
         ],
         color: parseInt(selectedTeamObj.team.color, 16)
-    });
-    
-    await interaction.send({
+    };
+  
+    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
         embeds: [embed]
     });
 };
 
-export const handleTeamAutocomplete = async (interaction: MessageComponentInteraction) => {
+export const handleTeamAutocomplete = async (bot: Bot, interaction: Interaction) => {
     const interactionData: any = interaction.data;
     const detailsOption = interactionData.options.find((option: any) => option.name === 'details');
     const searchTeamOption: any = detailsOption ? detailsOption.options.find((option: any) => option.name === 'team') : null;
@@ -140,8 +144,13 @@ export const handleTeamAutocomplete = async (interaction: MessageComponentIntera
         name: results.item.name,
         value: results.item.espnAbbr
     })).slice(0, 25);
-
-    await autoCompleteCallback(interaction, formattedResults);
+    
+    await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+        type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
+        data: {
+            choices: formattedResults
+        }
+    })
 }
 
 const getGameEvents = async (espnId: string) => {
@@ -168,3 +177,32 @@ const getGameEvents = async (espnId: string) => {
     
     return events;
 }
+
+const thisWeekCommand: subCommand = {
+    name: 'this-week',
+    description: 'Get this week\'s games',
+    execute: sendNFLScoreboard,
+    type: ApplicationCommandTypes.Message,
+}
+
+const detailsCommand: subCommand = {
+    name: 'details',
+    description: 'Get details for a team\'s game',
+    execute: sendNFLGameDetails,
+    type: ApplicationCommandTypes.Message,
+    options: [{
+        name: "team",
+        description: "Team name or abbreviation",
+        type: ApplicationCommandOptionTypes.String,
+        required: true,
+        autocomplete: true
+    }]
+}
+
+createCommand({
+    name: 'nfl',
+    description: 'Commands for fetching NFL information',
+    type: ApplicationCommandTypes.ChatInput,
+    execute: async (_bot, _interaction) => {},
+    subcommands: [thisWeekCommand, detailsCommand]
+})
