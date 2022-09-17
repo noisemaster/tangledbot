@@ -17,6 +17,7 @@ import {
     InteractionCallbackData,
     InteractionResponseTypes,
 } from "discordeno/mod.ts";
+import { updateInteractionWithFile } from "./lib/updateInteraction.ts";
 
 interface YahooStockQuote extends HasTimerange {
     symbol: string;
@@ -125,7 +126,7 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
         internalMessageId,
     );
 
-    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+    await updateInteractionWithFile(bot, interaction.token, {
         ...payload,
         components: [
             ...timerangeComponents,
@@ -185,14 +186,12 @@ const generateStockEmbed = async (
     }
 
     const payload: InteractionCallbackData = {
-        embeds: [stockEmbed],
     };
 
     if (image) {
-        // const imageAttach = (, image);
         const imageAttach: FileContent = {
             name: `${symbol}.png`,
-            blob: new Blob([image.buffer])
+            blob: new Blob([image])
         };
         payload.file = imageAttach;
 
@@ -200,6 +199,8 @@ const generateStockEmbed = async (
             url: `attachment://${symbol}.png`,
         };
     }
+
+    payload.embeds = [stockEmbed];
 
     return payload;
 };
@@ -230,7 +231,8 @@ const stockTimerangeHandler = async (
     );
 
     if (interaction.message) {
-        await bot.helpers.editOriginalInteractionResponse(
+        await updateInteractionWithFile(
+            bot,
             interaction.token,
             {
                 ...newEmbed,

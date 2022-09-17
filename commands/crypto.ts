@@ -6,6 +6,7 @@ import { Pageable, paginationPost, setPageablePost, generatePageButtons, getPage
 import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
 import { generateTimerangeButtons, getTimerangePost, HasTimerange, setTimerangePost, timerangePost } from "../handlers/timerangeHandler.ts";
 import { createCommand } from "./mod.ts";
+import { updateInteractionWithFile } from './lib/updateInteraction.ts';
 
 interface cgCoin extends Pageable, HasTimerange {
     id: string;
@@ -94,7 +95,7 @@ export const sendCryptoEmbed = async (bot: Bot, interaction: Interaction) => {
         ...(generateTimerangeButtons('crypto', timerangeData, internalMessageId))
     ]
 
-    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+    await updateInteractionWithFile(bot, interaction.token, {
         ...embed,
         components
     });
@@ -168,7 +169,8 @@ const cryptoTimerangeHandler = async (bot: Bot, interaction: Interaction, pageDa
     const timerangeComponents = generateTimerangeButtons('crypto', pageData, messageId);
 
     if (interaction.message) {
-        await bot.helpers.editOriginalInteractionResponse(
+        await updateInteractionWithFile(
+            bot,
             interaction.token, {
                 ...newEmbed,
                 components: [
@@ -259,11 +261,13 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
             name: `${coin.id}.png`,
             blob: new Blob([image.buffer])
         };
-        payload.file = imageAttach;
+        payload.file = [imageAttach];
 
         embed.image = {
             url: `attachment://${coin.id}.png`
         };
+
+        payload.embeds = [embed];
     }
 
     return payload;
@@ -275,13 +279,12 @@ const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array
         stdout: 'piped'
     });
 
-    const output = await hololynx.output();
-    const { code } = await hololynx.status();
+    const [output, {code}] = await Promise.all([hololynx.output(), hololynx.status()]);
     
     if (code !== 0) {
         throw new Error('Candlesticks chart not generated')
     }
-
+    
     return output;
 }
 
