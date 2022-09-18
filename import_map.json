@@ -1,5 +1,6 @@
 {
   "imports": {
-    "discordeno/": "https://deno.land/x/discordeno@16.0.0/"
+    "discordeno/": "https://deno.land/x/discordeno@16.0.0/",
+    "redis/": "https://deno.land/x/redis@v0.27.0/"
   }
 }
