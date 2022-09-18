@@ -182,14 +182,14 @@ const thisWeekCommand: subCommand = {
     name: 'this-week',
     description: 'Get this week\'s games',
     execute: sendNFLScoreboard,
-    type: ApplicationCommandTypes.Message,
+    type: ApplicationCommandTypes.ChatInput,
 }
 
 const detailsCommand: subCommand = {
     name: 'details',
     description: 'Get details for a team\'s game',
     execute: sendNFLGameDetails,
-    type: ApplicationCommandTypes.Message,
+    type: ApplicationCommandTypes.ChatInput,
     options: [{
         name: "team",
         description: "Team name or abbreviation",
