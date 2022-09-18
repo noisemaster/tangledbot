@@ -2,5 +2,10 @@
     "importMap": "import_map.json",
     "tasks": {
         "start": "deno run --allow-net --allow-read --unstable --allow-write --allow-run main.ts"
+    },
+    "fmt": {
+        "options": {
+            "indentWidth": 4
+        }
     }
 }
