@@ -1,4 +1,4 @@
-import { ApplicationCommandOption, ApplicationCommandTypes, Bot, Collection, Interaction } from "discordeno/mod.ts";
+import { ApplicationCommandOption, ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, Collection, Interaction } from "discordeno/mod.ts";
 
 export type subCommand = Omit<Command, "subcommands">;
 export type subCommandGroup = {
@@ -20,5 +20,17 @@ export interface Command {
 export const commands = new Collection<string, Command>();
 
 export function createCommand(command: Command) {
+  if (command.subcommands) {
+    command.options = command.subcommands.map((x) => {
+      const handler = x as subCommand;
+      
+      return {
+        name: handler.name,
+        description: handler.description,
+        type: ApplicationCommandOptionTypes.SubCommand,
+      }
+    })
+  }
+
   commands.set(command.name, command);
 }
