@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, InteractionResponseTypes, Interaction, DiscordEmbedField, Embed } from "discordeno/mod.ts";
 import { sub, differenceInDays } from "https://deno.land/x/date_fns@v2.15.0/index.js";
-import { teams } from "../nfl/teams.ts";
+import { teams } from "../helpers/nfl/teams.ts";
 
 // @deno-types="https://deno.land/x/fuse@v6.4.1/dist/fuse.d.ts"
 import Fuse from 'https://deno.land/x/fuse@v6.4.1/dist/fuse.esm.min.js'
