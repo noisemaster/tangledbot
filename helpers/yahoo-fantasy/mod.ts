@@ -149,7 +149,7 @@ export const fetchScoreboard = async (accessToken: string, leagueId: string = '1
             winProbability: matchupTeams[1].team[1].win_probability
         }
 
-        const key = `week${league.week}-${team1.name}-vs-${team2.name}-points`;
+        const key = `week${weekNumber}-${team1.name}-vs-${team2.name}-points`;
 
         parsedScoreboard.push({
             team1, team2, key
