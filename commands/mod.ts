@@ -28,6 +28,7 @@ export function createCommand(command: Command) {
         name: handler.name,
         description: handler.description,
         type: ApplicationCommandOptionTypes.SubCommand,
+        options: handler.options,
       }
     })
   }
