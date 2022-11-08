@@ -193,3 +193,23 @@ export async function addPoints() {
         await redis.set(entry.key, JSON.stringify(currentData));
     }
 }
+
+export const listGamesInRedis = async () => {
+    const redis = await connect({
+        hostname: config.redis.hostname,
+    });
+
+    const keys = await redis.keys('week*');
+
+    const games = keys.map(key => {
+        const [week, team1, _vs, team2, _points] = key.split('-');
+        return {
+            week: Number(week.replace('week', '')),
+            team1,
+            team2,
+            key
+        }
+    });
+
+    return games.sort((a, b) => a.week - b.week);
+}
