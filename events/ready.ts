@@ -1,3 +1,4 @@
+import { DiscordApplicationCommand } from "discordeno/mod.ts";
 import { commands } from "../commands/mod.ts";
 import config from "../config.ts";
 import { events } from "./mod.ts";
