@@ -213,3 +213,139 @@ export const listGamesInRedis = async () => {
 
     return games.sort((a, b) => a.week - b.week);
 }
+
+export const getTransactions = async (accessToken: string, leagueId: string = '1353821') => {
+    const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/transactions;types=add,drop,trade;status=accepted?format=json`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    const rawTrades = await tradesRequest.json();
+    const league = rawTrades.fantasy_content.league[0];
+    const rawTransactions = rawTrades.fantasy_content.league[1].transactions;
+    delete rawTransactions.count;
+    const transactionsArr = Object.values(rawTransactions);
+    console.log(transactionsArr);
+
+    const transactions = transactionsArr.map((action: any) => {
+        const { transaction } = action;
+        const { transaction_id: id, type, status, timestamp } = transaction[0];
+        const { players } = transaction[1];
+        delete players.count;
+
+        const parsedPlayers = Object.values(players).map((p: any) => {
+            const { player } = p;
+            const [_pKey, _pid, nameInfo, {editorial_team_abbr}, {display_position}, {position_type}] = player[0];
+
+            return {
+                name: nameInfo.name.full,
+                team: editorial_team_abbr,
+                position: display_position,
+                transaction_data: player[1].transaction_data
+            }
+        });
+
+        return {
+            id,
+            type,
+            status,
+            timestamp: new Date(Number(timestamp * 1000)),
+            players: parsedPlayers
+        }
+    });
+
+    return {
+        league: {
+            name: league.name,
+            url: league.url,
+            logo: league.logo_url,
+        }, 
+        transactions
+    };
+}
+
+export const collectTransactions = async () => {
+    const accessToken = await getAccessToken();
+    const {league, transactions} = await getTransactions(accessToken);
+    const redis = await connect({
+        hostname: config.redis.hostname,
+    });
+
+    for (const transaction of transactions) {
+        const {id, type, status, timestamp, players} = transaction;
+        const key = `transaction-${league.name}-${id}`;
+
+        const currentData = await redis.get(key);
+        if (currentData) {
+            continue;
+        }
+
+        const data = {
+            type,
+            status,
+            timestamp,
+            players
+        }
+
+        await redis.set(key, JSON.stringify(data));
+
+        const embed = {
+            title: 'New Transaction',
+            description: players.map(p => {
+                const {name, team, position, transaction_data} = p;
+                let type, source_type, destination_type, source, destination;
+                if (Array.isArray(transaction_data)) {
+                    type = transaction_data[0].type;
+                    source_type = transaction_data[0].source_type;
+                    destination_type = transaction_data[0].destination_type;
+                    if (source_type === 'team') {
+                        source = transaction_data[0].source_team_name;
+                    } else {
+                        source = transaction_data[0].source_type;
+                    }
+                    if (destination_type === 'team') {
+                        destination = transaction_data[0].destination_team_name;
+                    } else {
+                        destination = transaction_data[0].destination_type;
+                    }
+                } else {
+                    type = transaction_data.type;
+                    source_type = transaction_data.source_type;
+                    destination_type = transaction_data.destination_type;
+                    if (source_type === 'team') {
+                        source = transaction_data.source_team_name;
+                    } else {
+                        source = transaction_data.source_type;
+                    }
+                    if (destination_type === 'team') {
+                        destination = transaction_data.destination_team_name;
+                    } else {
+                        destination = transaction_data.destination_type;
+                    }
+                }
+
+                const typeEmoji = type === 'add' ? '🔺' : type === 'drop' ? '🔻' : '🔄';
+
+                return `${name} (${team} - ${position}) ${typeEmoji} ${source} -> ${destination}`;
+            }).join('\n'),
+            timestamp: timestamp.toISOString(),
+        }
+
+        console.log(embed);
+
+        const webhookData = {
+            username: league.name,
+            avatar_url: league.logo,
+            embeds: [embed]
+        }
+
+        await fetch(config.yahoo.discordWebhook, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(webhookData)
+        }).catch(err => console.error(err));
+    }
+};
