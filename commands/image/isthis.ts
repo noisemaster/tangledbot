@@ -1,5 +1,5 @@
 import { InteractionResponseType, MessageAttachment, SlashCommandInteraction } from 'https://deno.land/x/harmony@v2.6.0/mod.ts'
-import { Image } from 'https://deno.land/x/imagescript@1.1.16/mod.ts';
+import { Image } from 'https://deno.land/x/imagescript@1.2.15/mod.ts';
 import { Buffer } from "https://deno.land/std@0.80.0/node/buffer.ts";
 import { sendInteraction } from "../lib/sendInteraction.ts";
 
