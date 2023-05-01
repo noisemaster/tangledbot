@@ -114,7 +114,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
                 type: MessageComponentTypes.Button,
                 style: ButtonStyles.Secondary,
                 label: 'Hide Image',
-                custom_id: `hideable_${internalMessageId}`,
+                customId: `hideable_${internalMessageId}`,
             }]
         });
 
