@@ -19,10 +19,17 @@ import {
 } from "discordeno/mod.ts";
 import { createCommand } from "./mod.ts";
 
+/**
+ * @TODO Cleanup logic, there's quite a bit of duplicated logic
+ */
+
 interface TMDBResult extends Pageable {
     "backdrop_path": string;
     id: number;
     "original_language": string;
+    "name"?: string;
+    "original_name"?: string;
+    "first_air_date": string;
     "original_title": string;
     overview: string;
     popularity: number;
@@ -39,25 +46,18 @@ const fetchMovie = async (bot: Bot, interaction: Interaction) => {
         return;
     }
 
-    const interactionOptions = interaction.data!.options!;
+    const type = interaction.data!.name;
 
-    const titleOption = interactionOptions.find((option) =>
-        option.name === "title"
-    );
-    const title: string = titleOption ? titleOption.value as string : "";
-
-    const yearOption = interactionOptions.find((option) =>
-        option.name === "year"
-    );
-    const year: number = yearOption ? yearOption.value as number : 0;
+    const interactionOptions = interaction.data!.options![0].options!;
+    const { title, year } = parseOptions(interactionOptions);
 
     await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
         type: InteractionResponseTypes.DeferredChannelMessageWithSource,
     });
 
     const url =
-        `https://api.themoviedb.org/3/search/movie?api_key=${config.tmdb.apiKey}&language=en-US&query=${title}&page=1&include_adult=false${year ? `&year=${year}` : ""
-        }`;
+        `https://api.themoviedb.org/3/search/${type}?api_key=${config.tmdb.apiKey}&language=en-US&query=${title}&page=1&include_adult=false${year ? `&year=${year}` : ""
+    }`;
 
     const request = await fetch(url);
     const response = await request.json();
@@ -67,7 +67,7 @@ const fetchMovie = async (bot: Bot, interaction: Interaction) => {
     if (results.length > 0) {
         const [movie] = results;
         const internalMessageId = v4.generate();
-        const embed = await generateTMDBEmbed(movie);
+        const embed = await generateMovieEmbed(movie, type);
 
         const pageData: paginationPost<TMDBResult> = {
             pages: results,
@@ -81,7 +81,64 @@ const fetchMovie = async (bot: Bot, interaction: Interaction) => {
 
         const components = [
             ...(results.length > 1
-                ? generatePageButtons("tmdb", pageData, internalMessageId)
+                ? generatePageButtons(type, pageData, internalMessageId)
+                : []),
+        ];
+
+        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+            embeds: [embed],
+            components,
+        });
+
+        setPageablePost(internalMessageId, pageData);
+    } else {
+        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+            content: "No movies found",
+        });
+    }
+};
+
+const fetchWhereToWatch = async (bot: Bot, interaction: Interaction) => {
+    if (!interaction.data) {
+        return;
+    }
+
+    const type = interaction.data!.name;
+    const interactionOptions = interaction.data!.options![0].options!;
+
+    const { title, year } = parseOptions(interactionOptions);
+
+    await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+        type: InteractionResponseTypes.DeferredChannelMessageWithSource,
+    });
+
+    const url =
+        `https://api.themoviedb.org/3/search/${type}?api_key=${config.tmdb.apiKey}&language=en-US&query=${title}&page=1&include_adult=false${year ? `&year=${year}` : ""
+        }`;
+
+    const request = await fetch(url);
+    const response = await request.json();
+
+    const { results }: { results: TMDBResult[] } = response;
+
+    if (results.length > 0) {
+        const [movie] = results;
+        const internalMessageId = v4.generate();
+        const embed = await generateWatchEmbed(movie, type);
+
+        const pageData: paginationPost<TMDBResult> = {
+            pages: results,
+            poster: interaction.user.id,
+            embedMessage: embed,
+            currentPage: 1,
+            paginationHandler: tmdbPageHandler,
+            pageGenerator: generateTMDBPages,
+            interactionData: {},
+        };
+
+        const components = [
+            ...(results.length > 1
+                ? generatePageButtons(`${type}watch`, pageData, internalMessageId)
                 : []),
         ];
 
@@ -104,7 +161,7 @@ const tmdbPageHandler = async (
     pageData: paginationPost<TMDBResult>,
 ) => {
     const { customId } = interaction.data!;
-    const [_componentId, _commandInvoker, action, messageId] = customId!.split(
+    const [_componentId, invoker, action, messageId] = customId!.split(
         "_",
     );
 
@@ -126,9 +183,27 @@ const tmdbPageHandler = async (
     }
 
     const page = pageData.pages[pageData.currentPage - 1];
-    const newEmbed = await generateTMDBEmbed(page);
+    let newEmbed: Embed;
+    switch (invoker) {
+        case "movie":
+            newEmbed = await generateMovieEmbed(page, "movie");
+            break;
+        case "moviewatch":
+            newEmbed = await generateWatchEmbed(page, "movie");
+            break;
+        case "tv":
+            newEmbed = await generateMovieEmbed(page, "tv");
+            break;
+        case "tvwatch":
+            newEmbed = await generateWatchEmbed(page, "tv");
+            break;
+        default:
+            newEmbed = await generateMovieEmbed(page, "movie");
+            break;
+    }
+
     const newComponents = [
-        ...generatePageButtons("tmdb", pageData, messageId),
+        ...generatePageButtons(invoker, pageData, messageId),
     ];
 
     if (interaction.message) {
@@ -144,13 +219,27 @@ const tmdbPageHandler = async (
     setPageablePost(messageId, pageData);
 };
 
-const generateTMDBEmbed = async (result: TMDBResult) => {
+const generateMovieEmbed = async (result: TMDBResult, type: string) => {
     const fullDetails = await fetch(
-        `https://api.themoviedb.org/3/movie/${result.id}?api_key=${config.tmdb.apiKey}`,
+        `https://api.themoviedb.org/3/${type}/${result.id}?api_key=${config.tmdb.apiKey}`,
     )
         .then((res) => res.json());
 
     const possibleOptionalFields: DiscordEmbedField[] = [];
+
+    let title = '';
+
+    if (fullDetails.title || fullDetails.original_title) {
+        title = fullDetails.title === fullDetails.original_title
+            ? fullDetails.title
+            : `${fullDetails.title} (${fullDetails.original_title})`;
+    }
+
+    if (fullDetails.name || fullDetails.original_name) {
+        title = fullDetails.name === fullDetails.original_name
+            ? fullDetails.name
+            : `${fullDetails.name} (${fullDetails.original_name})`;
+    }
 
     if (fullDetails.production_companies.length > 0) {
         possibleOptionalFields.push({
@@ -169,28 +258,40 @@ const generateTMDBEmbed = async (result: TMDBResult) => {
             inline: true,
         });
     }
+    
+    if (fullDetails.runtime) {
+        possibleOptionalFields.push({
+            name: "Runtime",
+            value: fullDetails.runtime > 60
+                ? `${Math.floor(fullDetails.runtime / 60)}h ${fullDetails.runtime % 60}m`
+                : `${fullDetails.runtime}m`,
+            inline: false,
+        });
+    }
+
+    if (fullDetails.number_of_seasons) {
+        possibleOptionalFields.push({
+            name: "Run",
+            value: `${fullDetails.number_of_episodes} ${
+                fullDetails.number_of_episodes === 1 ? "episode" : "episodes"
+            } in ${fullDetails.number_of_seasons} ${
+                fullDetails.number_of_seasons === 1 ? "season" : "seasons"
+            }`,
+            inline: false,
+        });
+    }
 
     const embed: Embed = {
-        title: result.title === result.original_title
-            ? result.title
-            : `${result.title} (${result.original_title})`,
-        url: `https://www.themoviedb.org/movie/${result.id}`,
+        title,
+        url: `https://www.themoviedb.org/${type}/${result.id}`,
         description: result.overview,
-        timestamp: Date.parse(result.release_date),
+        timestamp: Date.parse(result.release_date || fullDetails.first_air_date),
         image: {
             url: result.backdrop_path
                 ? `https://image.tmdb.org/t/p/original/${result.backdrop_path}`
                 : `https://image.tmdb.org/t/p/original/${result.poster_path}`,
         },
         fields: [
-            {
-                name: "Runtime",
-                value: fullDetails.runtime > 60
-                    ? `${Math.floor(fullDetails.runtime / 60)}h ${fullDetails.runtime % 60
-                    }m`
-                    : `${fullDetails.runtime}m`,
-                inline: false,
-            },
             ...possibleOptionalFields,
         ],
         footer: {
@@ -202,38 +303,231 @@ const generateTMDBEmbed = async (result: TMDBResult) => {
     return embed;
 };
 
+const generateWatchEmbed = async (result: TMDBResult, type: string) => {
+    const fullDetails = await fetch(
+        `https://api.themoviedb.org/3/${type}/${result.id}?api_key=${config.tmdb.apiKey}`,
+    )
+        .then((res) => res.json());
+
+    const providers = await fetch(
+        `https://api.themoviedb.org/3/${type}/${result.id}/watch/providers?api_key=${config.tmdb.apiKey}`,
+    )   .then((res) => res.json());
+
+    const possibleOptionalFields: DiscordEmbedField[] = [];
+
+    const providerRegion = providers.results.US;
+
+    let title = '';
+
+    if (result.title || result.original_title) {
+        title = result.title === result.original_title
+            ? result.title
+            : `${result.title} (${result.original_title})`;
+    }
+
+    if (result.name || result.original_name) {
+        title = result.name! === result.original_name!
+            ? result.name
+            : `${result.name} (${result.original_name})`;
+    }
+
+
+    if (providerRegion?.flatrate?.length > 0) {
+        possibleOptionalFields.push({
+            name: "Streaming",
+            value: providerRegion.flatrate.map((x: any) => `- ${x.provider_name}`).join("\n",),
+            inline: true,
+        });
+    }
+
+    if (providerRegion?.rent?.length > 0) {
+        possibleOptionalFields.push({
+            name: "Rent",
+            value: providerRegion.rent.map((x: any) => `- ${x.provider_name}`).join("\n",),
+            inline: true,
+        });
+    }
+
+    if (providerRegion?.buy?.length > 0) {
+        possibleOptionalFields.push({
+            name: "Buy",
+            value: providerRegion.buy.map((x: any) => `- ${x.provider_name}`).join("\n",),
+            inline: true,
+        });
+    }
+
+    if (fullDetails.runtime) {
+        possibleOptionalFields.push({
+            name: "Runtime",
+            value: fullDetails.runtime > 60
+                ? `${Math.floor(fullDetails.runtime / 60)}h ${fullDetails.runtime % 60}m`
+                : `${fullDetails.runtime}m`,
+            inline: false,
+        });
+    }
+
+    if (fullDetails.number_of_seasons) {
+        possibleOptionalFields.push({
+            name: "Run",
+            value: `${fullDetails.number_of_episodes} ${
+                fullDetails.number_of_episodes === 1 ? "episode" : "episodes"
+            } in ${fullDetails.number_of_seasons} ${
+                fullDetails.number_of_seasons === 1 ? "season" : "seasons"
+            }`,
+            inline: false,
+        });
+    }
+
+    const embed: Embed = {
+        title,
+        url: `https://www.themoviedb.org/${type}/${result.id}`,
+        timestamp: Date.parse(result.release_date || result.first_air_date),
+        image: {
+            url: result.backdrop_path
+                ? `https://image.tmdb.org/t/p/original/${result.backdrop_path}`
+                : `https://image.tmdb.org/t/p/original/${result.poster_path}`,
+        },
+        fields: [
+            ...possibleOptionalFields,
+        ],
+        footer: {
+            text: "via themoviedb.org & justwatch.com",
+        },
+        color: 0x032541,
+    };
+
+    return embed;
+};
+
 const generateTMDBPages = (pages: TMDBResult[]): SelectOption[] => {
     return pages.map((page, index) => {
-        const releaseYear = new Date(page.release_date).getFullYear();
+        const releaseYear = new Date(page.release_date || page.first_air_date).getFullYear();
         const releaseYearString = isNaN(releaseYear) ? "None" : `${releaseYear}`;
 
-        return {
-            label: page.title.length > 97
+        if (page.title) {
+            return {
+                label: page.title.length > 97
                 ? `${page.title.substr(0, 97)}...`
                 : page.title,
-            description: `${releaseYearString}`,
-            value: `${index + 1}`,
-        };
+                description: `${releaseYearString}`,
+                value: `${index + 1}`,
+            };
+        } else {
+            return {
+                label: page.name!.length > 97
+                    ? `${page.name!.substr(0, 97)}...`
+                    : page.name!,
+                description: `${releaseYearString}`,
+                value: `${index + 1}`,
+            };
+        }
     });
 };
 
 createCommand({
-    name: "movie",
-    description: "Lookup a movie",
+    name: 'movie',
+    description: "Lookup movie info",
     type: ApplicationCommandTypes.ChatInput,
-    execute: fetchMovie,
-    options: [
+    execute: () => {},
+    subcommands: [
         {
-            name: "title",
-            description: "Movie Title",
-            type: ApplicationCommandOptionTypes.String,
-            required: true,
+            name: "search",
+            description: "Search for movies",
+            type: ApplicationCommandTypes.ChatInput,
+            execute: fetchMovie,
+            options: [
+                {
+                    name: "title",
+                    description: "Movie Title",
+                    type: ApplicationCommandOptionTypes.String,
+                    required: true,
+                },
+                {
+                    name: "year",
+                    description: "Release Year",
+                    type: ApplicationCommandOptionTypes.Integer,
+                    required: false,
+                },
+            ],
         },
         {
-            name: "year",
-            description: "Release Year",
-            type: ApplicationCommandOptionTypes.Integer,
-            required: false,
-        },
-    ],
+            name: "watch",
+            description: "Find where to watch a movie",
+            type: ApplicationCommandTypes.ChatInput,
+            execute: fetchWhereToWatch,        
+            options: [
+                {
+                    name: "title",
+                    description: "Movie Title",
+                    type: ApplicationCommandOptionTypes.String,
+                    required: true,
+                },
+                {
+                    name: "year",
+                    description: "Release Year",
+                    type: ApplicationCommandOptionTypes.Integer,
+                    required: false,
+                },
+            ],
+        }
+    ]
 });
+
+createCommand({
+    name: 'tv',
+    description: "Lookup TV info",
+    type: ApplicationCommandTypes.ChatInput,
+    execute: () => {},
+    subcommands: [
+        {
+            name: "search",
+            description: "Search for TV shows",
+            type: ApplicationCommandTypes.ChatInput,
+            execute: fetchMovie,
+            options: [
+                {
+                    name: "title",
+                    description: "Title",
+                    type: ApplicationCommandOptionTypes.String,
+                    required: true,
+                },
+                {
+                    name: "year",
+                    description: "Release Year",
+                    type: ApplicationCommandOptionTypes.Integer,
+                    required: false,
+                },
+            ],
+        },
+        {
+            name: "watch",
+            description: "Find where to watch a TV show",
+            type: ApplicationCommandTypes.ChatInput,
+            execute: fetchWhereToWatch,        
+            options: [
+                {
+                    name: "title",
+                    description: "Title",
+                    type: ApplicationCommandOptionTypes.String,
+                    required: true,
+                },
+                {
+                    name: "year",
+                    description: "Release Year",
+                    type: ApplicationCommandOptionTypes.Integer,
+                    required: false,
+                },
+            ],
+        }
+    ]
+});
+
+const parseOptions = (interactionOptions: any) => {
+  const titleOption = interactionOptions.find((option: {name: string}) => option.name === "title");
+  const title: string = titleOption ? titleOption.value as string : "";
+
+  const yearOption = interactionOptions.find((option: {name: string}) => option.name === "year");
+  const year: number = yearOption ? yearOption.value as number : 0;
+
+  return { title, year };
+}
