@@ -20,17 +20,17 @@ import {
 import { updateInteractionWithFile } from "./lib/updateInteraction.ts";
 
 interface YahooStockQuote extends HasTimerange {
-    symbol: string;
-    exchange: string;
-    quoteType: string;
-    coinImageUrl: string;
-    fromCurrency: string;
-    longName: string;
-    shortName: string;
-    regularMarketPrice: number;
-    regularMarketChange: number;
-    regularMarketChangePercent: number;
-    regularMarketTime: number;
+    symbol?: string;
+    exchange?: string;
+    quoteType?: string;
+    coinImageUrl?: string;
+    fromCurrency?: string;
+    longName?: string;
+    shortName?: string;
+    regularMarketPrice?: number;
+    regularMarketChange?: number;
+    regularMarketChangePercent?: number;
+    regularMarketTime?: number;
 }
 
 const YahooTimeranges = [
@@ -67,48 +67,59 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
         type: InteractionResponseTypes.DeferredChannelMessageWithSource,
     });
 
-    const url =
-        `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbol}`;
+    // const url =
+        // `https://query1.finance.yahoo.com/v6/finance/quote?symbols=${symbol}`;
 
-    let stockResp = await fetch(url);
-    let stock = await stockResp.json();
-    let { result } = stock.quoteResponse;
+    // let stockResp = await fetch(url);
+    // let stock = await stockResp.json();
+    // let { result } = stock.quoteResponse;
 
-    if (
-        result.length === 0 ||
-        (result[0].quoteType === "MUTUALFUND" && !result[0].marketCap)
-    ) {
-        stockResp = await fetch(url + "-USD");
-        stock = await stockResp.json();
-        result = stock.quoteResponse.result;
+    let text = await fetch('https://finance.yahoo.com/quote/U', {headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/116.0'}}).then(resp => resp.text())
+    const titlePos = text.indexOf('<title>')
+    const titlePosEnd = text.indexOf('</title>')
+    const stockName = text.substr(titlePos + 7, titlePosEnd-titlePos-7-55)
+    
 
-        if (result.length === 0) {
-            await bot.helpers.sendFollowupMessage(interaction.token, {
-                type: InteractionResponseTypes.ChannelMessageWithSource,
-                data: {
-                    content: `${symbol} not found`,
-                },
-            });
-            return;
-        }
+    // if (
+    //     result.length === 0 ||
+    //     (result[0].quoteType === "MUTUALFUND" && !result[0].marketCap)
+    // ) {
+    //     stockResp = await fetch(url + "-USD");
+    //     stock = await stockResp.json();
+    //     result = stock.quoteResponse.result;
+
+    //     if (result.length === 0) {
+    //         await bot.helpers.sendFollowupMessage(interaction.token, {
+    //             type: InteractionResponseTypes.ChannelMessageWithSource,
+    //             data: {
+    //                 content: `${symbol} not found`,
+    //             },
+    //         });
+    //         return;
+    //     }
+    // }
+
+    // const [data]: [YahooStockQuote] = result;
+
+    // if (!data.regularMarketTime) {
+    //     await bot.helpers.sendFollowupMessage(interaction.token, {
+    //         type: InteractionResponseTypes.ChannelMessageWithSource,
+    //         data: {
+    //             content: `${symbol} not found`,
+    //         },
+    //     });
+    //     return;
+    // }
+
+    const data = {
+        symbol: symbol,
+        longName: stockName,
     }
 
-    const [data]: [YahooStockQuote] = result;
-
-    if (!data.regularMarketTime) {
-        await bot.helpers.sendFollowupMessage(interaction.token, {
-            type: InteractionResponseTypes.ChannelMessageWithSource,
-            data: {
-                content: `${symbol} not found`,
-            },
-        });
-        return;
-    }
-
-    const payload = await generateStockEmbed(data, timeRange);
+    const payload = await generateStockEmbed(data as any, timeRange);
 
     const timerangeData: timerangePost<YahooStockQuote> = {
-        data,
+        data: data as any,
         currentTime: timeRange,
         embedMessage: payload.embeds![0],
         interactionData: {
@@ -148,42 +159,42 @@ const generateStockEmbed = async (
         fromCurrency,
         longName,
         shortName,
-        regularMarketPrice,
-        regularMarketChange,
-        regularMarketChangePercent,
+        regularMarketPrice = 0,
+        regularMarketChange = 0,
+        regularMarketChangePercent = 0,
         regularMarketTime,
     } = quoteData;
 
-    const lastRefresh = new Date(regularMarketTime * 1000);
+    const lastRefresh = regularMarketTime ? new Date(regularMarketTime * 1000) : new Date();
     const diffSymbol = regularMarketChange > 0
         ? "<:small_green_triangle:851144859103395861>"
         : "🔻";
     const diffColor = regularMarketChange > 0 ? 0x44bd32 : 0xe74c3c;
 
-    const image = await fetchChart(symbol, timerange).catch((err) => {
+    const image = await fetchChart(symbol!, timerange).catch((err) => {
         console.log(err);
     });
 
     const stockEmbed: Embed = {
-        title: `${longName || shortName} (${symbol})`,
+        title: `${longName || shortName}`,
         timestamp: lastRefresh.valueOf(),
         color: diffColor,
     };
 
-    if (quoteType === "CRYPTOCURRENCY") {
-        stockEmbed.author = {
-            iconUrl: coinImageUrl,
-            name: fromCurrency,
-        };
-        stockEmbed.description = `${regularMarketPrice}\n${diffSymbol} ${Math.abs(regularMarketChange)
-            } (${regularMarketChangePercent.toFixed(2)}%)`;
-    } else {
-        stockEmbed.description = `${regularMarketPrice.toFixed(2)}\n${diffSymbol} ${Math.abs(regularMarketChange).toFixed(2)
-            } (${regularMarketChangePercent.toFixed(2)}%)`;
-        stockEmbed.footer = {
-            text: `Exchange: ${exchange}`,
-        };
-    }
+    // if (quoteType === "CRYPTOCURRENCY") {
+    //     stockEmbed.author = {
+    //         iconUrl: coinImageUrl,
+    //         name: fromCurrency,
+    //     };
+    //     stockEmbed.description = `${regularMarketPrice}\n${diffSymbol} ${Math.abs(regularMarketChange)
+    //         } (${regularMarketChangePercent.toFixed(2)}%)`;
+    // } else {
+    //     stockEmbed.description = `${regularMarketPrice.toFixed(2)}\n${diffSymbol} ${Math.abs(regularMarketChange).toFixed(2)
+    //         } (${regularMarketChangePercent.toFixed(2)}%)`;
+    //     stockEmbed.footer = {
+    //         text: `Exchange: ${exchange}`,
+    //     };
+    // }
 
     const payload: InteractionCallbackData = {
     };
