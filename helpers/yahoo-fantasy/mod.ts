@@ -1,6 +1,8 @@
 import { connect } from 'redis/mod.ts';
+import { MongoClient } from 'npm:mongodb';
 import { encode } from "https://deno.land/std@0.154.0/encoding/base64.ts";
 import config from '../../config.ts';
+import { XMLParser } from 'npm:fast-xml-parser';
 
 interface ParsedStandings {
     name: string,
@@ -214,46 +216,20 @@ export const listGamesInRedis = async () => {
     return games.sort((a, b) => a.week - b.week);
 }
 
-export const getTransactions = async (accessToken: string, leagueId: string = '1353821') => {
-    const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/transactions;types=add,drop,trade;status=accepted?format=json`, {
+export const getTransactions = async (accessToken: string, leagueId: string = '1353821', gameId = 'nfl') => {
+    const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/transactions;types=add,drop,trade;status=accepted`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
         }
     });
 
-    const rawTrades = await tradesRequest.json();
-    const league = rawTrades.fantasy_content.league[0];
-    const rawTransactions = rawTrades.fantasy_content.league[1].transactions;
-    delete rawTransactions.count;
-    const transactionsArr = Object.values(rawTransactions);
-    console.log(transactionsArr);
+    const tradesText = await tradesRequest.text();
+    const parser = new XMLParser();
 
-    const transactions = transactionsArr.map((action: any) => {
-        const { transaction } = action;
-        const { transaction_id: id, type, status, timestamp } = transaction[0];
-        const { players } = transaction[1];
-        delete players.count;
+    const rawTrades = parser.parse(tradesText);
 
-        const parsedPlayers = Object.values(players).map((p: any) => {
-            const { player } = p;
-            const [_pKey, _pid, nameInfo, {editorial_team_abbr}, {display_position}, {position_type}] = player[0];
-
-            return {
-                name: nameInfo.name.full,
-                team: editorial_team_abbr,
-                position: display_position,
-                transaction_data: player[1].transaction_data
-            }
-        });
-
-        return {
-            id,
-            type,
-            status,
-            timestamp: new Date(Number(timestamp * 1000)),
-            players: parsedPlayers
-        }
-    });
+    const league = rawTrades.fantasy_content.league;
+    const transactions = league.transactions.transaction;
 
     return {
         league: {
@@ -265,9 +241,72 @@ export const getTransactions = async (accessToken: string, leagueId: string = '1
     };
 }
 
+export const getTeams = async (accessToken: string, leagueId: string = '1353821', gameId = 'nfl') => {
+    const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/teams`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    const rawXML = await tradesRequest.text();
+    const parser = new XMLParser();
+
+    const json = parser.parse(rawXML);
+
+    return json;
+}
+
+export const getPlayerDetails = async (accessToken: string, playerId: string = '1353821', gameId = 'nfl') => {
+    const mongo = await MongoClient.connect(config.mongo.url);
+    
+    // check if player exists
+    const dbPlayer = await mongo
+        .db('tangledbot')
+        .collection('players')
+        .findOne({playerId});
+
+    if (dbPlayer) {
+        dbPlayer.name = {
+            full: dbPlayer.name,
+        }
+        return dbPlayer;
+    }
+
+    const playerRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/players;player_keys=${gameId}.p.${playerId}`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    const rawXML = await playerRequest.text();
+    const parser = new XMLParser();
+
+    const json = parser.parse(rawXML);
+
+    const player = json.fantasy_content.players.player;
+
+    await mongo
+        .db('tangledbot')
+        .collection('players')
+        .insertOne({
+            playerKey: player.player_key,
+            playerId,
+            name: player.name.full,
+            status: player.status,
+            statusFull: player.status_full,
+            team: player.editorial_team_full_name,
+            teamAbbr: player.editorial_team_abbr,
+            position: player.display_position,
+            byeWeeks: player.bye_weeks,
+            headshot: player.image_url,
+        })
+
+    return player;
+}
+
 export const collectTransactions = async () => {
     const accessToken = await getAccessToken();
-    const {league, transactions} = await getTransactions(accessToken);
+    const {league, transactions} = await getTransactions(accessToken, '1353821', '414');
     const redis = await connect({
         hostname: config.redis.hostname,
     });
@@ -288,7 +327,7 @@ export const collectTransactions = async () => {
             players
         }
 
-        await redis.set(key, JSON.stringify(data));
+        // await redis.set(key, JSON.stringify(data));
 
         const embed = {
             title: 'New Transaction',
@@ -340,12 +379,37 @@ export const collectTransactions = async () => {
             embeds: [embed]
         }
 
-        await fetch(config.yahoo.discordWebhook, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(webhookData)
-        }).catch(err => console.error(err));
+        // await fetch(config.yahoo.discordWebhook, {
+        //     method: 'POST',
+        //     headers: {
+        //         'Content-Type': 'application/json'
+        //     },
+        //     body: JSON.stringify(webhookData)
+        // }).catch(err => console.error(err));
     }
 };
+
+const accessToken = await getAccessToken();
+console.log(accessToken);
+
+const {transactions} = await getTransactions(accessToken, '1353821', '414'); 
+
+// console.log(transactions);
+
+for (let transaction of transactions) {
+    console.log(transaction)
+
+    if (Array.isArray(transaction.players.player)) {
+        for (let player of transaction.players.player) {
+            const playerDetais = await getPlayerDetails(accessToken, player.player_id, '414');
+            console.log(`Updated ${playerDetais.name.full}`)
+        }
+    } else {
+        const player = await getPlayerDetails(accessToken, transaction.players.player.player_id, '414');
+        console.log(`Updated ${player.name.full}`)
+    }
+
+    await (new Promise(resolve => setTimeout(resolve, 2000)));
+}
+
+Deno.exit(0);
