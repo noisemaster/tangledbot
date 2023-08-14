@@ -69,36 +69,29 @@ export const getAccessToken = async () => {
 }
 
 export const fetchStandings = async (accessToken: string, leagueId: string = '1353821') => {
-    const standingsRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/standings?format=json`, {
+    const standingsRequestXML = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/standings`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
         }
     });
 
-    const rawStandings = await standingsRequest.json();
+    const rawXML = await standingsRequestXML.text();
+    const parser = new XMLParser();
+
+    const rawStandings = parser.parse(rawXML);
 
     const parsedStandings: ParsedStandings[] = [];
 
-    const league = rawStandings.fantasy_content.league[0];
-    const standings = rawStandings.fantasy_content.league[1].standings[0].teams;
+    const league = rawStandings.fantasy_content.league;
+    const standings = rawStandings.fantasy_content.league.standings.teams.team;
 
-    for (const index in standings) {
-        if (index === 'count') {
-            break;
-        }
-
-        const { team } = standings[index];
-
-        const [, , teamName] = team[0];
-        const { team_points } = team[1];
-        const { team_standings } = team[2];
-
+    for (const board of standings) {
         parsedStandings.push({
-            name: teamName.name,
-            points: Number(team_points.total),
-            wins: Number(team_standings.outcome_totals.wins),
-            losses: Number(team_standings.outcome_totals.losses),
-            ties: Number(team_standings.outcome_totals.ties),
+            name: board.name,
+            points: board.team_standings.points_for,
+            wins: board.team_standings.outcome_totals.wins,
+            losses: board.team_standings.outcome_totals.losses,
+            ties: board.team_standings.outcome_totals.ties,
         })
     }
 
@@ -393,8 +386,8 @@ export const collectTransactions = async () => {
     }
 };
 
-// const accessToken = await getAccessToken();
-// console.log(accessToken);
+const accessToken = await getAccessToken();
+console.log(accessToken);
 
 // const {transactions} = await getTransactions(accessToken, '1353821', '414'); 
 
@@ -416,4 +409,6 @@ export const collectTransactions = async () => {
 //     await (new Promise(resolve => setTimeout(resolve, 2000)));
 // }
 
-// Deno.exit(0);
+await fetchScoreboard(accessToken);
+
+Deno.exit(0);
