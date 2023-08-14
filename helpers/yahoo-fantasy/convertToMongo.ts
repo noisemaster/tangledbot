@@ -1,5 +1,5 @@
 import { connect } from 'redis/mod.ts';
-import { getAccessToken, getTeams } from './mod.ts';
+import { getAccessToken, getTeams, getTransactions } from './mod.ts';
 import { MongoClient } from 'npm:mongodb';
 import config from "../../config.ts";
 
@@ -46,45 +46,53 @@ await mongo
         { upsert: true }
     )
 
-const transactionData = await Deno.readTextFile('transactions.json').then(x => JSON.parse(x));
-
-const transactions = transactionData.fantasy_content.league.transactions.transaction;
+const accessToken = await getAccessToken();
+const {transactions} = await getTransactions(accessToken, '1353821', '414'); 
 
 for (const transaction of transactions) {
     if (!Array.isArray(transaction.players.player)) {
         transaction.players.player = [transaction.players.player];
     }
 
-    const [gameId] = transaction.transaction_key.split('.');
+    for (const [index, player] of transaction.players.player.entries()) {
+        const [gameId] = transaction.transaction_key.split('.');
 
-    await mongo
-        .db('tangledbot')
-        .collection('transactions')
-        .updateOne(
-            {
-                transactionKey: transaction.transaction_key,
-            },
-            {
-                $setOnInsert: {
-                    transactionKey: transaction.transaction_key,
-                    leagueId: 1353821,
-                    type: transaction.type,
-                    timestamp: new Date(transaction.timestamp * 1000),
-                    status: transaction.status,
+        await mongo
+            .db('tangledbot')
+            .collection('transactions')
+            .updateOne(
+                {
+                    transactionKey: `${transaction.transaction_key}.${index}`,
                 },
-                $set: {
-                    gameId: Number(gameId),
-                    players: transaction.players.player,
-                }
-            },
-            { upsert: true }
-        )
+                {
+                    $setOnInsert: {
+                        transactionKey: `${transaction.transaction_key}.${index}`,
+                        leagueId: 1353821,
+                        type: transaction.type,
+                        timestamp: new Date(transaction.timestamp * 1000),
+                        status: player.transaction_data.type,
+                    },
+                    $set: {
+                        gameId: Number(gameId),
+                        name: player.name.full,
+                        playerId: player.player_id,
+                        position: player.position_type,
+                        sourceType: player.transaction_data.source_type,
+                        sourceTeam: player.transaction_data.source_team_name,
+                        sourceTeamKey: player.transaction_data.source_team_key,
+                        destinationType: player.transaction_data.destination_type,
+                        destinationTeam: player.transaction_data.destination_team_name,
+                        destinationTeamKey: player.transaction_data.destination_team_key,
+                    }
+                },
+                { upsert: true }
+            )
+    }
 }
 
 console.log('Getting Teams...');
 
-const accessToken = await getAccessToken();
-const teams = await getTeams(accessToken)
+const teams = await getTeams(accessToken, '1353821', '414')
     .then(x => x.fantasy_content.league.teams.team);
 
 for (const team of teams) {
@@ -111,6 +119,7 @@ for (const team of teams) {
             { upsert: true }
         )
 }
+
 
 console.log('Done!');
 Deno.exit(0);
