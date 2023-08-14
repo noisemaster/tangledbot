@@ -106,42 +106,40 @@ export const fetchStandings = async (accessToken: string, leagueId: string = '13
 }
 
 export const fetchScoreboard = async (accessToken: string, leagueId: string = '1353821') => {
-    const scoreboardRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/scoreboard?format=json`, {
+    const scoreboardRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/414.l.${leagueId}/scoreboard`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
         }
     });
 
-    const rawScoreboard = await scoreboardRequest.json();
+    const rawScoreboard = await scoreboardRequest.text();
+    const parser = new XMLParser();
+
+    const json = parser.parse(rawScoreboard);
 
     const parsedScoreboard: ParsedScoreboard[] = [];
 
-    const league = rawScoreboard.fantasy_content.league[0];
-    const { matchups } = rawScoreboard.fantasy_content.league[1].scoreboard[0];
+    const league = json.fantasy_content.league;
+    const matchups = json.fantasy_content.league.scoreboard.matchups.matchup;
     let weekNumber: string = '';
 
-    for (const index in matchups) {
-        if (index === 'count') {
-            break;
-        }
-
-        const {matchup} = matchups[index];
+    for (const matchup of matchups) {
         weekNumber = matchup.week;
 
-        const matchupTeams = matchup[0].teams;
+        const matchupTeams = matchup.teams.team;
 
         const team1 = {
-            name: matchupTeams[0].team[0][2].name,
-            actualPoints: Number(matchupTeams[0].team[1].team_points.total),
-            projectedPoints: Number(matchupTeams[0].team[1].team_projected_points.total),
-            winProbability: matchupTeams[0].team[1].win_probability
+            name: matchupTeams[0].name,
+            actualPoints: matchupTeams[0].team_points.total,
+            projectedPoints: matchupTeams[0].team_projected_points.total,
+            winProbability: matchupTeams[0].win_probability
         }
 
         const team2 = {
-            name: matchupTeams[1].team[0][2].name,
-            actualPoints: Number(matchupTeams[1].team[1].team_points.total),
-            projectedPoints: Number(matchupTeams[1].team[1].team_projected_points.total),
-            winProbability: matchupTeams[1].team[1].win_probability
+            name: matchupTeams[1].name,
+            actualPoints: matchupTeams[1].team_points.total,
+            projectedPoints: matchupTeams[1].team_projected_points.total,
+            winProbability: matchupTeams[1].win_probability
         }
 
         const key = `week${weekNumber}-${team1.name}-vs-${team2.name}-points`;
