@@ -73,10 +73,11 @@ for (const transaction of transactions) {
                         status: player.transaction_data.type,
                     },
                     $set: {
+                        parentTransactionKey: transaction.transaction_key,
                         gameId: Number(gameId),
                         name: player.name.full,
-                        playerId: player.player_id,
-                        position: player.position_type,
+                        playerId: player.player_key,
+                        position: player.position,
                         sourceType: player.transaction_data.source_type,
                         sourceTeam: player.transaction_data.source_team_name,
                         sourceTeamKey: player.transaction_data.source_team_key,
