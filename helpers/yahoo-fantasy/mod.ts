@@ -14,6 +14,7 @@ interface ParsedStandings {
 
 interface ScoreboardTeam {
     name: string,
+    teamKey: string,
     actualPoints: number,
     projectedPoints: number,
     winProbability: number
@@ -22,7 +23,6 @@ interface ScoreboardTeam {
 interface ParsedScoreboard {
     team1: ScoreboardTeam,
     team2: ScoreboardTeam,
-    key: string
 }
 
 export const getAccessToken = async () => {
@@ -121,7 +121,7 @@ export const fetchScoreboard = async (accessToken: string, leagueId: string = '1
 
     const league = json.fantasy_content.league;
     const matchups = json.fantasy_content.league.scoreboard.matchups.matchup;
-    let weekNumber: string = '';
+    let weekNumber = 0;
 
     for (const matchup of matchups) {
         weekNumber = matchup.week;
@@ -130,6 +130,7 @@ export const fetchScoreboard = async (accessToken: string, leagueId: string = '1
 
         const team1 = {
             name: matchupTeams[0].name,
+            teamKey: matchupTeams[0].team_key,
             actualPoints: matchupTeams[0].team_points.total,
             projectedPoints: matchupTeams[0].team_projected_points.total,
             winProbability: matchupTeams[0].win_probability
@@ -137,15 +138,14 @@ export const fetchScoreboard = async (accessToken: string, leagueId: string = '1
 
         const team2 = {
             name: matchupTeams[1].name,
+            teamKey: matchupTeams[1].team_key,
             actualPoints: matchupTeams[1].team_points.total,
             projectedPoints: matchupTeams[1].team_projected_points.total,
             winProbability: matchupTeams[1].win_probability
         }
 
-        const key = `week${weekNumber}-${team1.name}-vs-${team2.name}-points`;
-
         parsedScoreboard.push({
-            team1, team2, key
+            team1, team2
         });
     }
 
@@ -297,7 +297,7 @@ export const getPlayerDetails = async (accessToken: string, playerId = '1353821'
 
 export const collectTransactions = async () => {
     const accessToken = await getAccessToken();
-    const {league, transactions} = await getTransactions(accessToken, '1353821', '414');
+    const {league, transactions} = await getTransactions(accessToken, '1353821');
     const mongo = await MongoClient.connect(config.mongo.url);
 
     const embedsToSend: any[] = [];
@@ -420,6 +420,6 @@ console.log(accessToken);
 //     await (new Promise(resolve => setTimeout(resolve, 2000)));
 // }
 
-await fetchScoreboard(accessToken);
+// await fetchScoreboard(accessToken);
 
-Deno.exit(0);
+// Deno.exit(0);
