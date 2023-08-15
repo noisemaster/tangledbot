@@ -300,6 +300,8 @@ export const collectTransactions = async () => {
     const {league, transactions} = await getTransactions(accessToken, '1353821', '414');
     const mongo = await MongoClient.connect(config.mongo.url);
 
+    const embedsToSend: any[] = [];
+
     for (const transaction of transactions) {
         const dataExists = await mongo
             .db('tangledbot')
@@ -367,13 +369,23 @@ export const collectTransactions = async () => {
         }
 
         console.log(embed);
+    }
 
+    // Collect embeds in groups of 10
+    const embedGroups: any[] = [];
+
+    for (let i = 0; i < embedsToSend.length; i += 10) {
+        embedGroups.push(embedsToSend.slice(i, i + 10));
+    }
+
+    for (const group of embedGroups) {
         const webhookData = {
             username: league.name,
             avatar_url: league.logo,
-            embeds: [embed]
+            embeds: group
         }
-
+        
+        // Send embeds to discord
         await fetch(config.yahoo.discordWebhook, {
             method: 'POST',
             headers: {
@@ -382,6 +394,7 @@ export const collectTransactions = async () => {
             body: JSON.stringify(webhookData)
         }).catch(err => console.error(err));
     }
+
 };
 
 const accessToken = await getAccessToken();
