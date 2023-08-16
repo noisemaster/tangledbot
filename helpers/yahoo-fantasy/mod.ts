@@ -23,6 +23,7 @@ interface ScoreboardTeam {
 interface ParsedScoreboard {
     team1: ScoreboardTeam,
     team2: ScoreboardTeam,
+    id: string
 }
 
 export const getAccessToken = async () => {
@@ -105,8 +106,8 @@ export const fetchStandings = async (accessToken: string, leagueId: string = '13
     };
 }
 
-export const fetchScoreboard = async (accessToken: string, leagueId: string = '1353821') => {
-    const scoreboardRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/414.l.${leagueId}/scoreboard`, {
+export const fetchScoreboard = async (accessToken: string, leagueId: string = '1353821', gameId = 'nfl') => {
+    const scoreboardRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/scoreboard`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
         }
@@ -127,6 +128,7 @@ export const fetchScoreboard = async (accessToken: string, leagueId: string = '1
         weekNumber = matchup.week;
 
         const matchupTeams = matchup.teams.team;
+        const matchupId = league.league_key + `.mu.${matchupTeams[0].team_id}.v.${matchupTeams[1].team_id}`;
 
         const team1 = {
             name: matchupTeams[0].name,
@@ -145,7 +147,7 @@ export const fetchScoreboard = async (accessToken: string, leagueId: string = '1
         }
 
         parsedScoreboard.push({
-            team1, team2
+            team1, team2, id: matchupId
         });
     }
 
@@ -162,28 +164,48 @@ export const fetchScoreboard = async (accessToken: string, leagueId: string = '1
 
 export async function addPoints() {
     const accessToken = await getAccessToken();
-    const {scoreboard} = await fetchScoreboard(accessToken);
-    const redis = await connect({
-        hostname: config.redis.hostname,
-    });
+    const {scoreboard, league} = await fetchScoreboard(accessToken);
+    const mongo = await MongoClient.connect(config.mongo.url);
 
     const now = Date.now();
     for (const entry of scoreboard) {
-        let currentData: any | null = await redis.get(entry.key);
+        const currentData = await mongo
+            .db('tangledbot')
+            .collection('matchups')
+            .findOne({matchupKey: entry.id});
 
-        if (!currentData) {
-            currentData = {
-                [entry.team1.name]: [],
-                [entry.team2.name]: []
-            }
-        } else {
-            currentData = JSON.parse(currentData);
+        let team1ScoreTiming = [];
+        let team2ScoreTiming = [];
+
+        if (currentData) {
+            team1ScoreTiming = currentData.team1ScoreTiming;
+            team2ScoreTiming = currentData.team2ScoreTiming;
         }
-        
-        currentData[entry.team1.name].push([now, entry.team1.actualPoints, entry.team1.winProbability]);
-        currentData[entry.team2.name].push([now, entry.team2.actualPoints, entry.team2.winProbability]);
 
-        await redis.set(entry.key, JSON.stringify(currentData));
+        team1ScoreTiming.push([now, entry.team1.actualPoints, entry.team1.winProbability]);
+        team2ScoreTiming.push([now, entry.team2.actualPoints, entry.team2.winProbability]);
+
+        await mongo
+            .db('tangledbot')
+            .collection('matchups')
+            .updateOne({matchupId: entry.id}, {
+                $set: {
+                    team1ScoreTiming,
+                    team2ScoreTiming,
+                    team1Name: entry.team1.name,
+                    team2Name: entry.team2.name,
+                    team1Score: entry.team1.actualPoints,
+                    team2Score: entry.team2.actualPoints,
+                },
+                $setOnInsert: {
+                    matchupKey: entry.id,
+                    gameId: 'nfl',
+                    leagueId: '1353821',
+                    week: league.week,
+                    team1Id: entry.team1.teamKey,
+                    team2Id: entry.team2.teamKey,
+                },
+            }, {upsert: true});
     }
 }
 
@@ -420,6 +442,6 @@ console.log(accessToken);
 //     await (new Promise(resolve => setTimeout(resolve, 2000)));
 // }
 
-// await fetchScoreboard(accessToken);
+await fetchScoreboard(accessToken, '1353821', '414');
 
-// Deno.exit(0);
+Deno.exit(0);
