@@ -209,25 +209,25 @@ export async function addPoints() {
     }
 }
 
-export const listGamesInRedis = async () => {
-    const redis = await connect({
-        hostname: config.redis.hostname,
-    });
+export const listGames = async () => {
+    const mongo = await MongoClient.connect(config.mongo.url);
 
-    const keys = await redis.keys('week*');
-
-    const games = keys.map(key => {
-        const [week, team1, _vs, team2, _points] = key.split('-');
-        return {
-            week: Number(week.replace('week', '')),
-            team1,
-            team2,
-            key
-        }
-    });
+    const games = await mongo
+        .db('tangledbot')
+        .collection('matchups')
+        .find({
+            gameId: 'nfl',
+        })
+        .toArray()
+        .then(arr => arr.map(x => ({
+            week: x.week,
+            team1: x.team1Name,
+            team2: x.team2Name,
+            key: x.matchupKey,
+        })))
 
     return games.sort((a, b) => a.week - b.week);
-}
+};
 
 export const getTransactions = async (accessToken: string, leagueId: string = '1353821', gameId = 'nfl') => {
     const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/transactions;types=add,drop,trade;status=accepted`, {
