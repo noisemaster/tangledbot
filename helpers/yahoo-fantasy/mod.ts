@@ -418,30 +418,3 @@ export const collectTransactions = async () => {
     }
 
 };
-
-const accessToken = await getAccessToken();
-console.log(accessToken);
-
-// const {transactions} = await getTransactions(accessToken, '1353821', '414'); 
-
-// // console.log(transactions);
-
-// for (let transaction of transactions) {
-//     console.log(transaction)
-
-//     if (Array.isArray(transaction.players.player)) {
-//         for (let player of transaction.players.player) {
-//             const playerDetais = await getPlayerDetails(accessToken, player.player_id, '414');
-//             console.log(`Updated ${playerDetais.name.full}`)
-//         }
-//     } else {
-//         const player = await getPlayerDetails(accessToken, transaction.players.player.player_id, '414');
-//         console.log(`Updated ${player.name.full}`)
-//     }
-
-//     await (new Promise(resolve => setTimeout(resolve, 2000)));
-// }
-
-await fetchScoreboard(accessToken, '1353821', '414');
-
-Deno.exit(0);
