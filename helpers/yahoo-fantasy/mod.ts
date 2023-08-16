@@ -1,6 +1,8 @@
 import { connect } from 'redis/mod.ts';
+import { MongoClient } from 'npm:mongodb';
 import { encode } from "https://deno.land/std@0.154.0/encoding/base64.ts";
 import config from '../../config.ts';
+import { XMLParser } from 'npm:fast-xml-parser';
 
 interface ParsedStandings {
     name: string,
@@ -12,6 +14,7 @@ interface ParsedStandings {
 
 interface ScoreboardTeam {
     name: string,
+    teamKey: string,
     actualPoints: number,
     projectedPoints: number,
     winProbability: number
@@ -20,7 +23,7 @@ interface ScoreboardTeam {
 interface ParsedScoreboard {
     team1: ScoreboardTeam,
     team2: ScoreboardTeam,
-    key: string
+    id: string
 }
 
 export const getAccessToken = async () => {
@@ -67,36 +70,29 @@ export const getAccessToken = async () => {
 }
 
 export const fetchStandings = async (accessToken: string, leagueId: string = '1353821') => {
-    const standingsRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/standings?format=json`, {
+    const standingsRequestXML = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/standings`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
         }
     });
 
-    const rawStandings = await standingsRequest.json();
+    const rawXML = await standingsRequestXML.text();
+    const parser = new XMLParser();
+
+    const rawStandings = parser.parse(rawXML);
 
     const parsedStandings: ParsedStandings[] = [];
 
-    const league = rawStandings.fantasy_content.league[0];
-    const standings = rawStandings.fantasy_content.league[1].standings[0].teams;
+    const league = rawStandings.fantasy_content.league;
+    const standings = rawStandings.fantasy_content.league.standings.teams.team;
 
-    for (const index in standings) {
-        if (index === 'count') {
-            break;
-        }
-
-        const { team } = standings[index];
-
-        const [, , teamName] = team[0];
-        const { team_points } = team[1];
-        const { team_standings } = team[2];
-
+    for (const board of standings) {
         parsedStandings.push({
-            name: teamName.name,
-            points: Number(team_points.total),
-            wins: Number(team_standings.outcome_totals.wins),
-            losses: Number(team_standings.outcome_totals.losses),
-            ties: Number(team_standings.outcome_totals.ties),
+            name: board.name,
+            points: board.team_standings.points_for,
+            wins: board.team_standings.outcome_totals.wins,
+            losses: board.team_standings.outcome_totals.losses,
+            ties: board.team_standings.outcome_totals.ties,
         })
     }
 
@@ -110,49 +106,48 @@ export const fetchStandings = async (accessToken: string, leagueId: string = '13
     };
 }
 
-export const fetchScoreboard = async (accessToken: string, leagueId: string = '1353821') => {
-    const scoreboardRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/scoreboard?format=json`, {
+export const fetchScoreboard = async (accessToken: string, leagueId: string = '1353821', gameId = 'nfl') => {
+    const scoreboardRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/scoreboard`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
         }
     });
 
-    const rawScoreboard = await scoreboardRequest.json();
+    const rawScoreboard = await scoreboardRequest.text();
+    const parser = new XMLParser();
+
+    const json = parser.parse(rawScoreboard);
 
     const parsedScoreboard: ParsedScoreboard[] = [];
 
-    const league = rawScoreboard.fantasy_content.league[0];
-    const { matchups } = rawScoreboard.fantasy_content.league[1].scoreboard[0];
-    let weekNumber: string = '';
+    const league = json.fantasy_content.league;
+    const matchups = json.fantasy_content.league.scoreboard.matchups.matchup;
+    let weekNumber = 0;
 
-    for (const index in matchups) {
-        if (index === 'count') {
-            break;
-        }
-
-        const {matchup} = matchups[index];
+    for (const matchup of matchups) {
         weekNumber = matchup.week;
 
-        const matchupTeams = matchup[0].teams;
+        const matchupTeams = matchup.teams.team;
+        const matchupId = league.league_key + `.mu.${matchupTeams[0].team_id}.v.${matchupTeams[1].team_id}`;
 
         const team1 = {
-            name: matchupTeams[0].team[0][2].name,
-            actualPoints: Number(matchupTeams[0].team[1].team_points.total),
-            projectedPoints: Number(matchupTeams[0].team[1].team_projected_points.total),
-            winProbability: matchupTeams[0].team[1].win_probability
+            name: matchupTeams[0].name,
+            teamKey: matchupTeams[0].team_key,
+            actualPoints: matchupTeams[0].team_points.total,
+            projectedPoints: matchupTeams[0].team_projected_points.total,
+            winProbability: matchupTeams[0].win_probability
         }
 
         const team2 = {
-            name: matchupTeams[1].team[0][2].name,
-            actualPoints: Number(matchupTeams[1].team[1].team_points.total),
-            projectedPoints: Number(matchupTeams[1].team[1].team_projected_points.total),
-            winProbability: matchupTeams[1].team[1].win_probability
+            name: matchupTeams[1].name,
+            teamKey: matchupTeams[1].team_key,
+            actualPoints: matchupTeams[1].team_points.total,
+            projectedPoints: matchupTeams[1].team_projected_points.total,
+            winProbability: matchupTeams[1].win_probability
         }
 
-        const key = `week${weekNumber}-${team1.name}-vs-${team2.name}-points`;
-
         parsedScoreboard.push({
-            team1, team2, key
+            team1, team2, id: matchupId
         });
     }
 
@@ -169,91 +164,85 @@ export const fetchScoreboard = async (accessToken: string, leagueId: string = '1
 
 export async function addPoints() {
     const accessToken = await getAccessToken();
-    const {scoreboard} = await fetchScoreboard(accessToken);
-    const redis = await connect({
-        hostname: config.redis.hostname,
-    });
+    const {scoreboard, league} = await fetchScoreboard(accessToken);
+    const mongo = await MongoClient.connect(config.mongo.url);
 
     const now = Date.now();
     for (const entry of scoreboard) {
-        let currentData: any | null = await redis.get(entry.key);
+        const currentData = await mongo
+            .db('tangledbot')
+            .collection('matchups')
+            .findOne({matchupKey: entry.id});
 
-        if (!currentData) {
-            currentData = {
-                [entry.team1.name]: [],
-                [entry.team2.name]: []
-            }
-        } else {
-            currentData = JSON.parse(currentData);
+        let team1ScoreTiming = [];
+        let team2ScoreTiming = [];
+
+        if (currentData) {
+            team1ScoreTiming = currentData.team1ScoreTiming;
+            team2ScoreTiming = currentData.team2ScoreTiming;
         }
-        
-        currentData[entry.team1.name].push([now, entry.team1.actualPoints, entry.team1.winProbability]);
-        currentData[entry.team2.name].push([now, entry.team2.actualPoints, entry.team2.winProbability]);
 
-        await redis.set(entry.key, JSON.stringify(currentData));
+        team1ScoreTiming.push([now, entry.team1.actualPoints, entry.team1.winProbability]);
+        team2ScoreTiming.push([now, entry.team2.actualPoints, entry.team2.winProbability]);
+
+        await mongo
+            .db('tangledbot')
+            .collection('matchups')
+            .updateOne({matchupId: entry.id}, {
+                $set: {
+                    team1ScoreTiming,
+                    team2ScoreTiming,
+                    team1Name: entry.team1.name,
+                    team2Name: entry.team2.name,
+                    team1Score: entry.team1.actualPoints,
+                    team2Score: entry.team2.actualPoints,
+                },
+                $setOnInsert: {
+                    matchupKey: entry.id,
+                    gameId: 'nfl',
+                    leagueId: '1353821',
+                    week: league.week,
+                    team1Id: entry.team1.teamKey,
+                    team2Id: entry.team2.teamKey,
+                },
+            }, {upsert: true});
     }
 }
 
-export const listGamesInRedis = async () => {
-    const redis = await connect({
-        hostname: config.redis.hostname,
-    });
+export const listGames = async () => {
+    const mongo = await MongoClient.connect(config.mongo.url);
 
-    const keys = await redis.keys('week*');
-
-    const games = keys.map(key => {
-        const [week, team1, _vs, team2, _points] = key.split('-');
-        return {
-            week: Number(week.replace('week', '')),
-            team1,
-            team2,
-            key
-        }
-    });
+    const games = await mongo
+        .db('tangledbot')
+        .collection('matchups')
+        .find({
+            gameId: 'nfl',
+        })
+        .toArray()
+        .then(arr => arr.map(x => ({
+            week: x.week,
+            team1: x.team1Name,
+            team2: x.team2Name,
+            key: x.matchupKey,
+        })))
 
     return games.sort((a, b) => a.week - b.week);
-}
+};
 
-export const getTransactions = async (accessToken: string, leagueId: string = '1353821') => {
-    const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/transactions;types=add,drop,trade;status=accepted?format=json`, {
+export const getTransactions = async (accessToken: string, leagueId: string = '1353821', gameId = 'nfl') => {
+    const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/transactions;types=add,drop,trade;status=accepted`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
         }
     });
 
-    const rawTrades = await tradesRequest.json();
-    const league = rawTrades.fantasy_content.league[0];
-    const rawTransactions = rawTrades.fantasy_content.league[1].transactions;
-    delete rawTransactions.count;
-    const transactionsArr = Object.values(rawTransactions);
-    console.log(transactionsArr);
+    const tradesText = await tradesRequest.text();
+    const parser = new XMLParser();
 
-    const transactions = transactionsArr.map((action: any) => {
-        const { transaction } = action;
-        const { transaction_id: id, type, status, timestamp } = transaction[0];
-        const { players } = transaction[1];
-        delete players.count;
+    const rawTrades = parser.parse(tradesText);
 
-        const parsedPlayers = Object.values(players).map((p: any) => {
-            const { player } = p;
-            const [_pKey, _pid, nameInfo, {editorial_team_abbr}, {display_position}, {position_type}] = player[0];
-
-            return {
-                name: nameInfo.name.full,
-                team: editorial_team_abbr,
-                position: display_position,
-                transaction_data: player[1].transaction_data
-            }
-        });
-
-        return {
-            id,
-            type,
-            status,
-            timestamp: new Date(Number(timestamp * 1000)),
-            players: parsedPlayers
-        }
-    });
+    const league = rawTrades.fantasy_content.league;
+    const transactions = league.transactions.transaction;
 
     return {
         league: {
@@ -265,81 +254,160 @@ export const getTransactions = async (accessToken: string, leagueId: string = '1
     };
 }
 
-export const collectTransactions = async () => {
-    const accessToken = await getAccessToken();
-    const {league, transactions} = await getTransactions(accessToken);
-    const redis = await connect({
-        hostname: config.redis.hostname,
+export const getTeams = async (accessToken: string, leagueId = '1353821', gameId = 'nfl') => {
+    const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/teams`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
     });
 
-    for (const transaction of transactions) {
-        const {id, type, status, timestamp, players} = transaction;
-        const key = `transaction-${league.name}-${id}`;
+    const rawXML = await tradesRequest.text();
+    const parser = new XMLParser();
 
-        const currentData = await redis.get(key);
-        if (currentData) {
+    const json = parser.parse(rawXML);
+
+    return json;
+}
+
+export const getPlayerDetails = async (accessToken: string, playerId = '1353821', gameId = 'nfl') => {
+    const mongo = await MongoClient.connect(config.mongo.url);
+    
+    // check if player exists
+    const dbPlayer = await mongo
+        .db('tangledbot')
+        .collection('players')
+        .findOne({playerId});
+
+    if (dbPlayer) {
+        dbPlayer.name = {
+            full: dbPlayer.name,
+        }
+        return dbPlayer;
+    }
+
+    const playerRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/players;player_keys=${gameId}.p.${playerId}`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    const rawXML = await playerRequest.text();
+    const parser = new XMLParser();
+
+    const json = parser.parse(rawXML);
+
+    const player = json.fantasy_content.players.player;
+
+    await mongo
+        .db('tangledbot')
+        .collection('players')
+        .insertOne({
+            playerKey: player.player_key,
+            playerId,
+            name: player.name.full,
+            status: player.status,
+            statusFull: player.status_full,
+            team: player.editorial_team_full_name,
+            teamAbbr: player.editorial_team_abbr,
+            position: player.display_position,
+            byeWeeks: player.bye_weeks,
+            headshot: player.image_url,
+        })
+
+    return player;
+}
+
+export const collectTransactions = async () => {
+    const accessToken = await getAccessToken();
+    const {league, transactions} = await getTransactions(accessToken, '1353821');
+    const mongo = await MongoClient.connect(config.mongo.url);
+
+    const embedsToSend: any[] = [];
+
+    for (const transaction of transactions) {
+        const dataExists = await mongo
+            .db('tangledbot')
+            .collection('transactions')
+            .findOne({
+                parentTransactionKey: transaction.transaction_key,
+            });
+    
+        if (dataExists) {
             continue;
         }
 
-        const data = {
-            type,
-            status,
-            timestamp,
-            players
+        if (!Array.isArray(transaction.players)) {
+            transaction.players = [transaction.players];
         }
 
-        await redis.set(key, JSON.stringify(data));
+        for (const [index, player] of transaction.players.entries()) {
+            await mongo
+                .db('tangledbot')
+                .collection('transactions')
+                .insertOne({
+                    transactionKey: `${transaction.transaction_key}.${index}`,
+                    leagueId: 1353821,
+                    type: transaction.type,
+                    timestamp: new Date(transaction.timestamp * 1000),
+                    status: player.transaction_data.type,
+                    parentTransactionKey: transaction.transaction_key,
+                    gameId: 'nfl',
+                    name: player.name.full,
+                    playerId: player.player_key,
+                    position: player.position,
+                    sourceType: player.transaction_data.source_type,
+                    sourceTeam: player.transaction_data.source_team_name,
+                    sourceTeamKey: player.transaction_data.source_team_key,
+                    destinationType: player.transaction_data.destination_type,
+                    destinationTeam: player.transaction_data.destination_team_name,
+                    destinationTeamKey: player.transaction_data.destination_team_key,
+                });
+        }
 
         const embed = {
             title: 'New Transaction',
-            description: players.map(p => {
+            description: transaction.players.map((p: any) => {
                 const {name, team, position, transaction_data} = p;
-                let type, source_type, destination_type, source, destination;
-                if (Array.isArray(transaction_data)) {
-                    type = transaction_data[0].type;
-                    source_type = transaction_data[0].source_type;
-                    destination_type = transaction_data[0].destination_type;
-                    if (source_type === 'team') {
-                        source = transaction_data[0].source_team_name;
-                    } else {
-                        source = transaction_data[0].source_type;
-                    }
-                    if (destination_type === 'team') {
-                        destination = transaction_data[0].destination_team_name;
-                    } else {
-                        destination = transaction_data[0].destination_type;
-                    }
+                let source, destination;
+                const type = transaction_data.type;
+                const source_type = transaction_data.source_type;
+                const destination_type = transaction_data.destination_type;
+                if (source_type === 'team') {
+                    source = transaction_data.source_team_name;
                 } else {
-                    type = transaction_data.type;
-                    source_type = transaction_data.source_type;
-                    destination_type = transaction_data.destination_type;
-                    if (source_type === 'team') {
-                        source = transaction_data.source_team_name;
-                    } else {
-                        source = transaction_data.source_type;
-                    }
-                    if (destination_type === 'team') {
-                        destination = transaction_data.destination_team_name;
-                    } else {
-                        destination = transaction_data.destination_type;
-                    }
+                    source = transaction_data.source_type;
+                }
+                if (destination_type === 'team') {
+                    destination = transaction_data.destination_team_name;
+                } else {
+                    destination = transaction_data.destination_type;
                 }
 
                 const typeEmoji = type === 'add' ? '🔺' : type === 'drop' ? '🔻' : '🔄';
 
                 return `${name} (${team} - ${position}) ${typeEmoji} ${source} -> ${destination}`;
             }).join('\n'),
-            timestamp: timestamp.toISOString(),
+            timestamp: new Date(transaction.timestamp * 1000).toISOString(),
         }
 
         console.log(embed);
+    }
 
+    // Collect embeds in groups of 10
+    const embedGroups: any[] = [];
+
+    for (let i = 0; i < embedsToSend.length; i += 10) {
+        embedGroups.push(embedsToSend.slice(i, i + 10));
+    }
+
+    for (const group of embedGroups) {
         const webhookData = {
             username: league.name,
             avatar_url: league.logo,
-            embeds: [embed]
+            embeds: group
         }
-
+        
+        // Send embeds to discord
         await fetch(config.yahoo.discordWebhook, {
             method: 'POST',
             headers: {
@@ -348,4 +416,5 @@ export const collectTransactions = async () => {
             body: JSON.stringify(webhookData)
         }).catch(err => console.error(err));
     }
+
 };

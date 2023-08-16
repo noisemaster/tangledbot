@@ -1,6 +1,6 @@
 import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, Embed, FileContent, Interaction, InteractionCallbackData, InteractionResponseTypes } from 'discordeno/mod.ts';
 import { createCommand } from './mod.ts';
-import { getAccessToken, fetchStandings, fetchScoreboard, listGamesInRedis } from "../helpers/yahoo-fantasy/mod.ts";
+import { getAccessToken, fetchStandings, fetchScoreboard, listGamesInRedis, listGames } from "../helpers/yahoo-fantasy/mod.ts";
 
 // @deno-types="https://deno.land/x/fuse@v6.4.1/dist/fuse.d.ts"
 import Fuse from 'https://deno.land/x/fuse@v6.4.1/dist/fuse.esm.min.js'
@@ -95,7 +95,7 @@ export const handleGraphAutocomplete = async (bot: Bot, interaction: Interaction
     const searchGameOption: any = detailsOption ? detailsOption.options.find((option: any) => option.name === 'game') : null;
     const searchGame: string = searchGameOption ? searchGameOption.value : '';
 
-    const games = await listGamesInRedis();
+    const games = await listGames();
 
     const fuse = new Fuse(games, {
         keys: ['week', 'team1', 'team2', 'key']
