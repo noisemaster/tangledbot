@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, InteractionResponseTypes, Interaction, DiscordEmbedField, Embed } from "discordeno/mod.ts";
-import { sub, differenceInDays } from "https://deno.land/x/date_fns@v2.15.0/index.js";
+import { sub, differenceInDays } from "npm:date-fns";
 import { teams } from "../helpers/nfl/teams.ts";
 
 // @deno-types="https://deno.land/x/fuse@v6.4.1/dist/fuse.d.ts"
@@ -25,7 +25,7 @@ const sendNFLScoreboard = async (bot: Bot, interaction: Interaction) => {
     for (const game of scoreboard.events) {
         const gameDate = Date.parse(game.date);
         const now = new Date();
-        const aDayAgo = sub(now, {day: 1});
+        const aDayAgo = sub(now, {days: 1});
 
         const visitingTeam = game.competitions[0].competitors.find((team: {homeAway: string}) => team.homeAway === 'away');
 		const homeTeam = game.competitions[0].competitors.find((team: {homeAway: string}) => team.homeAway === 'home');

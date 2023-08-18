@@ -4,6 +4,7 @@ import { getAccessToken, fetchStandings, fetchScoreboard, listGamesInRedis, list
 
 // @deno-types="https://deno.land/x/fuse@v6.4.1/dist/fuse.d.ts"
 import Fuse from 'https://deno.land/x/fuse@v6.4.1/dist/fuse.esm.min.js'
+import config from "../config.ts";
 
 export const sendStandingsEmbed = async (bot: Bot, interaction: Interaction) => {
     await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
@@ -121,7 +122,7 @@ const fetchChart = async (
     game: string,
 ): Promise<Uint8Array> => {
     const badger = Deno.run({
-        cmd: ["python3", "./helpers/scoring.py", game],
+        cmd: ["python3", "./helpers/scoring.py", game, config.mongo.url],
         stdout: "piped",
     });
 
