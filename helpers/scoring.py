@@ -1,54 +1,50 @@
 """
-badger.py
+scoring.py
 
-Helper script to generate candlestick charts using data from Yahoo Finance's API
+Helper script to generate a line chart of scoring of a fantasy football game
 
-Expected usage: python badger.py [symbol] [time range]
+Expected usage: python scoring.py [matchup key] [connection url]
 Outputs: PNG image, expected to be read by the bot (should be UTF-8 encoded)
 """
 
 from datetime import datetime
 from multiprocessing.forkserver import read_signed
-import redis
+from pymongo import MongoClient
 import plotly.graph_objects as go
 import pandas
 import sys
 import os
-import json
 
-"""
-This'll assume that the quote provided is valid since it'll be called after a call to
-Yahoo Finance's API anyways
-"""
-def getStock(key: str):
-    instance = redis.Redis(
-        host='lot-server.local',
-    )
-    data = instance.get(key)
-    if data != None:
-        strdata = bytes.decode(data)
-        scoreData = json.loads(strdata)
-        teams = list(scoreData.keys())
+def get_scores(key: str, connection_url: str = 'mongodb://localhost:27017'):
+    instance = MongoClient(host = connection_url)
+    db = instance['tangledbot']
+    matchup = db.get_collection('matchups').find_one({
+        'matchupKey': key
+    })
 
-        times = [datetime.fromtimestamp(x[0] / 1000.0) for x in scoreData[teams[0]]]
+    if matchup != None:
+        team1ScoreTiming = matchup['team1ScoreTiming']
+        team2ScoreTiming = matchup['team2ScoreTiming']
 
-        team1scores = [x[1] for x in scoreData[teams[0]]]
-        team2scores = [x[1] for x in scoreData[teams[1]]]
+        times = [datetime.fromtimestamp(x[0] / 1000.0) for x in team1ScoreTiming]
 
-        team1prob = [x[2] for x in scoreData[teams[0]]]
-        team2prob = [x[2] for x in scoreData[teams[1]]]
+        team1scores = [x[1] for x in team1ScoreTiming]
+        team2scores = [x[1] for x in team2ScoreTiming]
+
+        team1prob = [x[2] for x in team1ScoreTiming]
+        team2prob = [x[2] for x in team2ScoreTiming]
 
         return {
-            'team1': teams[0],
+            'team1': matchup['team1Name'],
             'team1score': team1scores,
             'team1prob': team1prob,
-            'team2': teams[1],
+            'team2': matchup['team2Name'],
             'team2score': team2scores,
             'team2prob': team2prob,
             'timestamp': times
         }
 
-def generateFigure(details: dict):
+def generate_figure(details: dict):
     frame = pandas.DataFrame.from_dict(details)
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -86,10 +82,11 @@ def generateFigure(details: dict):
 
 if __name__ == '__main__':
     scoring = sys.argv[1]
-    details = getStock(scoring)
+    connectionUrl = sys.argv[2]
+    details = get_scores(scoring)
     
     if details != None:
-        fig = generateFigure(details)
+        fig = generate_figure(details)
         # with open('test.png', 'wb') as stdout:
         with os.fdopen(sys.stdout.fileno(), 'wb') as stdout:
             fig.write_image(file=stdout, format='png', width=1000, height=700)
