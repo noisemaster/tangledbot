@@ -69,7 +69,7 @@ export const getAccessToken = async () => {
     return accessToken!;
 }
 
-export const fetchStandings = async (accessToken: string, leagueId: string = '1353821') => {
+export const fetchStandings = async (accessToken: string, leagueId: string = '22526') => {
     const standingsRequestXML = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/standings`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -106,7 +106,7 @@ export const fetchStandings = async (accessToken: string, leagueId: string = '13
     };
 }
 
-export const fetchScoreboard = async (accessToken: string, leagueId: string = '1353821', gameId = 'nfl') => {
+export const fetchScoreboard = async (accessToken: string, leagueId: string = '22526', gameId = 'nfl') => {
     const scoreboardRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/scoreboard`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -229,7 +229,7 @@ export const listGames = async () => {
     return games.sort((a, b) => a.week - b.week);
 };
 
-export const getTransactions = async (accessToken: string, leagueId: string = '1353821', gameId = 'nfl') => {
+export const getTransactions = async (accessToken: string, leagueId: string = '22526', gameId = 'nfl') => {
     const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/transactions;types=add,drop,trade;status=accepted`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -240,6 +240,7 @@ export const getTransactions = async (accessToken: string, leagueId: string = '1
     const parser = new XMLParser();
 
     const rawTrades = parser.parse(tradesText);
+    console.log(rawTrades);
 
     const league = rawTrades.fantasy_content.league;
     const transactions = league.transactions.transaction;
@@ -254,7 +255,7 @@ export const getTransactions = async (accessToken: string, leagueId: string = '1
     };
 }
 
-export const getTeams = async (accessToken: string, leagueId = '1353821', gameId = 'nfl') => {
+export const getTeams = async (accessToken: string, leagueId = '22526', gameId = 'nfl') => {
     const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/teams`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -319,7 +320,7 @@ export const getPlayerDetails = async (accessToken: string, playerId = '1353821'
 
 export const collectTransactions = async () => {
     const accessToken = await getAccessToken();
-    const {league, transactions} = await getTransactions(accessToken, '1353821');
+    const {league, transactions} = await getTransactions(accessToken, '22526');
     const mongo = await MongoClient.connect(config.mongo.url);
 
     const embedsToSend: any[] = [];
@@ -336,17 +337,19 @@ export const collectTransactions = async () => {
             continue;
         }
 
-        if (!Array.isArray(transaction.players)) {
-            transaction.players = [transaction.players];
+        if (!Array.isArray(transaction.players.player)) {
+            transaction.players.player = [transaction.players.player];
         }
 
-        for (const [index, player] of transaction.players.entries()) {
+        for (const [index, player] of transaction.players.player.entries()) {
+            console.log(player);
+
             await mongo
                 .db('tangledbot')
                 .collection('transactions')
                 .insertOne({
                     transactionKey: `${transaction.transaction_key}.${index}`,
-                    leagueId: 1353821,
+                    leagueId: 22526,
                     type: transaction.type,
                     timestamp: new Date(transaction.timestamp * 1000),
                     status: player.transaction_data.type,
@@ -366,31 +369,32 @@ export const collectTransactions = async () => {
 
         const embed = {
             title: 'New Transaction',
-            description: transaction.players.map((p: any) => {
-                const {name, team, position, transaction_data} = p;
+            description: transaction.players.player.map((p: any) => {
                 let source, destination;
-                const type = transaction_data.type;
-                const source_type = transaction_data.source_type;
-                const destination_type = transaction_data.destination_type;
+                const type = p.transaction_data.type;
+                const source_type = p.transaction_data.source_type;
+                const destination_type = p.transaction_data.destination_type;
                 if (source_type === 'team') {
-                    source = transaction_data.source_team_name;
+                    source = p.transaction_data.source_team_name;
                 } else {
-                    source = transaction_data.source_type;
+                    source = p.transaction_data.source_type;
                 }
                 if (destination_type === 'team') {
-                    destination = transaction_data.destination_team_name;
+                    destination = p.transaction_data.destination_team_name;
                 } else {
-                    destination = transaction_data.destination_type;
+                    destination = p.transaction_data.destination_type;
                 }
 
                 const typeEmoji = type === 'add' ? '🔺' : type === 'drop' ? '🔻' : '🔄';
 
-                return `${name} (${team} - ${position}) ${typeEmoji} ${source} -> ${destination}`;
+                return `${p.name.full} (${p.editorial_team_abbr} - ${p.display_position}) ${typeEmoji} ${source} -> ${destination}`;
             }).join('\n'),
             timestamp: new Date(transaction.timestamp * 1000).toISOString(),
         }
 
         console.log(embed);
+
+        embedsToSend.push(embed);
     }
 
     // Collect embeds in groups of 10
