@@ -1,5 +1,5 @@
 import { addPoints, collectTransactions } from "./mod.ts";
-import {cron} from 'https://deno.land/x/deno_cron/cron.ts';
+import { CronJob } from "cron";
 
 // cron('1 */5 19-23 * * 1,4', () => {
 //     console.log(new Date(), 'Getting Points');
@@ -12,7 +12,7 @@ import {cron} from 'https://deno.land/x/deno_cron/cron.ts';
 // });
 
 // Run every 15 minutes
-cron('1 */5 * * * *', () => {
+new CronJob('1 */5 * * * *', () => {
     console.log(new Date(), 'Collecting Transactions');
     collectTransactions();
 });

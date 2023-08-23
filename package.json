@@ -14,6 +14,7 @@
     "@discordeno/types": "^19.0.0-next.b2f65c2",
     "@discordeno/utils": "^19.0.0-next.b2f65c2",
     "@types/uuid": "^9.0.2",
+    "cron": "^2.4.1",
     "date-fns": "^2.30.0",
     "discordeno": "^18.0.1",
     "fast-xml-parser": "^4.2.7",
