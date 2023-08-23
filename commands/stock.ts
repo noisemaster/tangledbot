@@ -19,7 +19,7 @@ import {
     InteractionCallbackData,
     InteractionResponseTypes,
 } from "@discordeno/bot";
-import { updateInteractionWithFile } from "./lib/updateInteraction.ts";
+import { updateInteraction, updateInteractionWithFile } from "./lib/updateInteraction.ts";
 
 interface YahooStockQuote extends HasTimerange {
     symbol?: string;
@@ -80,7 +80,6 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
     const titlePos = text.indexOf('<title>')
     const titlePosEnd = text.indexOf('</title>')
     const stockName = text.substr(titlePos + 7, titlePosEnd-titlePos-7-55)
-    
 
     // if (
     //     result.length === 0 ||
@@ -139,12 +138,7 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
         internalMessageId,
     );
 
-    await updateInteractionWithFile(bot, interaction.token, {
-        ...payload,
-        components: [
-            ...timerangeComponents,
-        ],
-    });
+    await updateInteraction(interaction, payload, payload.files);
 
     setTimerangePost(internalMessageId, timerangeData);
 };
@@ -179,7 +173,7 @@ const generateStockEmbed = async (
 
     const stockEmbed: Camelize<DiscordEmbed> = {
         title: `${longName || shortName}`,
-        timestamp: String(lastRefresh.valueOf()),
+        timestamp: lastRefresh.toISOString(),
         color: diffColor,
     };
 
@@ -244,15 +238,15 @@ const stockTimerangeHandler = async (
     );
 
     if (interaction.message) {
-        await updateInteractionWithFile(
-            bot,
-            interaction.token,
+        await updateInteraction(
+            interaction,
             {
                 ...newEmbed,
                 components: [
                     ...timerangeComponents,
                 ],
             },
+            newEmbed.files,
         );
     }
 
@@ -263,7 +257,7 @@ const fetchChart = async (
     symbol: string,
     timeRange: string,
 ): Promise<ArrayBuffer> => {
-    const badger = Bun.spawn({
+    const badger = Bun.spawnSync({
         cmd: ["python3", "./helpers/badger.py", symbol, timeRange],
         stdout: "pipe",
     });
@@ -271,7 +265,7 @@ const fetchChart = async (
     const output = badger.stdout;
     const code = badger.exitCode;
 
-    if (code !== 0) {
+    if (code && code !== 0) {
         throw new Error("Candlesticks chart not generated");
     }
 

@@ -95,10 +95,10 @@ export const sendCryptoEmbed = async (bot: Bot, interaction: Interaction) => {
         ...(generateTimerangeButtons('crypto', timerangeData, internalMessageId))
     ]
 
-    await updateInteractionWithFile(bot, interaction.token, {
+    await updateInteraction(interaction, {
         ...embed,
         components
-    });
+    }, embed.files);
 
     setPageablePost(internalMessageId, pageData);
     setTimerangePost(internalMessageId, timerangeData)
@@ -169,15 +169,15 @@ const cryptoTimerangeHandler = async (bot: Bot, interaction: Interaction, pageDa
     const timerangeComponents = generateTimerangeButtons('crypto', pageData, messageId);
 
     if (interaction.message) {
-        await updateInteractionWithFile(
-            bot,
-            interaction.token, {
+        await updateInteraction(
+            interaction, {
                 ...newEmbed,
                 components: [
                     ...pageComponents,
                     ...timerangeComponents
                 ],
-            }
+            },
+            newEmbed.files
         );
     }
 
