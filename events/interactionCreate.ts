@@ -14,9 +14,6 @@ import { updateTimerange } from "../handlers/timerangeHandler.ts";
 import { events } from "./mod.ts";
 
 events.interactionCreate = async (interaction: Interaction, ...rest) => {
-    console.log('interaction create');
-    console.log(rest);
-
     const bot = interaction.bot;
 
     if (interaction.type === InteractionTypes.ApplicationCommandAutocomplete) {
@@ -80,7 +77,6 @@ events.interactionCreate = async (interaction: Interaction, ...rest) => {
             const subCommandGroup = command.subcommands?.find(
                 (command) => command.name == interaction.data?.options?.[0].name,
             );
-            console.log(subCommandGroup);
 
             if (!subCommandGroup) {
                 return;
@@ -127,7 +123,6 @@ events.interactionCreate = async (interaction: Interaction, ...rest) => {
 
         try {
             if (command) {
-                console.log(command);
                 command.execute(bot, interaction);
             } else {
                 throw "";
