@@ -288,7 +288,7 @@ const generateMovieEmbed = async (result: TMDBResult, type: string) => {
         title,
         url: `https://www.themoviedb.org/${type}/${result.id}`,
         description: result.overview,
-        timestamp: String(Date.parse(result.release_date || fullDetails.first_air_date)),
+        timestamp: new Date(Date.parse(result.release_date || fullDetails.first_air_date)).toISOString(),
         image: {
             url: result.backdrop_path
                 ? `https://image.tmdb.org/t/p/original/${result.backdrop_path}`
@@ -384,7 +384,7 @@ const generateWatchEmbed = async (result: TMDBResult, type: string) => {
     const embed: Camelize<DiscordEmbed> = {
         title,
         url: `https://www.themoviedb.org/${type}/${result.id}`,
-        timestamp: String(Date.parse(result.release_date || result.first_air_date)),
+        timestamp: new Date(Date.parse(result.release_date || result.first_air_date)).toISOString(),
         image: {
             url: result.backdrop_path
                 ? `https://image.tmdb.org/t/p/original/${result.backdrop_path}`

@@ -85,7 +85,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
         footer: {
             text: `Post ${randomIndex + 1}/${posts.length}`,
         },
-        timestamp: String(post.created_utc * 1000)
+        timestamp: new Date(post.created_utc * 1000).toISOString(),
     };
 
     if (isPostImage) {
