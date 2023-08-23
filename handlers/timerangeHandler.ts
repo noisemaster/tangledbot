@@ -1,4 +1,4 @@
-import { Bot, Embed, Interaction, InteractionResponseTypes, MessageComponents, MessageComponentTypes } from 'discordeno/mod.ts';
+import { Bot, Camelize, DiscordEmbed, Embed, Interaction, InteractionResponseTypes, MessageComponents, MessageComponentTypes } from '@discordeno/bot';
 
 export interface HasTimerange {
     pagable: true
@@ -7,7 +7,7 @@ export interface HasTimerange {
 export interface timerangePost<T extends HasTimerange> {
     poster: BigInt;
     data: T,
-    embedMessage: Embed;
+    embedMessage: Camelize<DiscordEmbed>;
     currentTime: string;
     timeRangeHandler(bot: Bot, interaction: Interaction, postData: timerangePost<T>): Promise<void>;
     timeRanges: {value: string, name: string}[];

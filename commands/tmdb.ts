@@ -4,20 +4,23 @@ import {
     paginationPost,
     setPageablePost,
 } from "../handlers/paginationHandler.ts";
-import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
+import { v4 } from "uuid";
 
 import config from "../config.ts";
 import {
     ApplicationCommandOptionTypes,
     ApplicationCommandTypes,
     Bot,
+    Camelize,
+    DiscordEmbed,
     DiscordEmbedField,
     Embed,
     Interaction,
     InteractionResponseTypes,
     SelectOption,
-} from "discordeno/mod.ts";
+} from "@discordeno/bot";
 import { createCommand } from "./mod.ts";
+import { updateInteraction } from "./lib/updateInteraction.ts";
 
 /**
  * @TODO Cleanup logic, there's quite a bit of duplicated logic
@@ -66,7 +69,7 @@ const fetchMovie = async (bot: Bot, interaction: Interaction) => {
 
     if (results.length > 0) {
         const [movie] = results;
-        const internalMessageId = v4.generate();
+        const internalMessageId = v4();
         const embed = await generateMovieEmbed(movie, type);
 
         const pageData: paginationPost<TMDBResult> = {
@@ -85,14 +88,14 @@ const fetchMovie = async (bot: Bot, interaction: Interaction) => {
                 : []),
         ];
 
-        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        await updateInteraction(interaction, {
             embeds: [embed],
             components,
         });
 
         setPageablePost(internalMessageId, pageData);
     } else {
-        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        await updateInteraction(interaction, {
             content: "No movies found",
         });
     }
@@ -123,7 +126,7 @@ const fetchWhereToWatch = async (bot: Bot, interaction: Interaction) => {
 
     if (results.length > 0) {
         const [movie] = results;
-        const internalMessageId = v4.generate();
+        const internalMessageId = v4();
         const embed = await generateWatchEmbed(movie, type);
 
         const pageData: paginationPost<TMDBResult> = {
@@ -142,14 +145,14 @@ const fetchWhereToWatch = async (bot: Bot, interaction: Interaction) => {
                 : []),
         ];
 
-        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        await updateInteraction(interaction, {
             embeds: [embed],
             components,
         });
 
         setPageablePost(internalMessageId, pageData);
     } else {
-        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        await updateInteraction(interaction, {
             content: "No movies found",
         });
     }
@@ -183,7 +186,7 @@ const tmdbPageHandler = async (
     }
 
     const page = pageData.pages[pageData.currentPage - 1];
-    let newEmbed: Embed;
+    let newEmbed: Camelize<DiscordEmbed>;
     switch (invoker) {
         case "movie":
             newEmbed = await generateMovieEmbed(page, "movie");
@@ -207,8 +210,8 @@ const tmdbPageHandler = async (
     ];
 
     if (interaction.message) {
-        await bot.helpers.editOriginalInteractionResponse(
-            interaction.token,
+        await updateInteraction(
+            interaction,
             {
                 embeds: [newEmbed],
                 components: newComponents,
@@ -281,11 +284,11 @@ const generateMovieEmbed = async (result: TMDBResult, type: string) => {
         });
     }
 
-    const embed: Embed = {
+    const embed: Camelize<DiscordEmbed> = {
         title,
         url: `https://www.themoviedb.org/${type}/${result.id}`,
         description: result.overview,
-        timestamp: Date.parse(result.release_date || fullDetails.first_air_date),
+        timestamp: new Date(Date.parse(result.release_date || fullDetails.first_air_date)).toISOString(),
         image: {
             url: result.backdrop_path
                 ? `https://image.tmdb.org/t/p/original/${result.backdrop_path}`
@@ -378,10 +381,10 @@ const generateWatchEmbed = async (result: TMDBResult, type: string) => {
         });
     }
 
-    const embed: Embed = {
+    const embed: Camelize<DiscordEmbed> = {
         title,
         url: `https://www.themoviedb.org/${type}/${result.id}`,
-        timestamp: Date.parse(result.release_date || result.first_air_date),
+        timestamp: new Date(Date.parse(result.release_date || result.first_air_date)).toISOString(),
         image: {
             url: result.backdrop_path
                 ? `https://image.tmdb.org/t/p/original/${result.backdrop_path}`

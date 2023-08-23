@@ -1,12 +1,12 @@
 // import { Embed, InteractionResponseType, MessageComponentInteraction, SlashCommandInteraction, MessageAttachment, MessageComponentOption } from 'https://deno.land/x/harmony@v2.6.0/mod.ts'
 // import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 // import { MessageAttachment } from "https://deno.land/x/harmony@v2.6.0/mod.ts";
-import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, Embed, FileContent, Interaction, InteractionCallbackData, InteractionResponseTypes, SelectOption } from 'discordeno/mod.ts';
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, Camelize, DiscordEmbed, Embed, FileContent, Interaction, InteractionCallbackData, InteractionResponseTypes, SelectOption } from '@discordeno/bot';
 import { Pageable, paginationPost, setPageablePost, generatePageButtons, getPageablePost } from "../handlers/paginationHandler.ts";
-import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
+import { v4 } from "uuid";
 import { generateTimerangeButtons, getTimerangePost, HasTimerange, setTimerangePost, timerangePost } from "../handlers/timerangeHandler.ts";
 import { createCommand } from "./mod.ts";
-import { updateInteractionWithFile } from './lib/updateInteraction.ts';
+import { updateInteraction, updateInteractionWithFile } from './lib/updateInteraction.ts';
 
 interface cgCoin extends Pageable, HasTimerange {
     id: string;
@@ -49,7 +49,7 @@ export const sendCryptoEmbed = async (bot: Bot, interaction: Interaction) => {
     let coinsMatchingSymbol = cryptoMap.filter(coin => coin.symbol.toLowerCase().startsWith(symbol));
 
     if (coinsMatchingSymbol.length === 0) {
-        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        await updateInteraction(interaction, {
             content: 'No coin found'
         });
         return;
@@ -61,7 +61,7 @@ export const sendCryptoEmbed = async (bot: Bot, interaction: Interaction) => {
     ]
 
     const [firstCoin] = coinsMatchingSymbol;
-    const internalMessageId = v4.generate();
+    const internalMessageId = v4();
     const embed = await generateCryptoQuoteEmbed(firstCoin, timeRange);
 
     const pageData: paginationPost<cgCoin> = {
@@ -95,10 +95,10 @@ export const sendCryptoEmbed = async (bot: Bot, interaction: Interaction) => {
         ...(generateTimerangeButtons('crypto', timerangeData, internalMessageId))
     ]
 
-    await updateInteractionWithFile(bot, interaction.token, {
+    await updateInteraction(interaction, {
         ...embed,
         components
-    });
+    }, embed.files);
 
     setPageablePost(internalMessageId, pageData);
     setTimerangePost(internalMessageId, timerangeData)
@@ -142,8 +142,8 @@ const cryptoPageHandler = async (bot: Bot, interaction: Interaction, pageData: p
     ]
 
     if (interaction.message) {
-        await bot.helpers.editOriginalInteractionResponse(
-            interaction.token, {
+        await updateInteraction(
+            interaction, {
                 ...newEmbed,
                 components: newComponents,
             }
@@ -169,15 +169,15 @@ const cryptoTimerangeHandler = async (bot: Bot, interaction: Interaction, pageDa
     const timerangeComponents = generateTimerangeButtons('crypto', pageData, messageId);
 
     if (interaction.message) {
-        await updateInteractionWithFile(
-            bot,
-            interaction.token, {
+        await updateInteraction(
+            interaction, {
                 ...newEmbed,
                 components: [
                     ...pageComponents,
                     ...timerangeComponents
                 ],
-            }
+            },
+            newEmbed.files
         );
     }
 
@@ -207,7 +207,7 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
     const weekChange = Math.abs(price * (weekChangePercent / 100));
     const weekDiffSymbol = weekChangePercent > 0 ? '<:small_green_triangle:851144859103395861>' : '🔻';
 
-    const embed: Embed = {
+    const embed: Camelize<DiscordEmbed> = {
         author: {
             iconUrl: coinData.image.large,
             name: `${coin.name} (${coin.symbol.toUpperCase()})`,
@@ -259,9 +259,9 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
     if (image) {
         const imageAttach: FileContent = {
             name: `${coin.id}.png`,
-            blob: new Blob([image.buffer])
+            blob: new Blob([image])
         };
-        payload.file = [imageAttach];
+        payload.files = [imageAttach];
 
         embed.image = {
             url: `attachment://${coin.id}.png`
@@ -273,19 +273,20 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
     return payload;
 }
 
-const fetchChart = async (symbol: string, timeRange: string): Promise<Uint8Array> => {
-    const hololynx = Deno.run({
+const fetchChart = async (symbol: string, timeRange: string): Promise<ArrayBuffer> => {
+    const hololynx = Bun.spawn({
         cmd: ["python3", "./helpers/hololynx.py", symbol, timeRange],
-        stdout: 'piped'
+        stdout: 'pipe'
     });
 
-    const [output, {code}] = await Promise.all([hololynx.output(), hololynx.status()]);
+    const output = hololynx.stdout;
+    const code = hololynx.exitCode;
     
     if (code !== 0) {
         throw new Error('Candlesticks chart not generated')
     }
     
-    return output;
+    return new Response(output).arrayBuffer();
 }
 
 const cryptoPageSelectGenerator = (pages: cgCoin[]): SelectOption[] => {

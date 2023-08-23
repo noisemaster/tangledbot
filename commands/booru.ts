@@ -1,7 +1,9 @@
-import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, ButtonStyles, Embed, Interaction, InteractionResponseTypes, MessageComponentTypes } from 'discordeno/mod.ts';
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, ButtonStyles, Camelize, DiscordEmbed, Embed, Interaction, InteractionResponseTypes, MessageComponentTypes } from '@discordeno/bot';
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
-import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
+import { v4 } from "uuid";
 import { createCommand } from './mod.ts';
+import { avatarUrl } from '@discordeno/utils';
+import { updateInteraction } from './lib/updateInteraction.ts';
 
 export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
     if (!interaction.data) {
@@ -34,7 +36,7 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
 
     if (posts.length === 0) {
         // await interaction.send(`Nothing found for ${tags}`);
-        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        await updateInteraction(interaction, {
             content: `Nothing found for ${tags}`
         });
         return;
@@ -42,14 +44,10 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
 
     const randomIndex = Math.floor(Math.random() * posts.length);
     const post = posts[randomIndex];
-    const embed: Embed = {
+    const embed: Camelize<DiscordEmbed> = {
         author: {
             name: interaction.user.username,
-            iconUrl: bot.helpers.getAvatarURL(interaction.user.id, interaction.user.discriminator, {
-                size: 256,
-                avatar: interaction.user.avatar,
-                format: 'png'
-            })
+            iconUrl: avatarUrl(interaction.user.id, interaction.user.discriminator)
         },
         fields: [],
     };
@@ -112,7 +110,7 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
     //     }
     // });
 
-    const internalMessageId = v4.generate();
+    const internalMessageId = v4();
 
     addHideablePost(internalMessageId, {
         details: {
@@ -123,7 +121,7 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
         visible: true
     });
 
-    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+    await updateInteraction(interaction, {
         embeds: [embed],
         allowedMentions: {
             users: []

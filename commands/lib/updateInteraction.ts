@@ -1,22 +1,33 @@
-import { Bot, DiscordMessage, InteractionResponseTypes, Message, InteractionCallbackData } from "discordeno/mod.ts";
+import { Bot, DiscordMessage, InteractionResponseTypes, Message, InteractionCallbackData, BotInteractionCallbackData, CamelizedDiscordMessage, Interaction, FileContent } from "@discordeno/bot";
+import {} from '@discordeno/utils';
+import { SendRequestOptions } from '@discordeno/rest';
 
 export async function updateInteractionWithFile(
     bot: Bot,
     token: string,
     options: InteractionCallbackData,
-): Promise<Message | undefined> {
-    const result = await bot.rest.runMethod<DiscordMessage>(
-        bot.rest,
-        "PATCH",
-        bot.constants.routes.INTERACTION_ORIGINAL_ID_TOKEN(bot.applicationId, token),
-        {
-            ...bot.transformers.reverse.interactionResponse(bot, {
-                type: InteractionResponseTypes.UpdateMessage,
-                data: options,
-            }).data,
-            file: options.file
-        },
+): Promise<CamelizedDiscordMessage> {
+    const result = await bot.rest.editOriginalInteractionResponse(
+        token,
+        options
       );
     
-    return bot.transformers.message(bot, result);
+    return result;
+}
+
+export async function updateInteraction(
+    interaction: Interaction,
+    data: InteractionCallbackData,
+    files?: FileContent[]
+): Promise<CamelizedDiscordMessage> {
+    const result = await interaction.bot.rest.patch<DiscordMessage>(
+        interaction.bot.rest.routes.interactions.responses.original(interaction.applicationId, interaction.token), {
+            body: data,
+            files
+        }
+    ).catch((err) => {
+        console.log(err);
+    });
+    
+    return result!;
 }

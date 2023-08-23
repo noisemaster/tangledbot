@@ -1,4 +1,4 @@
-import { Bot, Interaction, ButtonStyles, MessageComponents, MessageComponentTypes, SelectOption, Embed, InteractionResponseTypes } from "discordeno/mod.ts";
+import { Bot, Interaction, ButtonStyles, MessageComponents, MessageComponentTypes, SelectOption, Embed, InteractionResponseTypes, Camelize, DiscordEmbed } from "@discordeno/bot";
 
 // custom id structure
 // pagination_[command]_[action = prev|next]
@@ -9,7 +9,7 @@ export interface Pageable {
 
 export interface paginationPost<T extends Pageable> {
     poster: BigInt;
-    embedMessage: Embed;
+    embedMessage: Camelize<DiscordEmbed>;
     pages: T[];
     currentPage: number;
     paginationHandler(bot: Bot, interaction: Interaction, postData: paginationPost<T>): Promise<void>;

@@ -1,10 +1,10 @@
-import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, InteractionResponseTypes, Interaction, DiscordEmbedField, Embed } from "discordeno/mod.ts";
-import { sub, differenceInDays } from "npm:date-fns";
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, InteractionResponseTypes, Interaction, DiscordEmbedField, Embed, Camelize, DiscordEmbed } from "@discordeno/bot";
+import { sub, differenceInDays } from "date-fns";
 import { teams } from "../helpers/nfl/teams.ts";
 
-// @deno-types="https://deno.land/x/fuse@v6.4.1/dist/fuse.d.ts"
-import Fuse from 'https://deno.land/x/fuse@v6.4.1/dist/fuse.esm.min.js'
+import Fuse from 'fuse.js'
 import { createCommand, subCommand } from "./mod.ts";
+import { updateInteraction } from "./lib/updateInteraction.ts";
 // import { autoCompleteCallback } from "./lib/sendInteraction.ts";
 
 interface parsedEvents {
@@ -55,9 +55,9 @@ const sendNFLScoreboard = async (bot: Bot, interaction: Interaction) => {
         scoreboardFields.push(scoreboardField);
     }
 
-    const embed: Embed = {
+    const embed: Camelize<DiscordEmbed> = {
         title: `NFL ${seasonWeek.label}`,
-        fields: scoreboardFields
+        fields: scoreboardFields,
     };
 
     await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
@@ -86,7 +86,7 @@ export const sendNFLGameDetails = async (bot: Bot, interaction: Interaction) => 
     });
     
     if (!game) {
-        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        await updateInteraction(interaction, {
             content: 'Game not found'
         })
         return
@@ -102,7 +102,7 @@ export const sendNFLGameDetails = async (bot: Bot, interaction: Interaction) => 
 
     console.log(selectedTeamObj.team.color);
 
-    const embed: Embed = {
+    const embed: Camelize<DiscordEmbed> = {
         title: game.name,
         fields: [
             {
@@ -123,7 +123,7 @@ export const sendNFLGameDetails = async (bot: Bot, interaction: Interaction) => 
         color: parseInt(selectedTeamObj.team.color, 16)
     };
   
-    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+    await updateInteraction(interaction, {
         embeds: [embed]
     });
 };
