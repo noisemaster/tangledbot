@@ -1,6 +1,5 @@
-import { connect } from 'redis/mod.ts';
 import { getAccessToken, getTeams, getTransactions } from './mod.ts';
-import { MongoClient } from 'npm:mongodb';
+import { MongoClient } from 'mongodb';
 import config from "../../config.ts";
 
 const mongo = await MongoClient.connect(config.mongo.url);
@@ -123,4 +122,5 @@ for (const team of teams) {
 
 
 console.log('Done!');
-Deno.exit(0);
+
+process.exit(0);

@@ -4,8 +4,8 @@ import {
     hasProperty,
     Interaction,
     InteractionTypes,
-} from "discordeno/mod.ts";
-import { Command, commands } from "../commands/mod.ts";
+} from "@discordeno/bot";
+import { Command, commands, subCommand } from "../commands/mod.ts";
 import { handleTeamAutocomplete } from "../commands/nfl.ts";
 import { handleGraphAutocomplete } from "../commands/yahoo-fantasy.ts";
 import { togglePost } from "../handlers/imagePostHandler.ts";
@@ -13,7 +13,12 @@ import { updatePage } from "../handlers/paginationHandler.ts";
 import { updateTimerange } from "../handlers/timerangeHandler.ts";
 import { events } from "./mod.ts";
 
-events.interactionCreate = async (bot: Bot, interaction: Interaction) => {
+events.interactionCreate = async (interaction: Interaction, ...rest) => {
+    console.log('interaction create');
+    console.log(rest);
+
+    const bot = interaction.bot;
+
     if (interaction.type === InteractionTypes.ApplicationCommandAutocomplete) {
         if (interaction.data!.name === "nfl") {
             handleTeamAutocomplete(bot, interaction);
@@ -94,7 +99,7 @@ events.interactionCreate = async (bot: Bot, interaction: Interaction) => {
             }
 
             // Try to find the command
-            command = subCommandGroup.subCommands.find((c) =>
+            command = (subCommandGroup.subCommands as subCommand[]).find((c) =>
                 c.name === targetCmdName
             );
         }

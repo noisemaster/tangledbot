@@ -1,4 +1,5 @@
-import { Bot, Embed, Interaction, InteractionResponseTypes } from 'discordeno/mod.ts';
+import { Bot, Camelize, DiscordEmbed, Embed, Interaction, InteractionResponseTypes } from '@discordeno/bot';
+import { updateInteraction } from '../commands/lib/updateInteraction';
 
 // Contains hideable content in details, original post information
 export interface hideablePost {
@@ -6,7 +7,7 @@ export interface hideablePost {
         imageUrl: string,
     },
     poster: BigInt,
-    embedMessage: Embed,
+    embedMessage: Camelize<DiscordEmbed>,
     visible: boolean,
 }
 
@@ -65,7 +66,7 @@ export const togglePost = async (bot: Bot, interaction: Interaction) => {
         await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
             type: InteractionResponseTypes.DeferredChannelMessageWithSource,
         });
-        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        await updateInteraction(interaction, {
             content: `Only the orignal poster can ${postData.visible ? 'hide' : 'show'} this message`,
             // flags: 
         })

@@ -1,8 +1,7 @@
-import { connect } from 'redis/mod.ts';
-import { MongoClient } from 'npm:mongodb';
-import { encode } from "https://deno.land/std@0.154.0/encoding/base64.ts";
+import { createClient } from 'redis';
+import { MongoClient } from 'mongodb';
 import config from '../../config.ts';
-import { XMLParser } from 'npm:fast-xml-parser';
+import { XMLParser } from 'fast-xml-parser';
 
 interface ParsedStandings {
     name: string,
@@ -27,9 +26,11 @@ interface ParsedScoreboard {
 }
 
 export const getAccessToken = async () => {
-    const redis = await connect({
-        hostname: config.redis.hostname,
+    const redis = createClient({
+        url: config.redis.hostname
     });
+
+    await redis.connect();
 
     let accessToken = await redis.get('accessToken');
 
@@ -38,7 +39,7 @@ export const getAccessToken = async () => {
 
         const refreshToken = await redis.get('refreshToken');
 
-        const encoded = encode(`${config.yahoo.clientId}:${config.yahoo.clientSecret}`);
+        const encoded = btoa(`${config.yahoo.clientId}:${config.yahoo.clientSecret}`);
 
         const refreshRequest = await fetch(`https://api.login.yahoo.com/oauth2/get_token`, {
             method: 'POST',

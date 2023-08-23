@@ -1,9 +1,9 @@
-import { MongoClient } from 'npm:mongodb';
+import { MongoClient } from 'mongodb';
 import config from '../../config.ts';
 
 const mongo = await MongoClient.connect(config.mongo.url);
-const data = Deno.readTextFileSync('./scores.json');
-const json: any[] = JSON.parse(data);
+const data = Bun.file('./scores.json');
+const json: any[] = await data.json();
 
 const teamKeyMap: {[x: string]: string} = {
     "Georgetown Georges": "414.l.135821.t.4",
@@ -74,4 +74,4 @@ for (const row of json) {
         );
 }
 
-Deno.exit();
+process.exit(0);

@@ -1,10 +1,10 @@
-import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, Embed, FileContent, Interaction, InteractionCallbackData, InteractionResponseTypes } from 'discordeno/mod.ts';
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, Camelize, DiscordEmbed, Embed, FileContent, Interaction, InteractionCallbackData, InteractionResponseTypes } from '@discordeno/bot';
 import { createCommand } from './mod.ts';
-import { getAccessToken, fetchStandings, fetchScoreboard, listGamesInRedis, listGames } from "../helpers/yahoo-fantasy/mod.ts";
+import { getAccessToken, fetchStandings, fetchScoreboard, listGames } from "../helpers/yahoo-fantasy/mod.ts";
 
-// @deno-types="https://deno.land/x/fuse@v6.4.1/dist/fuse.d.ts"
-import Fuse from 'https://deno.land/x/fuse@v6.4.1/dist/fuse.esm.min.js'
+import Fuse from 'fuse.js'
 import config from "../config.ts";
+import { updateInteraction } from './lib/updateInteraction.ts';
 
 export const sendStandingsEmbed = async (bot: Bot, interaction: Interaction) => {
     await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
@@ -14,7 +14,7 @@ export const sendStandingsEmbed = async (bot: Bot, interaction: Interaction) => 
     const accessToken = await getAccessToken();
     const { league, standings } = await fetchStandings(accessToken);
 
-    const embed: Embed = {
+    const embed: Camelize<DiscordEmbed> = {
         author: {
             name: league.name,
             url: league.url,
@@ -29,7 +29,7 @@ export const sendStandingsEmbed = async (bot: Bot, interaction: Interaction) => 
         };
     })
 
-    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+    await updateInteraction(interaction, {
         embeds: [embed]
     });
 }
@@ -42,7 +42,7 @@ export const sendScoreboardEmbed = async (bot: Bot, interaction: Interaction) =>
     const accessToken = await getAccessToken();
     const { league, scoreboard } = await fetchScoreboard(accessToken);
 
-    const embed: Embed = {
+    const embed: Camelize<DiscordEmbed> = {
         author: {
             name: league.name,
             url: league.url,
@@ -58,8 +58,12 @@ export const sendScoreboardEmbed = async (bot: Bot, interaction: Interaction) =>
         };
     });
 
-    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+    console.log(embed);
+
+    await updateInteraction(interaction, {
         embeds: [embed]
+    }).catch((err) => {
+        console.log(err);
     });
 }
 
@@ -81,7 +85,7 @@ export const sendScoringGraph = async (bot: Bot, interaction: Interaction) => {
             name: `${searchGame}.png`,
             blob: new Blob([image])
         };
-        payload.file = imageAttach;
+        payload.files = [imageAttach];
     }
 
     await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
@@ -120,20 +124,20 @@ export const handleGraphAutocomplete = async (bot: Bot, interaction: Interaction
 
 const fetchChart = async (
     game: string,
-): Promise<Uint8Array> => {
-    const badger = Deno.run({
+): Promise<ArrayBuffer> => {
+    const badger = Bun.spawn({
         cmd: ["python3", "./helpers/scoring.py", game, config.mongo.url],
-        stdout: "piped",
+        stdout: "pipe",
     });
 
-    const output = await badger.output();
-    const { code } = await badger.status();
+    const output = badger.stdout;
+    const code = badger.exitCode;
 
     if (code !== 0) {
         throw new Error("Chart not generated");
     }
 
-    return output;
+    return new Response(output).arrayBuffer();
 };
 
 createCommand({

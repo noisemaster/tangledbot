@@ -1,4 +1,4 @@
-import { ApplicationCommandOption, ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, Collection, Interaction } from "discordeno/mod.ts";
+import { ApplicationCommandOption, ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, Collection, Interaction } from "@discordeno/bot";
 
 export type subCommand = Omit<Command, "subcommands">;
 export type subCommandGroup = {

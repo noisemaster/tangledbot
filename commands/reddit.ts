@@ -2,9 +2,10 @@
 // import { format } from "https://deno.land/x/date_fns@v2.15.0/index.js";
 import { addHideablePost } from "../handlers/imagePostHandler.ts";
 import { trim } from "./lib/trim.ts";
-import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
-import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, ButtonStyles, Embed, Interaction, InteractionResponseTypes, MessageComponentTypes } from "discordeno/mod.ts";
+import { v4 } from "uuid";
+import { ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, ButtonStyles, Camelize, DiscordEmbed, Embed, Interaction, InteractionResponseTypes, MessageComponentTypes } from "@discordeno/bot";
 import { createCommand } from "./mod.ts";
+import { updateInteraction } from "./lib/updateInteraction.ts";
 
 interface redditPost {
     data: {
@@ -56,7 +57,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
     );
 
     if (posts.length === 0) {
-        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        await updateInteraction(interaction, {
             content: 'No posts found'
         });
         return;
@@ -67,7 +68,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
 
     const isPostImage = isImage || post.url.includes('.jpg') || post.url.includes('.png') || post.url.includes('.jpeg') || post.url.includes('.gif')
 
-    const postEmbed: Embed = {
+    const postEmbed: Camelize<DiscordEmbed> = {
         title: post.title,
         url: post.url,
         author: {
@@ -84,7 +85,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
         footer: {
             text: `Post ${randomIndex + 1}/${posts.length}`,
         },
-        timestamp: post.created_utc * 1000
+        timestamp: String(post.created_utc * 1000)
     };
 
     if (isPostImage) {
@@ -96,7 +97,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
     const channel = await bot.helpers.getChannel(interaction.channelId!);
 
     if (post.over_18 && !channel.nsfw) {
-        await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+        await updateInteraction(interaction, {
             content: 'This channel is not a NSFW channel'
         });
         return;
@@ -106,7 +107,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
     const components: any[] = [];
 
     if (isPostImage) {
-        const internalMessageId = v4.generate();
+        const internalMessageId = v4();
 
         components.push({
             type: MessageComponentTypes.ActionRow,
@@ -128,7 +129,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
         });
     }
 
-    await bot.helpers.editOriginalInteractionResponse(interaction.token, {
+    await updateInteraction(interaction, {
         embeds: [postEmbed],
         allowedMentions: {
             users: []

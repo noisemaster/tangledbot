@@ -4,19 +4,21 @@ import {
     setTimerangePost,
     timerangePost,
 } from "../handlers/timerangeHandler.ts";
-import { v4 } from "https://deno.land/std@0.97.0/uuid/mod.ts";
+import { v4 } from "uuid";
 
 import { createCommand } from "./mod.ts";
 import {
     ApplicationCommandOptionTypes,
     ApplicationCommandTypes,
     Bot,
+    Camelize,
+    DiscordEmbed,
     Embed,
     FileContent,
     Interaction,
     InteractionCallbackData,
     InteractionResponseTypes,
-} from "discordeno/mod.ts";
+} from "@discordeno/bot";
 import { updateInteractionWithFile } from "./lib/updateInteraction.ts";
 
 interface YahooStockQuote extends HasTimerange {
@@ -130,7 +132,7 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
         timeRangeHandler: stockTimerangeHandler,
     };
 
-    const internalMessageId = v4.generate();
+    const internalMessageId = v4();
     const timerangeComponents = generateTimerangeButtons(
         "stock",
         timerangeData,
@@ -175,9 +177,9 @@ const generateStockEmbed = async (
         console.log(err);
     });
 
-    const stockEmbed: Embed = {
+    const stockEmbed: Camelize<DiscordEmbed> = {
         title: `${longName || shortName}`,
-        timestamp: lastRefresh.valueOf(),
+        timestamp: String(lastRefresh.valueOf()),
         color: diffColor,
     };
 
@@ -204,7 +206,7 @@ const generateStockEmbed = async (
             name: `${symbol}.png`,
             blob: new Blob([image])
         };
-        payload.file = imageAttach;
+        payload.files = [imageAttach];
 
         stockEmbed.image = {
             url: `attachment://${symbol}.png`,
@@ -260,20 +262,20 @@ const stockTimerangeHandler = async (
 const fetchChart = async (
     symbol: string,
     timeRange: string,
-): Promise<Uint8Array> => {
-    const badger = Deno.run({
+): Promise<ArrayBuffer> => {
+    const badger = Bun.spawn({
         cmd: ["python3", "./helpers/badger.py", symbol, timeRange],
-        stdout: "piped",
+        stdout: "pipe",
     });
 
-    const output = await badger.output();
-    const { code } = await badger.status();
+    const output = badger.stdout;
+    const code = badger.exitCode;
 
     if (code !== 0) {
         throw new Error("Candlesticks chart not generated");
     }
 
-    return output;
+    return new Response(output).arrayBuffer();
 };
 
 createCommand({
