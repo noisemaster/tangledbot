@@ -1,5 +1,4 @@
-// load all files in folder
-
+import { logger } from '@discordeno/utils';
 import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -12,6 +11,6 @@ const files = readdirSync(folderPath)
     .filter(x => !x.endsWith('index.ts'))!
 
 for (let file of files) {
-    console.log(`Loading ${file}...`);
+    logger.info(`Loading ${file}...`);
     await import(join(folderPath, file));
 }
