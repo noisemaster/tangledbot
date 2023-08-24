@@ -15,6 +15,6 @@ import { CronJob } from "cron";
 new CronJob('1 */5 * * * *', () => {
     console.log(new Date(), 'Collecting Transactions');
     collectTransactions();
-});
+}).start();
 
 console.log('Cron Loaded');
