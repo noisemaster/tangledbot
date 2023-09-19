@@ -365,31 +365,38 @@ export const collectTransactions = async () => {
                     destinationType: player.transaction_data.destination_type,
                     destinationTeam: player.transaction_data.destination_team_name,
                     destinationTeamKey: player.transaction_data.destination_team_key,
+                    winningFaabBid: player.faab_bid || null,
                 });
+        }
+
+        let description = transaction.players.player.map((p: any) => {
+            let source, destination;
+            const type = p.transaction_data.type;
+            const source_type = p.transaction_data.source_type;
+            const destination_type = p.transaction_data.destination_type;
+            if (source_type === 'team') {
+                source = p.transaction_data.source_team_name;
+            } else {
+                source = p.transaction_data.source_type;
+            }
+            if (destination_type === 'team') {
+                destination = p.transaction_data.destination_team_name;
+            } else {
+                destination = p.transaction_data.destination_type;
+            }
+
+            const typeEmoji = type === 'add' ? '🔺' : type === 'drop' ? '🔻' : '🔄';
+
+            const finalMessage = `${p.name.full} (${p.editorial_team_abbr} - ${p.display_position}) ${typeEmoji} ${source} -> ${destination}`;
+        }).join('\n');
+
+        if (transaction.faab_bid) {
+            description += `\nWinning Bid: ${transaction.faab_bid}`;
         }
 
         const embed = {
             title: 'New Transaction',
-            description: transaction.players.player.map((p: any) => {
-                let source, destination;
-                const type = p.transaction_data.type;
-                const source_type = p.transaction_data.source_type;
-                const destination_type = p.transaction_data.destination_type;
-                if (source_type === 'team') {
-                    source = p.transaction_data.source_team_name;
-                } else {
-                    source = p.transaction_data.source_type;
-                }
-                if (destination_type === 'team') {
-                    destination = p.transaction_data.destination_team_name;
-                } else {
-                    destination = p.transaction_data.destination_type;
-                }
-
-                const typeEmoji = type === 'add' ? '🔺' : type === 'drop' ? '🔻' : '🔄';
-
-                return `${p.name.full} (${p.editorial_team_abbr} - ${p.display_position}) ${typeEmoji} ${source} -> ${destination}`;
-            }).join('\n'),
+            description,
             timestamp: new Date(transaction.timestamp * 1000).toISOString(),
         }
 
