@@ -374,7 +374,7 @@ export const collectTransactions = async () => {
         for (const player of transaction.players.player) {
             const destination = player.transaction_data.destination_team_name || player.transaction_data.transaction_type;
 
-            if (destinations[destination]) {
+            if (!destinations[destination]) {
                 destinations[destination] = [];
             }
     
