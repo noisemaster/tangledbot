@@ -1,5 +1,5 @@
 import { createClient } from 'redis';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ServerDescriptionChangedEvent } from 'mongodb';
 import config from '../../config.ts';
 import { XMLParser } from 'fast-xml-parser';
 
@@ -372,12 +372,12 @@ export const collectTransactions = async () => {
         const destinations: {[dest: string]: any} = {};
 
         for (const player of transaction.players.player) {
-            const destination = player.transaction_data.destination_team_name || player.transaction_data.transaction_type;
+            const destination = player.transaction_data.destination_team_name || player.transaction_data.destination_type;
 
             if (!destinations[destination]) {
                 destinations[destination] = [];
             }
-    
+
             destinations[destination].push(player);
         }
 
@@ -394,10 +394,10 @@ export const collectTransactions = async () => {
             const playersTo = destinations[destination];
 
             fields.push({
-                name: cleanDest,
+                name: 'To ' + cleanDest,
                 value: playersTo.map((player: any) => {
-                    `${player.name.full}\n${player.editorial_team_abbr} - ${player.display_position}`
-                })
+                    return `${player.name.full}\n${player.editorial_team_abbr} - ${player.display_position}`
+                }).join('\n')
             });
         }
 
