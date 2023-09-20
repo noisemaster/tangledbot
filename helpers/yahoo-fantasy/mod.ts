@@ -369,29 +369,64 @@ export const collectTransactions = async () => {
                 });
         }
 
-        let description = transaction.players.player.map((p: any) => {
-            let source, destination;
-            const type = p.transaction_data.type;
-            const source_type = p.transaction_data.source_type;
-            const destination_type = p.transaction_data.destination_type;
-            if (source_type === 'team') {
-                source = p.transaction_data.source_team_name;
-            } else {
-                source = p.transaction_data.source_type;
+        const destinations = {};
+
+        for (const player of transaction.players.player) {
+            const destination = player.transaction_data.destination_team_name || player.transaction_data.transaction_type;
+
+            if (destinations[destination]) {
+                destinations[destination] = [];
             }
-            if (destination_type === 'team') {
-                destination = p.transaction_data.destination_team_name;
-            } else {
-                destination = p.transaction_data.destination_type;
+    
+            destinations[destination].push(player);
+        }
+
+        const fields = [];
+
+        for (const destination in destinations) {
+            let cleanDest = destination;
+            if (destination === 'waivers') {
+                cleanDest = 'Waivers'
+            } else if (detination === 'freeagents') {
+                cleanDest = 'Free Agency'
             }
 
-            const typeEmoji = type === 'add' ? '🔺' : type === 'drop' ? '🔻' : '🔄';
+            const playersTo = destinations[destination];
 
-            const finalMessage = `${p.name.full} (${p.editorial_team_abbr} - ${p.display_position}) ${typeEmoji} ${source} -> ${destination}`;
-        }).join('\n');
+            fields.push({
+                name: cleanDest,
+                value: playersTo.map((player: any) => {
+                    `${p.name.full}\n${p.editorial_team_abbr} - ${p.display_position)}`
+                })
+            });
+        }
+
+        // let description = transaction.players.player.map((p: any) => {
+        //     let source, destination;
+        //     const type = p.transaction_data.type;
+        //     const source_type = p.transaction_data.source_type;
+        //     const destination_type = p.transaction_data.destination_type;
+        //     if (source_type === 'team') {
+        //         source = p.transaction_data.source_team_name;
+        //     } else {
+        //         source = p.transaction_data.source_type;
+        //     }
+        //     if (destination_type === 'team') {
+        //         destination = p.transaction_data.destination_team_name;
+        //     } else {
+        //         destination = p.transaction_data.destination_type;
+        //     }
+        //
+        //     const typeEmoji = type === 'add' ? '🔺' : type === 'drop' ? '🔻' : '🔄';
+        //
+        //     const finalMessage = `${p.name.full} (${p.editorial_team_abbr} - ${p.display_position}) ${typeEmoji} ${source} -> ${destination}`;
+        // }).join('\n');
 
         if (transaction.faab_bid) {
-            description += `\nWinning Bid: ${transaction.faab_bid}`;
+            fields.push({
+                name: 'Winning Bid'
+                value: `${transaction.faab_bid}`;
+            });
         }
 
         const embed = {
