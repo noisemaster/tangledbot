@@ -369,7 +369,7 @@ export const collectTransactions = async () => {
                 });
         }
 
-        const destinations = {};
+        const destinations: {[dest: string]: any} = {};
 
         for (const player of transaction.players.player) {
             const destination = player.transaction_data.destination_team_name || player.transaction_data.transaction_type;
@@ -387,7 +387,7 @@ export const collectTransactions = async () => {
             let cleanDest = destination;
             if (destination === 'waivers') {
                 cleanDest = 'Waivers'
-            } else if (detination === 'freeagents') {
+            } else if (destination === 'freeagents') {
                 cleanDest = 'Free Agency'
             }
 
@@ -396,7 +396,7 @@ export const collectTransactions = async () => {
             fields.push({
                 name: cleanDest,
                 value: playersTo.map((player: any) => {
-                    `${p.name.full}\n${p.editorial_team_abbr} - ${p.display_position)}`
+                    `${player.name.full}\n${player.editorial_team_abbr} - ${player.display_position}`
                 })
             });
         }
@@ -424,14 +424,14 @@ export const collectTransactions = async () => {
 
         if (transaction.faab_bid) {
             fields.push({
-                name: 'Winning Bid'
-                value: `${transaction.faab_bid}`;
+                name: 'Winning Bid',
+                value: `${transaction.faab_bid}`,
             });
         }
 
         const embed = {
             title: 'New Transaction',
-            description,
+            fields,
             timestamp: new Date(transaction.timestamp * 1000).toISOString(),
         }
 
