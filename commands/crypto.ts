@@ -7,6 +7,8 @@ import { v4 } from "uuid";
 import { generateTimerangeButtons, getTimerangePost, HasTimerange, setTimerangePost, timerangePost } from "../handlers/timerangeHandler.ts";
 import { createCommand } from "./mod.ts";
 import { updateInteraction, updateInteractionWithFile } from './lib/updateInteraction.ts';
+import vegaLite from 'vega-lite';
+import { generateVega } from '../helpers/charting.ts';
 
 interface cgCoin extends Pageable, HasTimerange {
     id: string;
@@ -259,7 +261,7 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
     if (image) {
         const imageAttach: FileContent = {
             name: `${coin.id}.png`,
-            blob: new Blob([image])
+            blob: image
         };
         payload.files = [imageAttach];
 
@@ -273,20 +275,70 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
     return payload;
 }
 
-const fetchChart = async (symbol: string, timeRange: string): Promise<ArrayBuffer> => {
-    const hololynx = Bun.spawn({
-        cmd: ["python3", "./helpers/hololynx.py", symbol, timeRange],
-        stdout: 'pipe'
-    });
+const fetchChart = async (symbol: string, timeRange: string): Promise<Blob> => {
+    const data = await fetch(`https://api.coingecko.com/api/v3/coins/${symbol}/ohlc?vs_currency=usd&days=${timeRange}`)
+        .then((res) => res.json());
 
-    const output = hololynx.stdout;
-    const code = hololynx.exitCode;
-    
-    if (code !== 0) {
-        throw new Error('Candlesticks chart not generated')
-    }
-    
-    return new Response(output).arrayBuffer();
+    const candleStickSchema = vegaLite.compile({
+        $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+        description: "A simple bar chart with embedded data.",
+        width: 1280 / 2,
+        height: 720 / 2,
+        data: {
+            values: data.map((row: number[]) => {
+                return {
+                    date: new Date(row[0]),
+                    open: row[1],
+                    close: row[2],
+                    high: row[3],
+                    low: row[4]
+                };
+            }),
+        },
+        encoding: {
+            x: {
+                field: "date",
+                type: "temporal",
+                axis: {
+                    format: "%m/%d %H:%M",
+                    labelAngle: -45,
+                },
+            },
+            y: {
+                type: "quantitative",
+                scale: { zero: false },
+                axis: { title: "Price" },
+            },
+            color: {
+                condition: {
+                    test: "datum.open < datum.close",
+                    value: "#06982d",
+                },
+                value: "#ae1325",
+            },
+        },
+        layer: [
+            {
+                mark: "rule",
+                encoding: {
+                    y: { field: "low" },
+                    y2: { field: "high" },
+                },
+            },
+            {
+                mark: "bar",
+                encoding: {
+                    y: { field: "open" },
+                    y2: { field: "close" },
+                },
+            },
+        ],
+    }).spec;
+
+    const buffer = await generateVega(candleStickSchema);
+
+    return new Blob([buffer])
+
 }
 
 const cryptoPageSelectGenerator = (pages: cgCoin[]): SelectOption[] => {

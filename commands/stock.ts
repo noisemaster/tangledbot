@@ -19,7 +19,12 @@ import {
     InteractionCallbackData,
     InteractionResponseTypes,
 } from "@discordeno/bot";
-import { updateInteraction, updateInteractionWithFile } from "./lib/updateInteraction.ts";
+import {
+    updateInteraction,
+    updateInteractionWithFile,
+} from "./lib/updateInteraction.ts";
+import vegaLite from 'vega-lite';
+import { generateVega } from "../helpers/charting.ts";
 
 interface YahooStockQuote extends HasTimerange {
     symbol?: string;
@@ -48,6 +53,23 @@ const YahooTimeranges = [
     { name: "Max", value: "max" },
 ];
 
+type YahooRanges = "1d" | "5d" | "1mo" | "3mo" | "6mo" | "1y" | "2y" | "5y" | "10y" | "ytd" | "max";
+type YahooInterval = "1m" | "2m" | "5m" | "15m" | "30m" | "60m" | "90m" | "1h" | "1d" | "5d" | "1wk" | "1mo" | "3mo";
+
+const intervalDataPointMap: {[key in YahooRanges]: YahooInterval} = {
+    "1d": "2m",
+    "5d": "5m",
+    "1mo": "1d",
+    "3mo": "1d",
+    "6mo": "1wk",
+    "1y": "1wk",
+    "2y": "1mo",
+    "5y": "1mo",
+    "10y": '1mo',
+    "ytd": "1wk",
+    "max": "3mo",
+};
+
 const fetchQuote = async (bot: Bot, interaction: Interaction) => {
     if (!interaction.data) {
         return;
@@ -65,21 +87,33 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
         ? timeRangeOption.value as string
         : "1d";
 
-    await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-        type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-    });
+    await bot.helpers.sendInteractionResponse(
+        interaction.id,
+        interaction.token,
+        {
+            type: InteractionResponseTypes.DeferredChannelMessageWithSource,
+        },
+    );
 
     // const url =
-        // `https://query1.finance.yahoo.com/v6/finance/quote?symbols=${symbol}`;
+    // `https://query1.finance.yahoo.com/v6/finance/quote?symbols=${symbol}`;
 
     // let stockResp = await fetch(url);
     // let stock = await stockResp.json();
     // let { result } = stock.quoteResponse;
 
-    let text = await fetch('https://finance.yahoo.com/quote/U', {headers: {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/116.0'}}).then(resp => resp.text())
-    const titlePos = text.indexOf('<title>')
-    const titlePosEnd = text.indexOf('</title>')
-    const stockName = text.substr(titlePos + 7, titlePosEnd-titlePos-7-55)
+    let text = await fetch("https://finance.yahoo.com/quote/U", {
+        headers: {
+            "User-Agent":
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/116.0",
+        },
+    }).then((resp) => resp.text());
+    const titlePos = text.indexOf("<title>");
+    const titlePosEnd = text.indexOf("</title>");
+    const stockName = text.substr(
+        titlePos + 7,
+        titlePosEnd - titlePos - 7 - 55,
+    );
 
     // if (
     //     result.length === 0 ||
@@ -115,7 +149,7 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
     const data = {
         symbol: symbol,
         longName: stockName,
-    }
+    };
 
     const payload = await generateStockEmbed(data as any, timeRange);
 
@@ -137,6 +171,8 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
         timerangeData,
         internalMessageId,
     );
+
+    payload.components = timerangeComponents;
 
     await updateInteraction(interaction, payload, payload.files);
 
@@ -161,7 +197,9 @@ const generateStockEmbed = async (
         regularMarketTime,
     } = quoteData;
 
-    const lastRefresh = regularMarketTime ? new Date(regularMarketTime * 1000) : new Date();
+    const lastRefresh = regularMarketTime
+        ? new Date(regularMarketTime * 1000)
+        : new Date();
     const diffSymbol = regularMarketChange > 0
         ? "<:small_green_triangle:851144859103395861>"
         : "🔻";
@@ -192,13 +230,12 @@ const generateStockEmbed = async (
     //     };
     // }
 
-    const payload: InteractionCallbackData = {
-    };
+    const payload: InteractionCallbackData = {};
 
     if (image) {
         const imageAttach: FileContent = {
             name: `${symbol}.png`,
-            blob: new Blob([image])
+            blob: image
         };
         payload.files = [imageAttach];
 
@@ -256,20 +293,80 @@ const stockTimerangeHandler = async (
 const fetchChart = async (
     symbol: string,
     timeRange: string,
-): Promise<ArrayBuffer> => {
-    const badger = Bun.spawnSync({
-        cmd: ["python3", "./helpers/badger.py", symbol, timeRange],
-        stdout: "pipe",
-    });
+): Promise<Blob> => {
+    const interval = intervalDataPointMap[timeRange as YahooRanges];
+    const data = await fetch(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${timeRange}&interval=${interval}`,
+    )
+        .then((res) => res.json());
 
-    const output = badger.stdout;
-    const code = badger.exitCode;
+    const timestamps = data.chart.result[0].timestamp;
+    const quoteOpen = data.chart.result[0].indicators.quote[0].open;
+    const close = data.chart.result[0].indicators.quote[0].close;
+    const volume = data.chart.result[0].indicators.quote[0].volume;
+    const high = data.chart.result[0].indicators.quote[0].high;
+    const low = data.chart.result[0].indicators.quote[0].low;
 
-    if (code && code !== 0) {
-        throw new Error("Candlesticks chart not generated");
-    }
+    const candleStickSchema = vegaLite.compile({
+        $schema: "https://vega.github.io/schema/vega-lite/v5.json",
+        description: "A simple bar chart with embedded data.",
+        width: 1280 / 2,
+        height: 720 / 2,
+        data: {
+            values: timestamps.map((timestamp: any, index: number) => {
+                return {
+                    date: new Date(timestamp * 1000),
+                    open: quoteOpen[index],
+                    close: close[index],
+                    high: high[index],
+                    low: low[index],
+                    volume: volume[index],
+                };
+            }),
+        },
+        encoding: {
+            x: {
+                field: "date",
+                type: "temporal",
+                axis: {
+                    format: "%m/%d %H:%M",
+                    labelAngle: -45,
+                },
+            },
+            y: {
+                type: "quantitative",
+                scale: { zero: false },
+                axis: { title: "Price" },
+            },
+            color: {
+                condition: {
+                    test: "datum.open < datum.close",
+                    value: "#06982d",
+                },
+                value: "#ae1325",
+            },
+        },
+        layer: [
+            {
+                mark: "rule",
+                encoding: {
+                    y: { field: "low" },
+                    y2: { field: "high" },
+                },
+            },
+            {
+                mark: "bar",
+                encoding: {
+                    y: { field: "open" },
+                    y2: { field: "close" },
+                },
+            },
+        ],
+    }).spec;
 
-    return new Response(output).arrayBuffer();
+    const buffer = await generateVega(candleStickSchema);
+
+    return new Blob([buffer])
 };
 
 createCommand({
