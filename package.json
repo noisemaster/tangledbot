@@ -14,7 +14,9 @@
     "@discordeno/types": "^19.0.0-next.b2f65c2",
     "@discordeno/utils": "^19.0.0-next.b2f65c2",
     "@types/uuid": "^9.0.2",
+    "canvas": "^2.11.2",
     "cron": "^2.4.1",
+    "d3-node": "^3.0.0",
     "date-fns": "^2.30.0",
     "discordeno": "^18.0.1",
     "fast-xml-parser": "^4.2.7",
@@ -22,7 +24,10 @@
     "mongodb": "^5.8.0",
     "redis": "^4.6.7",
     "saslprep": "^1.0.3",
+    "sharp": "0.33.0-alpha.9",
     "uuid": "^9.0.0",
+    "vega": "^5.25.0",
+    "vega-lite": "^5.16.1",
     "word-wrap": "^1.2.5"
   }
 }
