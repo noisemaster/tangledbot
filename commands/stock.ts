@@ -102,7 +102,7 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
     // let stock = await stockResp.json();
     // let { result } = stock.quoteResponse;
 
-    let text = await fetch("https://finance.yahoo.com/quote/U", {
+    let text = await fetch(`https://finance.yahoo.com/quote/${symbol}`, {
         headers: {
             "User-Agent":
                 "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/116.0",
