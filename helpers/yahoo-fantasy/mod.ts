@@ -70,7 +70,7 @@ export const getAccessToken = async () => {
     return accessToken!;
 }
 
-export const fetchStandings = async (accessToken: string, leagueId: string = '22526') => {
+export const fetchStandings = async (accessToken: string, leagueId: string = '494410') => {
     const standingsRequestXML = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/standings`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -107,7 +107,7 @@ export const fetchStandings = async (accessToken: string, leagueId: string = '22
     };
 }
 
-export const fetchScoreboard = async (accessToken: string, leagueId: string = '22526', gameId = 'nfl') => {
+export const fetchScoreboard = async (accessToken: string, leagueId: string = '494410', gameId = 'nfl') => {
     const scoreboardRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/scoreboard`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -230,7 +230,7 @@ export const listGames = async () => {
     return games.sort((a, b) => a.week - b.week);
 };
 
-export const getTransactions = async (accessToken: string, leagueId: string = '22526', gameId = 'nfl') => {
+export const getTransactions = async (accessToken: string, leagueId: string = '494410', gameId = 'nfl') => {
     const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/transactions;types=add,drop,trade;status=accepted`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -256,7 +256,7 @@ export const getTransactions = async (accessToken: string, leagueId: string = '2
     };
 }
 
-export const getTeams = async (accessToken: string, leagueId = '22526', gameId = 'nfl') => {
+export const getTeams = async (accessToken: string, leagueId = '494410', gameId = 'nfl') => {
     const tradesRequest = await fetch(`https://fantasysports.yahooapis.com/fantasy/v2/league/${gameId}.l.${leagueId}/teams`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -321,7 +321,7 @@ export const getPlayerDetails = async (accessToken: string, playerId = '1353821'
 
 export const collectTransactions = async () => {
     const accessToken = await getAccessToken();
-    const {league, transactions} = await getTransactions(accessToken, '22526');
+    const {league, transactions} = await getTransactions(accessToken, '494410');
     const mongo = await MongoClient.connect(config.mongo.url);
 
     const embedsToSend: any[] = [];
@@ -350,7 +350,7 @@ export const collectTransactions = async () => {
                 .collection('transactions')
                 .insertOne({
                     transactionKey: `${transaction.transaction_key}.${index}`,
-                    leagueId: 22526,
+                    leagueId: 494410,
                     type: transaction.type,
                     timestamp: new Date(transaction.timestamp * 1000),
                     status: player.transaction_data.type,
