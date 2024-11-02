@@ -1,86 +1,117 @@
-import { pgTable, integer, serial, json, timestamp, varchar, decimal } from "drizzle-orm/pg-core";}
+import {
+  integer,
+  text,
+  json,
+  timestamp,
+  pgTable,
+  decimal,
+} from "drizzle-orm/pg-core";
 
-export const league = pgTable("leagues", {
-  id: serial("id").primaryKey(),
-  leagueKey: varchar("league_key").notNull(),
-  name: varchar("name").notNull(),
-  logo: varchar("logo").notNull(),
-  gameId: integer("game_id").notNull(),
-  url: varchar("url").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+export type PlayerStatObj = {
+  statAbbr: string;
+  statCat: string;
+  statId: number;
+  statName: string;
+  value: number;
+};
+
+export const Game = pgTable("games", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  sport: text("sport"),
+  year: text("year"),
 });
 
-export const matchup = pgTable("matchups", {
-  id: serial("id").primaryKey(),
-  leagueId: integer("league_id").notNull(),
-  matchupKey: varchar("matchup_key").notNull(),
-  team1Id: integer("team1_id").notNull(),
-  team2Id: integer("team2_id").notNull(),
-  team1Score: decimal("team1_score").notNull(),
-  team2Score: decimal("team2_score").notNull(),
-  week: integer("week").notNull(),
-  timing: json("timing").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+export const League = pgTable("leagues", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  key: text("key"),
+  logo: text("logo"),
+  name: text("name"),
+  sportId: integer("sportId"),
+  url: text("url"),
 });
 
-export const player = pgTable("players", {
-  id: serial("id").primaryKey(),
-  leagueId: integer("league_id").notNull(),
-  playerId: integer("player_id").notNull(),
-  playerKey: varchar("player_key").notNull(),
-  name: varchar("name").notNull(),
-  position: varchar("position").notNull(),
-  positionAbbr: varchar("position_abbr").notNull(),
-  teamId: integer("team_id").notNull(),
-  status: varchar("status").notNull(),
-  statusFull: varchar("status_full").notNull(),
-  headshot: varchar("headshot").notNull(),
-  byeWeek: integer("bye_week").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+// Matchups table
+export const Matchup = pgTable("matchups", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  gameId: text("gameId"),
+  leagueId: text("leagueId"),
+  matchupId: text("matchupId"),
+  matchupKey: text("matchupKey"),
+  team1Id: text("team1Id"),
+  team1Name: text("team1Name"),
+  team1Score: decimal("team1Score"),
+  team1ScoreTiming: json("team1ScoreTiming"),
+  team2Id: text("team2Id"),
+  team2Name: text("team2Name"),
+  team2Score: decimal("team2Score"),
+  team2ScoreTiming: json("team2ScoreTiming"),
+  week: integer("week"),
 });
 
-export const stats = pgTable("stats", {
-  id: serial("id").primaryKey(),
-  sportId: integer("sport_id").notNull(),
-  statId: integer("stat_id").notNull(),
-  abbr: varchar("abbr").notNull(),
-  group: varchar("group").notNull(),
-  name: varchar("name").notNull(),
-  posiionType: varchar("position_type").notNull(),
-  sortOrder: integer("sort_order").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+// PlayerStats table
+export const PlayerStat = pgTable("playerStats", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  playerKey: text("playerKey"),
+  playerName: text("playerName"),
+  points: decimal("points"),
+  stats: json("stats").$type<PlayerStatObj[]>(),
+  week: integer("week"),
 });
 
-export const leagueTeam = pgTable("league_teams", {
-  id: serial("id").primaryKey(),
-  leagueId: integer("league_id").notNull(),
-  teamId: integer("team_id").notNull(),
-  teamKey: varchar("team_key").notNull(),
-  managerName: varchar("manager_name").notNull(),
-  name: varchar("name").notNull(),
-  logo: varchar("logo").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+// Players table
+export const Player = pgTable("players", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  name: text("name"),
+  playerKey: text("playerKey"),
+  position: text("position"),
+  positionAbbr: text("positionAbbr"),
+  status: text("status"),
+  statusFull: text("statusFull"),
+  teamKey: text("teamKey"),
 });
 
-export const transaction = pgTable("transactions", {
-  id: serial("id").primaryKey(),
-  destinationTeamId: integer("destination_team_id"),
-  sourceTeamId: integer("source_team_id"),
-  sourceType: varchar("source_type").notNull(),
-  destinationType: varchar("destination_type").notNull(),
-  gameId: varchar("game_id").notNull(),
-  leagueId: integer("league_id").notNull(),
-  playerName: varchar("player_name").notNull(),
-  parentTransactionId: integer("parent_transaction_id"),
-  transactionId: integer("transaction_id").notNull(),
-  type: varchar("type").notNull(),
-  winningBid: decimal("winning_bid").notNull(),
-  timestamp: timestamp("timestamp").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+// Stats table
+export const Stat = pgTable("stats", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  abbr: text("abbr"),
+  group: text("group"),
+  name: text("name"),
+  positionType: text("positionType"),
+  sortOrder: integer("sortOrder"),
+  sportId: integer("sportId"),
+  statId: integer("statId"),
+});
+
+// Teams table
+export const Team = pgTable("teams", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  leagueId: integer("leagueId"),
+  logo: text("logo"),
+  manager: text("manager"),
+  managerAvatar: text("managerAvatar"),
+  name: text("name"),
+  sportId: integer("sportId"),
+  teamKey: text("teamKey"),
+});
+
+// Transactions table
+export const Transaction = pgTable("transactions", {
+  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+  destinationTeam: text("destinationTeam"),
+  destinationTeamKey: text("destinationTeamKey"),
+  destinationType: text("destinationType"),
+  gameId: text("gameId"),
+  leagueId: text("leagueId"),
+  name: text("name"),
+  parentTransactionKey: text("parentTransactionKey"),
+  playerId: text("playerId"),
+  position: text("position"),
+  sourceTeam: text("sourceTeam"),
+  sourceTeamKey: text("sourceTeamKey"),
+  sourceType: text("sourceType"),
+  status: text("status"),
+  timestamp: timestamp("timestamp"),
+  transactionKey: text("transactionKey"),
+  type: text("type"),
+  winningFaabBid: integer("winningFaabBid"),
 });

@@ -3,8 +3,9 @@
   "module": "main.ts",
   "type": "module",
   "devDependencies": {
+    "@types/pg": "^8.11.10",
     "bun-types": "latest",
-    "drizzle-kit": "^0.24.2"
+    "drizzle-kit": "^0.27.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"
@@ -21,11 +22,13 @@
     "d3-node": "^3.0.0",
     "date-fns": "^2.30.0",
     "discordeno": "^18.0.1",
-    "drizzle-orm": "^0.33.0",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.36.0",
     "fast-xml-parser": "^4.2.7",
     "fuse.js": "^6.6.2",
     "jsdom": "^25.0.1",
     "mongodb": "^5.8.0",
+    "pg": "^8.13.1",
     "redis": "^4.6.7",
     "saslprep": "^1.0.3",
     "sharp": "0.33.0-alpha.9",

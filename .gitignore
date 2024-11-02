@@ -30,3 +30,4 @@ config.ts
 debug
 fileloader.ts
 node_modules
+.env
