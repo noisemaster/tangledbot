@@ -7,7 +7,7 @@ import {
 } from "@discordeno/bot";
 import { Command, commands, subCommand } from "../commands/mod.ts";
 import { handleTeamAutocomplete } from "../commands/nfl.ts";
-import { handleGraphAutocomplete } from "../commands/yahoo-fantasy.ts";
+import { handleGraphAutocomplete, handlePlayerAutocomplete } from "../commands/yahoo-fantasy.ts";
 import { togglePost } from "../handlers/imagePostHandler.ts";
 import { updatePage } from "../handlers/paginationHandler.ts";
 import { updateTimerange } from "../handlers/timerangeHandler.ts";
@@ -19,6 +19,10 @@ events.interactionCreate = async (interaction: Interaction, ...rest) => {
     if (interaction.type === InteractionTypes.ApplicationCommandAutocomplete) {
         if (interaction.data!.name === "nfl") {
             handleTeamAutocomplete(bot, interaction);
+        }
+
+        if (interaction.data!.name === "fantasy") {
+            handlePlayerAutocomplete(bot, interaction);
         }
 
         if (interaction.data!.name === "fantasy") {

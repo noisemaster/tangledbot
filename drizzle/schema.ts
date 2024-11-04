@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   integer,
   text,
@@ -126,3 +126,14 @@ export const Transaction = pgTable("transactions", {
   type: text("type"),
   winningFaabBid: integer("winningFaabBid"),
 });
+
+export const PlayerRelations = relations(Player, ({many}) => ({
+  stats: many(PlayerStat)
+})) 
+
+export const PlayerStatRelations = relations(PlayerStat, ({one}) => ({
+  player: one(Player, {
+    fields: [PlayerStat.playerKey],
+    references: [Player.playerKey],
+  })
+}))
