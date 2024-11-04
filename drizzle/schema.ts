@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   integer,
   text,
@@ -5,6 +6,7 @@ import {
   timestamp,
   pgTable,
   decimal,
+  index,
 } from "drizzle-orm/pg-core";
 
 export type PlayerStatObj = {
@@ -59,16 +61,25 @@ export const PlayerStat = pgTable("playerStats", {
 });
 
 // Players table
-export const Player = pgTable("players", {
-  id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
-  name: text("name"),
-  playerKey: text("playerKey"),
-  position: text("position"),
-  positionAbbr: text("positionAbbr"),
-  status: text("status"),
-  statusFull: text("statusFull"),
-  teamKey: text("teamKey"),
-});
+export const Player = pgTable(
+  "players",
+  {
+    id: integer("id").primaryKey().generatedByDefaultAsIdentity(),
+    name: text("name"),
+    playerKey: text("playerKey"),
+    position: text("position"),
+    positionAbbr: text("positionAbbr"),
+    status: text("status"),
+    statusFull: text("statusFull"),
+    teamKey: text("teamKey"),
+  },
+  (table) => ({
+    nameSearchIndex: index("name_search_index").using(
+      "gin",
+      sql`to_tsvector('english', ${table.name})`
+    ),
+  })
+);
 
 // Stats table
 export const Stat = pgTable("stats", {
