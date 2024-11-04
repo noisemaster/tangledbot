@@ -1,6 +1,6 @@
 import { db } from "../../drizzle";
 import { MongoClient } from "mongodb";
-import { League, Matchup, Player, Team, Transaction } from "../../drizzle/schema.ts";
+import { League, Matchup, Player, PlayerStat, Stat, Team, Transaction } from "../../drizzle/schema.ts";
 
 const mongo = await MongoClient.connect(process.env.MONGODB_URL!);
 
@@ -16,6 +16,10 @@ const dbTeams = mongo.db("tangledbot").collection("teams").find({});
 const dbLeagues = mongo.db("tangledbot").collection("leagues").find({});
 
 const dbMatchups = mongo.db("tangledbot").collection("matchups").find({});
+
+const dbPlayerStats = mongo.db("tangledbot").collection("playerStats").find({});
+
+const dbStats = mongo.db("tangledbot").collection("stats").find({});
 
 await db.transaction(async (tx) => {
   for await (const player of dbPlayers) {
@@ -88,6 +92,28 @@ await db.transaction(async (tx) => {
       team2Score: matchup.team2Score,
       team2ScoreTiming: matchup.team2ScoreTiming,
       week: matchup.week,
+    });
+  }
+
+  for await (const playerStat of dbPlayerStats) {
+    await tx.insert(PlayerStat).values({
+      playerKey: playerStat.playerKey,
+      playerName: playerStat.playerName,
+      points: playerStat.points,
+      stats: playerStat.stats,
+      week: playerStat.week,
+    });
+  }
+
+  for await (const stat of dbStats) {
+    await tx.insert(Stat).values({
+      abbr: stat.abbr,
+      group: stat.group,
+      name: stat.name,
+      positionType: stat.positionType,
+      sortOrder: stat.sortOrder,
+      sportId: stat.sportId,
+      statId: stat.statId,
     });
   }
 });
