@@ -124,43 +124,68 @@ export const handleGraphAutocomplete = async (bot: Bot, interaction: Interaction
 
 export const handlePlayerAutocomplete = async (bot: Bot, interaction: Interaction) => {
     const interactionData: any = interaction.data;
-    const detailsOption = interactionData.options.find((option: any) => option.name === 'info');
+    const detailsOption = interactionData.options.find((option: any) => option.name === 'details');
     const searchPlayerOption: any = detailsOption ? detailsOption.options.find((option: any) => option.name === 'player') : null;
     const searchPlayer: string = searchPlayerOption ? searchPlayerOption.value : '';
 
-    const players = await db.query.Player.findMany({
-        // extras: {
-        //   rank: (player, {sql}) => sql<number>`ts_rank(to_tsvector('english', ${player.name}) @@ to_tsquery('english', ${query}))`.as('rank')
-        // },
-        where: (player, { inArray, and, sql }) =>
-            and(
-                inArray(player.positionAbbr, ["QB", "RB", "WR", "TE", "K"]),
-                sql`to_tsvector('english', ${player.name}) @@ ${searchPlayer + ':*'}::tsquery`
-            ),
-        // orderBy: (player, { desc }) => desc(player.rank),
-    });
+    if (searchPlayer === '') {
+        console.log('empty');
+        await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+            type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
+            data: {
+                choices: [{
+                    name: 'Player',
+                    value: 'player'
+                }]
+            }
+        })
+        return;
+    }
 
-    const formattedResults = players.map(player => ({
-        name: `${player.name} (${player.positionAbbr})`,
-        value: player.playerKey
-    })).slice(0, 25);
-    
-    await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-        type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
-        data: {
-            choices: formattedResults
-        }
-    })
+    try {
+        const players = await db.query.Player.findMany({
+            // extras: {
+            //   rank: (player, {sql}) => sql<number>`ts_rank(to_tsvector('english', ${player.name}) @@ to_tsquery('english', ${query}))`.as('rank')
+            // },
+            where: (player, { inArray, and, sql }) =>
+                and(
+                    inArray(player.positionAbbr, ["QB", "RB", "WR", "TE", "K"]),
+                    sql`to_tsvector('english', ${player.name}) @@ ${searchPlayer.trim() + ':*'}::tsquery`
+                ),
+            // orderBy: (player, { desc }) => desc(player.rank),
+        });
+
+        const formattedResults = players.map(player => ({
+            name: `${player.name} (${player.positionAbbr})`,
+            value: player.playerKey
+        })).slice(0, 25);
+
+        await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+            type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
+            data: {
+                choices: formattedResults
+            }
+        })
+    } catch (err) {
+        console.log(err);
+        return;
+    }
 }
 
 export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
     const interactionData: any = interaction.data;
-    const detailsOption = interactionData.options.find((option: any) => option.name === 'info');
+    const detailsOption = interactionData.options.find((option: any) => option.name === 'details');
     const searchPlayerOption: any = detailsOption ? detailsOption.options.find((option: any) => option.name === 'player') : null;
     const searchPlayer: string = searchPlayerOption ? searchPlayerOption.value : '';
 
-    const players = await db.query.Player.findMany({
-        where: (player, { eq }) => eq(player.playerKey, searchPlayer),
+    await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
+        type: InteractionResponseTypes.DeferredChannelMessageWithSource
+    });
+
+    console.log(`449${searchPlayer.substring(3)}`);
+
+    const player = await db.query.Player.findFirst({
+        where: (player, { eq }) => eq(player.playerKey, `449${searchPlayer.substring(3)}`),
         with: {
             stats: {
                 orderBy: (stat, { desc }) => desc(stat.week),
@@ -169,18 +194,17 @@ export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
         },
     });
 
-    if (players.length === 0) {
+    if (!player) {
         await updateInteraction(interaction, {
             content: 'Player not found'
         });
         return;
     }
 
-    const player = players[0];
-
     const embed: Camelize<DiscordEmbed> = {
         title: player.name!,
         url: `https://fantasysports.yahoo.com/nfl/players/${player.playerKey!}`,
+        description: `Points for ${player.name}\n${player.stats.map(stat => `Week ${stat.week}: ${stat.points}`).join('\n')}`,
     };
 
     await updateInteraction(interaction, {
@@ -249,8 +273,8 @@ createCommand({
                 type: ApplicationCommandOptionTypes.String,
                 required: true,
                 autocomplete: true
-            }
-        },
+            }]
+        }
     ],
     execute: () => {},
 });

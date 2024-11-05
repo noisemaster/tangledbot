@@ -4,6 +4,7 @@ import { events } from "./events/mod.ts";
 
 import './events/interactionCreate.ts';
 import './commands/index.ts';
+import { commands } from './commands/mod.ts';
 
 const client = createBot({
     // botId: config.discord.botID,
@@ -32,3 +33,10 @@ client.transformers.desiredProperties.interaction = {
 logger.info('Starting bot...');
 await client.start();
 logger.info('Bot started!');
+
+// await client.helpers.upsertGuildApplicationCommands(
+//     config.discord.testingGuildID,
+//     commands.array()
+// );
+
+// console.log('update commands for guild', config.discord.testingGuildID);

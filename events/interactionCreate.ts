@@ -21,11 +21,11 @@ events.interactionCreate = async (interaction: Interaction, ...rest) => {
             handleTeamAutocomplete(bot, interaction);
         }
 
-        if (interaction.data!.name === "fantasy") {
+        if (interaction.data!.name === "fantasy" && interaction.data!.options?.[0].name === 'details') {
             handlePlayerAutocomplete(bot, interaction);
         }
 
-        if (interaction.data!.name === "fantasy") {
+        if (interaction.data!.name === "fantasy" && interaction.data!.options?.[0].name === 'graph') {
             handleGraphAutocomplete(bot, interaction);
         }
 
