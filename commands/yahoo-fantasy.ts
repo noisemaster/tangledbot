@@ -199,10 +199,16 @@ export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
         return;
     }
 
+    const statSummary = player.stats.map(stat => {
+        const breakdown = (stat.stats || []).filter(x => x.value).map(x => `${x.value} ${x.statAbbr}`).join(', ')
+
+        return `Week ${stat.week}: ${stat.points}\n-# ${breakdown}`;
+    }).join('\n')
+
     const embed: Camelize<DiscordEmbed> = {
         title: player.name!,
         url: `https://fantasysports.yahoo.com/nfl/players/${player.playerKey!}`,
-        description: `Points for ${player.name}\n${player.stats.map(stat => `Week ${stat.week}: ${stat.points}`).join('\n')}`,
+        description: `Points for ${player.name}\n${statSummary}`,
     };
 
     await updateInteraction(interaction, {
