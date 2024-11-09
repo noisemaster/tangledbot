@@ -1,11 +1,11 @@
-import { MongoClient } from "mongodb";
+import { db } from '../../drizzle'
+import { and, eq } from 'drizzle-orm'
+import { Player, PlayerStat } from '../../drizzle/schema.ts'
 import { XMLParser } from "fast-xml-parser";
-import config from "../../config.ts";
 import { getAccessToken } from "./mod.ts";
 
 const importPlayers = async () => {
   const parser = new XMLParser();
-  const mongo = await MongoClient.connect(config.mongo.url);
   const accessToken = await getAccessToken();
   const teamSlugs = [
     "buffalo",
@@ -42,11 +42,11 @@ const importPlayers = async () => {
     "tampa-bay",
   ];
 
-  const dbStats = mongo.db("tangledbot").collection("stats").find({});
+  const dbStats = await db.query.Stat.findMany({});
   const statMap: { [x: number]: any } = {};
 
-  for await (const stat of dbStats) {
-    statMap[stat.statId] = {
+  for (const stat of dbStats) {
+    statMap[stat.statId!] = {
       name: stat.name,
       abbr: stat.abbr,
       cat: stat.group,
@@ -74,56 +74,51 @@ const importPlayers = async () => {
       const playerData = players[playerKey];
 
       const name = playerData.display_name;
-      const status = playerData.injury?.type;
-      const statusFull = playerData.injury?.comment;
+      const status = playerData.injury?.type || null;
+      const statusFull = playerData.injury?.comment || null;
 
       const position = positions[playerData.primary_position_id].name;
       const positionAbbr = positions[playerData.primary_position_id].abbr;
       currentTeamKey = playerData.team_id;
 
-      await mongo
-        .db("tangledbot")
-        .collection("players")
-        .updateOne(
-          {
-            playerKey,
-          },
-          {
-            $setOnInsert: {
-              playerKey,
-              name,
-              position,
-              positionAbbr,
-              teamKey: playerData.team_id,
-            },
-            $set: {
-              status,
-              statusFull,
-            },
-          },
-          { upsert: true },
-        );
+      try {
+        await db.insert(Player).values({
+          playerKey,
+          name,
+          position,
+          positionAbbr,
+          teamKey: playerData.team_id,
+        }).onConflictDoUpdate({
+          target: Player.playerKey,
+          set: {
+            status,
+            statusFull,
+          }
+        })
+      } catch (err) {
+        await db.update(Player).set({
+          status,
+          statusFull,
+        }).where(eq(Player.playerKey, playerKey))
+      }
     }
 
-    const dbPlayers = mongo
-      .db("tangledbot")
-      .collection("players")
-      .find({
-        teamKey: currentTeamKey,
-        positionAbbr: {
-          $in: ["QB", "WR", "K", "RB", "TE"],
-        },
-      });
+    const dbPlayers = await db.query.Player.findMany({
+      where: (player, { eq, inArray, and }) => and(
+        eq(player.teamKey, currentTeamKey),
+        inArray(player.positionAbbr, ["QB", "WR", "K", "RB", "TE"])
+      )
+    })
 
     const keys = [];
 
-    for await (const player of dbPlayers) {
+    for (const player of dbPlayers) {
       keys.push(player.playerKey);
     }
 
     console.log('syncing player stats');
 
-    for (let week of Array(7).keys()) {
+    for (let week of Array(10).keys()) {
       const url = `https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.494410/players;player_keys=${keys.join(",")}/stats;type=week;week=${week + 1}`;
       const req = await fetch(url, {
         headers: {
@@ -135,34 +130,41 @@ const importPlayers = async () => {
       const rawPlayer = parser.parse(rawXML);
 
       for (const player of rawPlayer.fantasy_content.league.players.player) {
-        await mongo
-          .db("tangledbot")
-          .collection("playerStats")
-          .updateOne(
-            {
-              playerKey: player.player_key,
-              week: player.player_points.week,
-            },
-            {
-              $set: {
-                playerKey: player.player_key,
-                playerName: player.name.full,
-                week: player.player_points.week,
-                points: player.player_points.total,
-                stats: player.player_stats.stats.stat.map((row: any) => ({
-                  statId: row.stat_id,
-                  statName: statMap[row.stat_id].name,
-                  statAbbr: statMap[row.stat_id].abbr,
-                  statCat: statMap[row.stat_id].cat,
-                  value: row.value,
-                })),
-              },
-            },
-            { upsert: true },
-          );
+        try {
+          await db.insert(PlayerStat).values({
+            playerKey: player.player_key.replace('449', 'nfl'),
+            playerName: player.name.full,
+            week: player.player_points.week,
+            points: player.player_points.total,
+            stats: player.player_stats.stats.stat.map((row: any) => ({
+              statId: row.stat_id,
+              statName: statMap[row.stat_id].name,
+              statAbbr: statMap[row.stat_id].abbr,
+              statCat: statMap[row.stat_id].cat,
+              value: row.value,
+            })),
+          })
+        } catch (err) {
+          await db.update(PlayerStat).set({
+            points: player.player_points.total,
+            stats: player.player_stats.stats.stat.map((row: any) => ({
+              statId: row.stat_id,
+              statName: statMap[row.stat_id].name,
+              statAbbr: statMap[row.stat_id].abbr,
+              statCat: statMap[row.stat_id].cat,
+              value: row.value,
+            })),
+          }).where(
+            and(eq(PlayerStat.week, player.player_points.week), eq(PlayerStat.playerKey, player.player_key.replace('449', 'nfl')))
+          )
+        }
       }
     }
   }
 };
 
 await importPlayers();
+
+console.log('Done!')
+
+process.exit(0);

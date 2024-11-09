@@ -53,7 +53,7 @@ export const sendScoreboardEmbed = async (bot: Bot, interaction: Interaction) =>
     };
     embed.fields = scoreboard.map((data, index) => {
         return {
-            name: `Matchup ${index+1}`,
+            name: `Matchup ${index + 1}`,
             value: `${data.team1.name}: ${data.team1.actualPoints} (Projected: ${data.team1.projectedPoints}) - Win Probability ${(data.team1.winProbability * 100).toFixed(0)}%\n${data.team2.name}: ${data.team2.actualPoints} (Projected: ${data.team2.projectedPoints}) - Win Probability ${(data.team2.winProbability * 100).toFixed(0)}%`,
             inline: false,
         };
@@ -113,7 +113,7 @@ export const handleGraphAutocomplete = async (bot: Bot, interaction: Interaction
         name: `Week ${results.item.week}: ${results.item.team1} vs ${results.item.team2}`,
         value: results.item.key
     })).slice(0, 25);
-    
+
     await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
         type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
         data: {
@@ -182,10 +182,8 @@ export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
         type: InteractionResponseTypes.DeferredChannelMessageWithSource
     });
 
-    console.log(`449${searchPlayer.substring(3)}`);
-
     const player = await db.query.Player.findFirst({
-        where: (player, { eq }) => eq(player.playerKey, `449${searchPlayer.substring(3)}`),
+        where: (player, { eq }) => eq(player.playerKey, searchPlayer),
         with: {
             stats: {
                 orderBy: (stat, { desc }) => desc(stat.week),
@@ -276,5 +274,5 @@ createCommand({
             }]
         }
     ],
-    execute: () => {},
+    execute: () => { },
 });

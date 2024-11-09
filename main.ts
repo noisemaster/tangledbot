@@ -8,7 +8,7 @@ import { commands } from './commands/mod.ts';
 
 const client = createBot({
     // botId: config.discord.botID,
-    token: config.discord.token,
+    token: process.env.DISCORD_TOKEN!,
     intents: GatewayIntents.Guilds,
     events
 });
@@ -34,9 +34,9 @@ logger.info('Starting bot...');
 await client.start();
 logger.info('Bot started!');
 
-// await client.helpers.upsertGuildApplicationCommands(
-//     config.discord.testingGuildID,
-//     commands.array()
-// );
+await client.helpers.upsertGuildApplicationCommands(
+    config.discord.testingGuildID,
+    commands.array()
+);
 
-// console.log('update commands for guild', config.discord.testingGuildID);
+console.log('update commands for guild', config.discord.testingGuildID);
