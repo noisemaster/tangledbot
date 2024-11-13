@@ -150,7 +150,7 @@ export const handlePlayerAutocomplete = async (bot: Bot, interaction: Interactio
             where: (player, { inArray, and, sql }) =>
                 and(
                     inArray(player.positionAbbr, ["QB", "RB", "WR", "TE", "K"]),
-                    sql`to_tsvector('english', ${player.name}) @@ ${searchPlayer.trim() + ':*'}::tsquery`
+                    sql`to_tsvector('english', ${player.name}) @@ websearch_to_tsquery(${searchPlayer.trim() + ':*'})`
                 ),
             // orderBy: (player, { desc }) => desc(player.rank),
         });
@@ -200,15 +200,21 @@ export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
     }
 
     const statSummary = player.stats.map(stat => {
-        const breakdown = (stat.stats || []).filter(x => x.value).map(x => `${x.value} ${x.statAbbr}`).join(', ')
+        const breakdown = (stat.stats || [])
+            .filter(x => x.value)
+            .map(x => `${x.value} ${x.statCat[0].toUpperCase() + x.statCat.substring(1)} ${x.statAbbr}`)
+            .join(', ')
 
-        return `Week ${stat.week}: ${stat.points}\n-# ${breakdown}`;
+        return `Week ${stat.week}: ${stat.points}\n${breakdown ? `-# ${breakdown}` : ''}`;
     }).join('\n')
 
     const embed: Camelize<DiscordEmbed> = {
         title: player.name!,
         url: `https://fantasysports.yahoo.com/nfl/players/${player.playerKey!}`,
         description: `Points for ${player.name}\n${statSummary}`,
+        thumbnail: {
+            url: player.headshot!,
+        }
     };
 
     await updateInteraction(interaction, {
