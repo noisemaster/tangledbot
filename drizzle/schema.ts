@@ -58,6 +58,7 @@ export const PlayerStat = pgTable("playerStats", {
   points: decimal("points"),
   stats: json("stats").$type<PlayerStatObj[]>(),
   week: integer("week"),
+  game: text("game").default('449')
 });
 
 // Players table
@@ -72,6 +73,7 @@ export const Player = pgTable(
     status: text("status"),
     statusFull: text("statusFull"),
     teamKey: text("teamKey"),
+    headshot: text("headshot")
   },
   (table) => ({
     nameSearchIndex: index("name_search_index").using(
@@ -127,11 +129,11 @@ export const Transaction = pgTable("transactions", {
   winningFaabBid: integer("winningFaabBid"),
 });
 
-export const PlayerRelations = relations(Player, ({many}) => ({
+export const PlayerRelations = relations(Player, ({ many }) => ({
   stats: many(PlayerStat)
-})) 
+}))
 
-export const PlayerStatRelations = relations(PlayerStat, ({one}) => ({
+export const PlayerStatRelations = relations(PlayerStat, ({ one }) => ({
   player: one(Player, {
     fields: [PlayerStat.playerKey],
     references: [Player.playerKey],
