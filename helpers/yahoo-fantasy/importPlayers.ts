@@ -81,25 +81,23 @@ const importPlayers = async () => {
       const positionAbbr = positions[playerData.primary_position_id].abbr;
       currentTeamKey = playerData.team_id;
 
-      try {
+      const playerExists = await db.query.Player.findFirst({
+        where: (player, { eq }) => eq(player.playerKey, playerKey)
+      })
+
+      if (!playerExists) {
         await db.insert(Player).values({
           playerKey,
           name,
           position,
           positionAbbr,
           teamKey: playerData.team_id,
-        }).onConflictDoUpdate({
-          target: Player.playerKey,
-          set: {
-            status,
-            statusFull,
-          }
         })
-      } catch (err) {
+      } else {
         await db.update(Player).set({
           status,
           statusFull,
-        }).where(eq(Player.playerKey, playerKey))
+        }).where(eq(Player.id, playerExists.id))
       }
     }
 
@@ -118,7 +116,10 @@ const importPlayers = async () => {
 
     console.log('syncing player stats');
 
-    for (let week of Array(10).keys()) {
+    const currentWeek = 11;
+
+    for (let week of Array(currentWeek).keys()) {
+      console.log(week + 1)
       const url = `https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.494410/players;player_keys=${keys.join(",")}/stats;type=week;week=${week + 1}`;
       const req = await fetch(url, {
         headers: {
@@ -129,8 +130,17 @@ const importPlayers = async () => {
       const rawXML = await req.text();
       const rawPlayer = parser.parse(rawXML);
 
+      console.log(rawPlayer)
+
       for (const player of rawPlayer.fantasy_content.league.players.player) {
-        try {
+        const statExists = await db.query.PlayerStat.findFirst({
+          where: (stat, { and, eq }) => and(
+            eq(stat.week, player.player_points.week),
+            eq(stat.playerKey, player.player_key.replace('449', 'nfl'))
+          )
+        });
+
+        if (!statExists) {
           await db.insert(PlayerStat).values({
             playerKey: player.player_key.replace('449', 'nfl'),
             playerName: player.name.full,
@@ -144,7 +154,7 @@ const importPlayers = async () => {
               value: row.value,
             })),
           })
-        } catch (err) {
+        } else {
           await db.update(PlayerStat).set({
             points: player.player_points.total,
             stats: player.player_stats.stats.stat.map((row: any) => ({
@@ -155,8 +165,14 @@ const importPlayers = async () => {
               value: row.value,
             })),
           }).where(
-            and(eq(PlayerStat.week, player.player_points.week), eq(PlayerStat.playerKey, player.player_key.replace('449', 'nfl')))
+            eq(PlayerStat.id, statExists.id)
           )
+        }
+
+        if (player.headshot) {
+          await db.update(Player).set({
+            headshot: player.headshot.url,
+          }).where(eq(Player.playerKey, player.player_key.replace('449', 'nfl')))
         }
       }
     }

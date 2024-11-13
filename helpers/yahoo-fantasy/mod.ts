@@ -192,7 +192,7 @@ export async function addPoints() {
   const now = Date.now();
   for (const entry of scoreboard) {
     const currentData = await db.query.Matchup.findFirst({
-      where: (matchup, {eq}) => eq(matchup.matchupKey, entry.id),
+      where: (matchup, { eq }) => eq(matchup.matchupKey, entry.id),
     });
 
     let team1ScoreTiming = [];
@@ -215,20 +215,20 @@ export async function addPoints() {
     ]);
 
     await db.insert(Matchup).values(
-          {
-            matchupKey: entry.id,
-            gameId: "nfl",
-            leagueId: "494410",
-            week: league.week,
-            team1Id: entry.team1.teamKey,
-            team2Id: entry.team2.teamKey,
-            team1ScoreTiming,
-            team2ScoreTiming,
-            team1Name: entry.team1.name,
-            team2Name: entry.team2.name,
-            team1Score: String(entry.team1.actualPoints),
-            team2Score: String(entry.team2.actualPoints),    
-          }
+      {
+        matchupKey: entry.id,
+        gameId: "nfl",
+        leagueId: "494410",
+        week: league.week,
+        team1Id: entry.team1.teamKey,
+        team2Id: entry.team2.teamKey,
+        team1ScoreTiming,
+        team2ScoreTiming,
+        team1Name: entry.team1.name,
+        team2Name: entry.team2.name,
+        team1Score: String(entry.team1.actualPoints),
+        team2Score: String(entry.team2.actualPoints),
+      }
     ).onConflictDoUpdate({
       target: Matchup.id,
       set: {
@@ -245,8 +245,8 @@ export async function addPoints() {
 
 export const listGames = async () => {
   const games = await db.query.Matchup.findMany({
-    where: (matchup, {eq}) => eq(matchup.gameId, "nfl"),
-    orderBy: (matchup, {asc}) => asc(matchup.week),
+    where: (matchup, { eq }) => eq(matchup.gameId, "nfl"),
+    orderBy: (matchup, { asc }) => asc(matchup.week),
   });
 
   return games.map((x) => ({
@@ -367,7 +367,7 @@ export const collectTransactions = async () => {
 
   for (const apiTransaction of transactions) {
     const dataExists = await db.query.Transaction.findFirst({
-      where: (transaction, {eq}) => eq(transaction.parentTransactionKey, apiTransaction.transaction_key),
+      where: (transaction, { eq }) => eq(transaction.parentTransactionKey, apiTransaction.transaction_key),
     });
 
     if (dataExists) {
@@ -407,9 +407,13 @@ export const collectTransactions = async () => {
     const destinations: { [dest: string]: any } = {};
 
     for (const player of apiTransaction.players.player) {
-      const destination =
+      let destination =
         player.transaction_data.destination_team_name ||
         player.transaction_data.destination_type;
+
+      if (destination === "waivers" && player.type === 'drop') {
+        destination = `Dropped from ${player.transaction_data.source_team_name}`
+      }
 
       if (!destinations[destination]) {
         destinations[destination] = [];
