@@ -18,7 +18,7 @@
     "@types/jsdom": "^21.1.7",
     "@types/uuid": "^9.0.2",
     "canvas": "^3.0.0-rc2",
-    "cron": "^2.4.1",
+    "croner": "^9.0.0",
     "d3-node": "^3.0.0",
     "date-fns": "^2.30.0",
     "discordeno": "^18.0.1",

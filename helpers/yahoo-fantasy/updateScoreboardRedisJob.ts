@@ -1,5 +1,5 @@
 import { addPoints, collectTransactions } from "./mod.ts";
-import { CronJob } from "cron";
+import { Cron } from "croner";
 
 // cron('1 */5 19-23 * * 1,4', () => {
 //     console.log(new Date(), 'Getting Points');
@@ -12,9 +12,15 @@ import { CronJob } from "cron";
 // });
 
 // Run every 15 minutes
-new CronJob('1 */5 * * * *', () => {
-    console.log(new Date(), 'Collecting Transactions');
+new Cron(
+  "1 */5 * * * *",
+  {
+    catch: (err) => console.error(err),
+  },
+  () => {
+    console.log(new Date(), "Collecting Transactions");
     collectTransactions();
-}).start();
+  },
+);
 
-console.log('Cron Loaded');
+console.log("Cron Loaded");
