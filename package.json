@@ -11,10 +11,10 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@discordeno/bot": "19.0.0-next.b2f65c2",
-    "@discordeno/rest": "19.0.0-next.b2f65c2",
-    "@discordeno/types": "19.0.0-next.b2f65c2",
-    "@discordeno/utils": "19.0.0-next.b2f65c2",
+    "@discordeno/bot": "21.0.0-next.c842a8a",
+    "@discordeno/rest": "21.0.0-next.c842a8a",
+    "@discordeno/types": "21.0.0-next.c842a8a",
+    "@discordeno/utils": "21.0.0-next.c842a8a",
     "@types/jsdom": "^21.1.7",
     "@types/uuid": "^9.0.2",
     "canvas": "^3.0.0-rc2",

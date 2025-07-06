@@ -2,6 +2,7 @@ import { createClient } from "redis";
 import { db } from "../../drizzle";
 import { XMLParser } from "fast-xml-parser";
 import { Matchup, Player, Transaction } from "../../drizzle/schema";
+import { MessageComponentTypes, ButtonStyles } from "@discordeno/bot";
 
 interface ParsedStandings {
   name: string;
@@ -362,6 +363,7 @@ export const getPlayerDetails = async (
 export const collectTransactions = async () => {
   const accessToken = await getAccessToken();
   const { league, transactions } = await getTransactions(accessToken, "494410");
+  const leagueId = "494410";
 
   const embedsToSend: any[] = [];
 
@@ -491,10 +493,36 @@ export const collectTransactions = async () => {
   }
 
   for (const group of embedGroups) {
+    // Create message components for the transaction webhook
+    const components = [{
+      type: MessageComponentTypes.ActionRow,
+      components: [
+        {
+          type: MessageComponentTypes.Button,
+          style: ButtonStyles.Link,
+          label: "View League",
+          url: league.url,
+        },
+        {
+          type: MessageComponentTypes.Button,
+          style: ButtonStyles.Link,
+          label: "📊 Standings",
+          url: `https://football.fantasysports.yahoo.com/f1/${leagueId}/standings`,
+        },
+        {
+          type: MessageComponentTypes.Button,
+          style: ButtonStyles.Link,
+          label: "📈 Transactions",
+          url: `https://football.fantasysports.yahoo.com/f1/${leagueId}/transactions`,
+        }
+      ]
+    }];
+
     const webhookData = {
       username: league.name,
       avatar_url: league.logo,
       embeds: group,
+      components: components,
     };
 
     // Send embeds to discord
