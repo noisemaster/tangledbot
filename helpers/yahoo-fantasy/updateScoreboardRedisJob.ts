@@ -1,12 +1,20 @@
 import { addPoints, collectTransactions } from "./mod.ts";
 import { Cron } from "croner";
 
-// cron('1 */5 19-23 * * 1,4', () => {
+// new Cron('1 */5 19-23 * * 1,4',
+//   {
+//     catch: (err) => console.error(err),
+//   },
+//  () => {
 //     console.log(new Date(), 'Getting Points');
 //     addPoints();
 // });
-
-// cron('1 */5 9-23 * * 0', () => {
+//
+// new Cron('1 */5 9-23 * * 0',
+//   {
+//     catch: (err) => console.error(err),
+//   }
+//   , () => {
 //     console.log(new Date(), 'Getting Points');
 //     addPoints();
 // });
