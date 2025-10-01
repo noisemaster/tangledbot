@@ -1,4 +1,11 @@
-import { ApplicationCommandOption, ApplicationCommandOptionTypes, ApplicationCommandTypes, Bot, Collection, Interaction } from "@discordeno/bot";
+import {
+  ApplicationCommandOption,
+  ApplicationCommandOptionTypes,
+  ApplicationCommandTypes,
+  Collection,
+} from "@discordeno/bot";
+
+import { Bot, Interaction } from "discordeno";
 
 export type subCommand = Omit<Command, "subcommands">;
 export type subCommandGroup = {
@@ -23,14 +30,14 @@ export function createCommand(command: Command) {
   if (command.subcommands) {
     command.options = command.subcommands.map((x) => {
       const handler = x as subCommand;
-      
+
       return {
         name: handler.name,
         description: handler.description,
         type: ApplicationCommandOptionTypes.SubCommand,
         options: handler.options,
-      }
-    })
+      };
+    });
   }
 
   commands.set(command.name, command);
