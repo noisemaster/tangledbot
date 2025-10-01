@@ -63,6 +63,8 @@ export const getAccessToken = async () => {
 
     const refreshJson: any = await refreshRequest.json();
 
+    console.log(refreshJson);
+
     await redis.set("accessToken", refreshJson.access_token);
     await redis.expire("accessToken", 300);
 
@@ -77,7 +79,7 @@ export const getAccessToken = async () => {
 
 export const fetchStandings = async (
   accessToken: string,
-  leagueId: string = "494410",
+  leagueId: string = "581427",
 ) => {
   const standingsRequestXML = await fetch(
     `https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/standings`,
@@ -120,7 +122,7 @@ export const fetchStandings = async (
 
 export const fetchScoreboard = async (
   accessToken: string,
-  leagueId: string = "494410",
+  leagueId: string = "581427",
   gameId = "nfl",
 ) => {
   const scoreboardRequest = await fetch(
@@ -218,7 +220,7 @@ export async function addPoints() {
       {
         matchupKey: entry.id,
         gameId: "nfl",
-        leagueId: "494410",
+        leagueId: "581427",
         week: league.week,
         team1Id: entry.team1.teamKey,
         team2Id: entry.team2.teamKey,
@@ -259,7 +261,7 @@ export const listGames = async () => {
 
 export const getTransactions = async (
   accessToken: string,
-  leagueId: string = "494410",
+  leagueId: string = "581427",
   gameId = "nfl",
 ) => {
   const tradesRequest = await fetch(
@@ -292,7 +294,7 @@ export const getTransactions = async (
 
 export const getTeams = async (
   accessToken: string,
-  leagueId = "494410",
+  leagueId = "581427",
   gameId = "nfl",
 ) => {
   const tradesRequest = await fetch(
@@ -361,7 +363,7 @@ export const getPlayerDetails = async (
 
 export const collectTransactions = async () => {
   const accessToken = await getAccessToken();
-  const { league, transactions } = await getTransactions(accessToken, "494410");
+  const { league, transactions } = await getTransactions(accessToken, "581427");
 
   const embedsToSend: any[] = [];
 
@@ -384,7 +386,7 @@ export const collectTransactions = async () => {
       await db.insert(Transaction).values(
         {
           transactionKey: `${apiTransaction.transaction_key}.${index}`,
-          leagueId: '494410',
+          leagueId: '581427',
           type: apiTransaction.type,
           timestamp: new Date(apiTransaction.timestamp * 1000),
           status: player.transaction_data.type,

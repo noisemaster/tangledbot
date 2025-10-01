@@ -120,7 +120,7 @@ const importPlayers = async () => {
 
     for (let week of Array(currentWeek).keys()) {
       console.log(week + 1)
-      const url = `https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.494410/players;player_keys=${keys.join(",")}/stats;type=week;week=${week + 1}`;
+      const url = `https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.581427/players;player_keys=${keys.join(",")}/stats;type=week;week=${week + 1}`;
       const req = await fetch(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
