@@ -3,9 +3,9 @@ import {
   ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
   Collection,
-} from "@discordeno/bot";
-
-import { Bot, Interaction } from "discordeno";
+  Bot,
+  Interaction,
+} from "discordeno";
 
 export type subCommand = Omit<Command, "subcommands">;
 export type subCommandGroup = {
