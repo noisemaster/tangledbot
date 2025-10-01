@@ -34,9 +34,6 @@ logger.info('Starting bot...');
 await client.start();
 logger.info('Bot started!');
 
-await client.helpers.upsertGuildApplicationCommands(
-    config.discord.testingGuildID,
+await client.helpers.upsertGlobalApplicationCommands(
     commands.array()
 );
-
-console.log('update commands for guild', config.discord.testingGuildID);
