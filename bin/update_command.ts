@@ -1,5 +1,5 @@
 import config from '../config.ts';
-import {NFLCommandSchema as commandRequest} from '../commands/schemas/nfl.ts';
+import {NFLCommandSchema as commandRequest} from '../schemas/nfl.ts';
 
 const [mode = 'prod'] = Deno.args;
 let url = '';

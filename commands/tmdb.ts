@@ -13,7 +13,6 @@ import {
   Camelize,
   DiscordEmbed,
   DiscordEmbedField,
-  Embed,
   InteractionResponseTypes,
   SelectOption,
   Bot,
@@ -89,14 +88,14 @@ const fetchMovie = async (bot: Bot, interaction: Interaction) => {
         : []),
     ];
 
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       embeds: [embed],
       components,
     });
 
     setPageablePost(internalMessageId, pageData);
   } else {
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       content: "No movies found",
     });
   }
@@ -146,14 +145,14 @@ const fetchWhereToWatch = async (bot: Bot, interaction: Interaction) => {
         : []),
     ];
 
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       embeds: [embed],
       components,
     });
 
     setPageablePost(internalMessageId, pageData);
   } else {
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       content: "No movies found",
     });
   }
@@ -186,7 +185,7 @@ const tmdbPageHandler = async (
   }
 
   const page = pageData.pages[pageData.currentPage - 1];
-  let newEmbed: Embed;
+  let newEmbed: Camelize<DiscordEmbed>;
   switch (invoker) {
     case "movie":
       newEmbed = await generateMovieEmbed(page, "movie");
@@ -208,7 +207,7 @@ const tmdbPageHandler = async (
   const newComponents = [...generatePageButtons(invoker, pageData, messageId)];
 
   if (interaction.message) {
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       embeds: [newEmbed],
       components: newComponents,
     });
@@ -281,13 +280,13 @@ const generateMovieEmbed = async (result: TMDBResult, type: string) => {
     });
   }
 
-  const embed: Embed = {
+  const embed: Camelize<DiscordEmbed> = {
     title,
     url: `https://www.themoviedb.org/${type}/${result.id}`,
     description: result.overview,
     timestamp: new Date(
       Date.parse(result.release_date || fullDetails.first_air_date),
-    ).valueOf(),
+    ).toISOString(),
     image: {
       url: result.backdrop_path
         ? `https://image.tmdb.org/t/p/original/${result.backdrop_path}`
@@ -385,12 +384,12 @@ const generateWatchEmbed = async (result: TMDBResult, type: string) => {
     });
   }
 
-  const embed: Embed = {
+  const embed: Camelize<DiscordEmbed> = {
     title,
     url: `https://www.themoviedb.org/${type}/${result.id}`,
     timestamp: new Date(
       Date.parse(result.release_date || result.first_air_date),
-    ).valueOf(),
+    ).toISOString(),
     image: {
       url: result.backdrop_path
         ? `https://image.tmdb.org/t/p/original/${result.backdrop_path}`

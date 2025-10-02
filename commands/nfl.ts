@@ -3,7 +3,6 @@ import {
   ApplicationCommandTypes,
   InteractionResponseTypes,
   DiscordEmbedField,
-  Embed,
   Bot,
   Interaction,
   Camelize,
@@ -88,7 +87,7 @@ const sendNFLScoreboard = async (bot: Bot, interaction: Interaction) => {
     scoreboardFields.push(scoreboardField);
   }
 
-  const embed: Embed = {
+  const embed: Camelize<DiscordEmbed> = {
     title: `NFL ${seasonWeek.label}`,
     fields: scoreboardFields,
   };
@@ -129,7 +128,7 @@ export const sendNFLGameDetails = async (
   });
 
   if (!game) {
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       content: "Game not found",
     });
     return;
@@ -154,7 +153,7 @@ export const sendNFLGameDetails = async (
 
   console.log(selectedTeamObj.team.color);
 
-  const embed: Embed = {
+  const embed: Camelize<DiscordEmbed> = {
     title: game.name,
     fields: [
       {
@@ -181,7 +180,7 @@ export const sendNFLGameDetails = async (
     color: parseInt(selectedTeamObj.team.color, 16),
   };
 
-  await updateInteraction(bot, interaction, {
+  await updateInteraction(interaction, {
     embeds: [embed],
   });
 };

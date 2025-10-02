@@ -4,7 +4,6 @@ import {
   ButtonStyles,
   Camelize,
   DiscordEmbed,
-  Embed,
   InteractionResponseTypes,
   MessageComponentTypes,
   Bot,
@@ -56,7 +55,7 @@ export const sendMFLEmbed = async (bot: Bot, interaction: Interaction) => {
 
   console.log(components);
 
-  await updateInteraction(bot, interaction, {
+  await updateInteraction(interaction, {
     flags: 1 << 15,
     components,
   });

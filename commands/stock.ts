@@ -12,7 +12,6 @@ import {
   ApplicationCommandTypes,
   Camelize,
   DiscordEmbed,
-  Embed,
   FileContent,
   InteractionCallbackData,
   InteractionResponseTypes,
@@ -192,12 +191,7 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
 
   payload.components = timerangeComponents;
 
-  await updateInteraction(
-    bot,
-    interaction,
-    payload,
-    payload.file as FileContent[],
-  );
+  await updateInteraction(interaction, payload, payload.files as FileContent[]);
 
   setTimerangePost(internalMessageId, timerangeData);
 };
@@ -233,9 +227,9 @@ const generateStockEmbed = async (
     console.log(err);
   });
 
-  const stockEmbed: Embed = {
+  const stockEmbed: Camelize<DiscordEmbed> = {
     title: `${longName || shortName}`,
-    timestamp: lastRefresh.valueOf(),
+    timestamp: lastRefresh.toISOString(),
     color: diffColor,
   };
 
@@ -261,7 +255,7 @@ const generateStockEmbed = async (
       name: `${symbol}.png`,
       blob: image as any,
     };
-    payload.file = [imageAttach];
+    payload.files = [imageAttach];
 
     stockEmbed.image = {
       url: `attachment://${symbol}.png`,
@@ -299,13 +293,12 @@ const stockTimerangeHandler = async (
 
   if (interaction.message) {
     await updateInteraction(
-      bot,
       interaction,
       {
         ...newEmbed,
         components: [...timerangeComponents],
       },
-      newEmbed.file as FileContent[],
+      newEmbed.files as FileContent[],
     );
   }
 

@@ -9,7 +9,6 @@ import {
   ButtonStyles,
   Camelize,
   DiscordEmbed,
-  Embed,
   InteractionResponseTypes,
   MessageComponentTypes,
   Bot,
@@ -83,7 +82,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
   );
 
   if (posts.length === 0) {
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       content: "No posts found",
     });
     return;
@@ -99,7 +98,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
     post.url.includes(".jpeg") ||
     post.url.includes(".gif");
 
-  const postEmbed: Embed = {
+  const postEmbed: Camelize<DiscordEmbed> = {
     title: post.title,
     url: post.url,
     author: {
@@ -116,7 +115,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
     footer: {
       text: `Post ${randomIndex + 1}/${posts.length}`,
     },
-    timestamp: new Date(post.created_utc * 1000).valueOf(),
+    timestamp: new Date(post.created_utc * 1000).toISOString(),
   };
 
   if (isPostImage) {
@@ -128,7 +127,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
   const channel = await bot.helpers.getChannel(interaction.channelId!);
 
   if (post.over_18 && !channel.nsfw) {
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       content: "This channel is not a NSFW channel",
     });
     return;
@@ -162,7 +161,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
     });
   }
 
-  await updateInteraction(bot, interaction, {
+  await updateInteraction(interaction, {
     embeds: [postEmbed],
     allowedMentions: {
       users: [],

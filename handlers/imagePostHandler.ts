@@ -2,7 +2,6 @@ import {
   Bot,
   Camelize,
   DiscordEmbed,
-  Embed,
   Interaction,
   InteractionResponseTypes,
 } from "discordeno";
@@ -14,7 +13,7 @@ export interface hideablePost {
     imageUrl: string;
   };
   poster: BigInt;
-  embedMessage: Embed;
+  embedMessage: Camelize<DiscordEmbed>;
   visible: boolean;
 }
 
@@ -88,7 +87,7 @@ export const togglePost = async (bot: Bot, interaction: Interaction) => {
         type: InteractionResponseTypes.DeferredChannelMessageWithSource,
       },
     );
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       content: `Only the orignal poster can ${postData.visible ? "hide" : "show"} this message`,
       // flags:
     });

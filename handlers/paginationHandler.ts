@@ -5,7 +5,6 @@ import {
   MessageComponents,
   MessageComponentTypes,
   SelectOption,
-  Embed,
   InteractionResponseTypes,
   Camelize,
   DiscordEmbed,
@@ -20,7 +19,7 @@ export interface Pageable {
 
 export interface paginationPost<T extends Pageable> {
   poster: BigInt;
-  embedMessage: Embed;
+  embedMessage: Camelize<DiscordEmbed>;
   pages: T[];
   currentPage: number;
   paginationHandler(
@@ -84,7 +83,7 @@ export const generatePageButtons = (
       type: MessageComponentTypes.ActionRow,
       components: [
         {
-          type: MessageComponentTypes.SelectMenu,
+          type: MessageComponentTypes.StringSelect,
           placeholder: `Page ${pageData.currentPage}/${pageData.pages.length >= 25 ? 25 : pageData.pages.length}`,
           customId: `pageable_${command}_select_${internalMessageId}`,
           options: pageData.pageGenerator(pageData.pages),

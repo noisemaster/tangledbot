@@ -2,7 +2,6 @@ import {
   Bot,
   Camelize,
   DiscordEmbed,
-  Embed,
   Interaction,
   InteractionResponseTypes,
   MessageComponents,
@@ -16,7 +15,7 @@ export interface HasTimerange {
 export interface timerangePost<T extends HasTimerange> {
   poster: BigInt;
   data: T;
-  embedMessage: Embed;
+  embedMessage: Camelize<DiscordEmbed>;
   currentTime: string;
   timeRangeHandler(
     bot: Bot,
@@ -83,7 +82,7 @@ export const generateTimerangeButtons = (
       type: MessageComponentTypes.ActionRow,
       components: [
         {
-          type: MessageComponentTypes.SelectMenu,
+          type: MessageComponentTypes.StringSelect,
           placeholder: currentLabel.name,
           customId: `timerange_${command}_select_${internalMessageId}`,
           options: pageData.timeRanges.map((x) => ({

@@ -6,7 +6,6 @@ import {
   DiscordEmbed,
   Bot,
   Interaction,
-  Embed,
   InteractionResponseTypes,
   MessageComponentTypes,
 } from "discordeno";
@@ -54,7 +53,7 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
 
   if (posts.length === 0) {
     // await interaction.send(`Nothing found for ${tags}`);
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       content: `Nothing found for ${tags}`,
     });
     return;
@@ -62,7 +61,7 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
 
   const randomIndex = Math.floor(Math.random() * posts.length);
   const post = posts[randomIndex];
-  const embed: Embed = {
+  const embed: Camelize<DiscordEmbed> = {
     author: {
       name: interaction.user.username,
       iconUrl: avatarUrl(interaction.user.id, interaction.user.discriminator),
@@ -154,7 +153,7 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
     visible: true,
   });
 
-  await updateInteraction(bot, interaction, {
+  await updateInteraction(interaction, {
     embeds: [embed],
     allowedMentions: {
       users: [],

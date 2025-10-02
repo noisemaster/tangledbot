@@ -13,7 +13,7 @@ const response = await fetch(commandsURLBase, {
   headers,
 });
 
-const commands = await response.json();
+const commands = await response.json() as any[];
 const commandIds = commands.map((x: any) => x.id);
 
 for (let id of commandIds) {

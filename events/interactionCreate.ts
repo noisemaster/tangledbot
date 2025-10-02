@@ -2,9 +2,10 @@ import {
   ApplicationCommandOptionTypes,
   hasProperty,
   InteractionTypes,
-} from "@discordeno/bot";
-
-import { Bot, Interaction } from "discordeno";
+  Bot,
+  Interaction,
+  EventHandlers,
+} from "discordeno";
 
 import { Command, commands, subCommand } from "../commands/mod.ts";
 import { handleTeamAutocomplete } from "../commands/nfl.ts";
@@ -15,47 +16,48 @@ import {
 import { togglePost } from "../handlers/imagePostHandler.ts";
 import { updatePage } from "../handlers/paginationHandler.ts";
 import { updateTimerange } from "../handlers/timerangeHandler.ts";
-import type { events } from "../bot.ts";
+import { client } from "../bot.ts";
 
-export const interactionCreate: InteractionCreate = async (
-  bot,
-  interaction,
-) => {
-  if (interaction.type === InteractionTypes.ApplicationCommandAutocomplete) {
-    if (interaction.data!.name === "nfl") {
-      handleTeamAutocomplete(bot, interaction);
+client.events.interactionCreate = async (interaction) => {
+  const bot = interaction.bot as any;
+  // Cast interaction to have the full properties we need
+  const fullInteraction = interaction as any as Interaction;
+
+  if (fullInteraction.type === InteractionTypes.ApplicationCommandAutocomplete) {
+    if (fullInteraction.data!.name === "nfl") {
+      handleTeamAutocomplete(bot, fullInteraction);
     }
 
     if (
-      interaction.data!.name === "fantasy" &&
-      interaction.data!.options?.[0].name === "details"
+      fullInteraction.data!.name === "fantasy" &&
+      fullInteraction.data!.options?.[0].name === "details"
     ) {
-      handlePlayerAutocomplete(bot, interaction);
+      handlePlayerAutocomplete(bot, fullInteraction);
     }
 
     if (
-      interaction.data!.name === "fantasy" &&
-      interaction.data!.options?.[0].name === "graph"
+      fullInteraction.data!.name === "fantasy" &&
+      fullInteraction.data!.options?.[0].name === "graph"
     ) {
-      handleGraphAutocomplete(bot, interaction);
+      handleGraphAutocomplete(bot, fullInteraction);
     }
 
     return;
   }
 
-  if (interaction.type === InteractionTypes.MessageComponent) {
-    const { customId } = interaction.data!;
+  if (fullInteraction.type === InteractionTypes.MessageComponent) {
+    const { customId } = fullInteraction.data!;
     const [command] = customId!.split("_");
 
     switch (command) {
       case "hideable":
-        await togglePost(bot, interaction);
+        await togglePost(bot, fullInteraction);
         break;
       case "pageable":
-        await updatePage(bot, interaction);
+        await updatePage(bot, fullInteraction);
         break;
       case "timerange":
-        await updateTimerange(bot, interaction);
+        await updateTimerange(bot, fullInteraction);
         break;
       default:
         console.log(`Unknown command type ${command}`);
@@ -64,12 +66,12 @@ export const interactionCreate: InteractionCreate = async (
   }
 
   if (
-    interaction.type === InteractionTypes.ApplicationCommand &&
-    interaction.data &&
-    interaction.id
+    fullInteraction.type === InteractionTypes.ApplicationCommand &&
+    fullInteraction.data &&
+    fullInteraction.id
   ) {
-    let command: undefined | Command = interaction.data.name
-      ? commands.get(interaction.data.name)
+    let command: undefined | Command = fullInteraction.data.name
+      ? commands.get(fullInteraction.data.name)
       : undefined;
 
     console.log(command);
@@ -78,12 +80,12 @@ export const interactionCreate: InteractionCreate = async (
       return;
     }
 
-    if (!interaction.data.name) {
+    if (!fullInteraction.data.name) {
       return;
     }
 
-    if (interaction.data.options?.[0]) {
-      const optionType = interaction.data.options[0].type;
+    if (fullInteraction.data.options?.[0]) {
+      const optionType = fullInteraction.data.options[0].type;
 
       if (optionType === ApplicationCommandOptionTypes.SubCommandGroup) {
         // Check if command has subcommand and handle types
@@ -93,7 +95,7 @@ export const interactionCreate: InteractionCreate = async (
 
         // Try to find the subcommand group
         const subCommandGroup = command.subcommands?.find(
-          (command) => command.name == interaction.data?.options?.[0].name,
+          (command) => command.name == fullInteraction.data?.options?.[0].name,
         );
 
         if (!subCommandGroup) {
@@ -106,8 +108,8 @@ export const interactionCreate: InteractionCreate = async (
 
         // Get name of the command which we are looking for
         const targetCmdName =
-          interaction.data.options?.[0].options?.[0].name ||
-          interaction.data.options?.[0].options?.[0].name;
+          fullInteraction.data.options?.[0].options?.[0].name ||
+          fullInteraction.data.options?.[0].options?.[0].name;
 
         if (!targetCmdName) {
           return;
@@ -127,7 +129,7 @@ export const interactionCreate: InteractionCreate = async (
 
         // Try to find the command
         const found = command.subcommands.find(
-          (command) => command.name == interaction.data?.options?.[0].name,
+          (command) => command.name == fullInteraction.data?.options?.[0].name,
         );
         if (!found) {
           return;
@@ -143,7 +145,7 @@ export const interactionCreate: InteractionCreate = async (
 
     try {
       if (command) {
-        command.execute(bot, interaction);
+        command.execute(bot, fullInteraction);
       } else {
         throw "";
       }

@@ -5,9 +5,9 @@ import {
   ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
   Camelize,
+  DiscordEmbed,
   Bot,
   Interaction,
-  Embed,
   FileContent,
   InteractionCallbackData,
   InteractionResponseTypes,
@@ -88,7 +88,7 @@ export const sendCryptoEmbed = async (bot: Bot, interaction: Interaction) => {
   );
 
   if (coinsMatchingSymbol.length === 0) {
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       content: "No coin found",
     });
     return;
@@ -141,13 +141,12 @@ export const sendCryptoEmbed = async (bot: Bot, interaction: Interaction) => {
   ];
 
   await updateInteraction(
-    bot,
     interaction,
     {
       ...embed,
       components,
     },
-    embed.file as FileContent[],
+    embed.files as FileContent[],
   );
 
   setPageablePost(internalMessageId, pageData);
@@ -204,7 +203,7 @@ const cryptoPageHandler = async (
   ];
 
   if (interaction.message) {
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       ...newEmbed,
       components: newComponents,
     });
@@ -245,13 +244,12 @@ const cryptoTimerangeHandler = async (
 
   if (interaction.message) {
     await updateInteraction(
-      bot,
       interaction,
       {
         ...newEmbed,
         components: [...pageComponents, ...timerangeComponents],
       },
-      newEmbed.file as FileContent[],
+      newEmbed.files as FileContent[],
     );
   }
 
@@ -289,7 +287,7 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
   const weekDiffSymbol =
     weekChangePercent > 0 ? "<:small_green_triangle:851144859103395861>" : "🔻";
 
-  const embed: Embed = {
+  const embed: Camelize<DiscordEmbed> = {
     author: {
       iconUrl: coinData.image.large,
       name: `${coin.name} (${coin.symbol.toUpperCase()})`,
@@ -343,7 +341,7 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
       name: `${coin.id}.png`,
       blob: image as any,
     };
-    payload.file = [imageAttach];
+    payload.files = [imageAttach];
 
     embed.image = {
       url: `attachment://${coin.id}.png`,

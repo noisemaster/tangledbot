@@ -3,7 +3,6 @@ import {
   ApplicationCommandTypes,
   Camelize,
   DiscordEmbed,
-  Embed,
   FileContent,
   InteractionCallbackData,
   InteractionResponseTypes,
@@ -35,7 +34,7 @@ export const sendStandingsEmbed = async (
   const accessToken = await getAccessToken();
   const { league, standings } = await fetchStandings(accessToken);
 
-  const embed: Embed = {
+  const embed: Camelize<DiscordEmbed> = {
     author: {
       name: league.name,
       url: league.url,
@@ -50,7 +49,7 @@ export const sendStandingsEmbed = async (
     };
   });
 
-  await updateInteraction(bot, interaction, {
+  await updateInteraction(interaction, {
     embeds: [embed],
   });
 };
@@ -66,7 +65,7 @@ export const sendScoreboardEmbed = async (
   const accessToken = await getAccessToken();
   const { league, scoreboard } = await fetchScoreboard(accessToken);
 
-  const embed: Embed = {
+  const embed: Camelize<DiscordEmbed> = {
     author: {
       name: league.name,
       url: league.url,
@@ -84,7 +83,7 @@ export const sendScoreboardEmbed = async (
 
   console.log(embed);
 
-  await updateInteraction(bot, interaction, {
+  await updateInteraction(interaction, {
     embeds: [embed],
   }).catch((err) => {
     console.log(err);
@@ -112,7 +111,7 @@ export const sendScoringGraph = async (bot: Bot, interaction: Interaction) => {
       name: `${searchGame}.png`,
       blob: new Blob([image]) as any,
     };
-    payload.file = [imageAttach];
+    payload.files = [imageAttach];
   }
 
   await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
@@ -255,7 +254,7 @@ export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
   });
 
   if (!player) {
-    await updateInteraction(bot, interaction, {
+    await updateInteraction(interaction, {
       content: "Player not found",
     });
     return;
@@ -275,7 +274,7 @@ export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
     })
     .join("\n");
 
-  const embed: Embed = {
+  const embed: Camelize<DiscordEmbed> = {
     title: player.name!,
     url: `https://fantasysports.yahoo.com/nfl/players/${player.playerKey!}`,
     description: `Points for ${player.name}\n${statSummary}`,
@@ -284,7 +283,7 @@ export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
     },
   };
 
-  await updateInteraction(bot, interaction, {
+  await updateInteraction(interaction, {
     embeds: [embed],
   });
 };
