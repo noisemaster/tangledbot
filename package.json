@@ -21,7 +21,7 @@
     "croner": "^9.0.0",
     "d3-node": "^3.0.0",
     "date-fns": "^2.30.0",
-    "discordeno": "^18.0.1",
+    "discordeno": "next",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.36.0",
     "fast-xml-parser": "^4.2.7",

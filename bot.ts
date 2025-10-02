@@ -5,6 +5,9 @@ const client = createBot({
   // botId: config.discord.botID,
   token: process.env.DISCORD_TOKEN!,
   intents: GatewayIntents.Guilds,
+  events: {
+    interactionCreate,
+  },
 });
 
 // client.transformers.desiredProperties.interaction = {

@@ -17,7 +17,7 @@ import { updatePage } from "../handlers/paginationHandler.ts";
 import { updateTimerange } from "../handlers/timerangeHandler.ts";
 import type { events } from "../bot.ts";
 
-export const interactionCreate: events["interactionCreate"] = async (
+export const interactionCreate: InteractionCreate = async (
   bot,
   interaction,
 ) => {
@@ -72,6 +72,8 @@ export const interactionCreate: events["interactionCreate"] = async (
       ? commands.get(interaction.data.name)
       : undefined;
 
+    console.log(command);
+
     if (!command) {
       return;
     }
@@ -80,65 +82,63 @@ export const interactionCreate: events["interactionCreate"] = async (
       return;
     }
 
-    if (!interaction.data.options?.[0]) {
-      return;
-    }
+    if (interaction.data.options?.[0]) {
+      const optionType = interaction.data.options[0].type;
 
-    const optionType = interaction.data.options[0].type;
+      if (optionType === ApplicationCommandOptionTypes.SubCommandGroup) {
+        // Check if command has subcommand and handle types
+        if (!command.subcommands) {
+          return;
+        }
 
-    if (optionType === ApplicationCommandOptionTypes.SubCommandGroup) {
-      // Check if command has subcommand and handle types
-      if (!command.subcommands) {
-        return;
+        // Try to find the subcommand group
+        const subCommandGroup = command.subcommands?.find(
+          (command) => command.name == interaction.data?.options?.[0].name,
+        );
+
+        if (!subCommandGroup) {
+          return;
+        }
+
+        if (!hasProperty(subCommandGroup, "subCommands")) {
+          return;
+        }
+
+        // Get name of the command which we are looking for
+        const targetCmdName =
+          interaction.data.options?.[0].options?.[0].name ||
+          interaction.data.options?.[0].options?.[0].name;
+
+        if (!targetCmdName) {
+          return;
+        }
+
+        // Try to find the command
+        command = (subCommandGroup.subCommands as subCommand[]).find(
+          (c) => c.name === targetCmdName,
+        );
       }
 
-      // Try to find the subcommand group
-      const subCommandGroup = command.subcommands?.find(
-        (command) => command.name == interaction.data?.options?.[0].name,
-      );
+      if (optionType === ApplicationCommandOptionTypes.SubCommand) {
+        // Check if command has subcommand and handle types
+        if (!command?.subcommands) {
+          return;
+        }
 
-      if (!subCommandGroup) {
-        return;
+        // Try to find the command
+        const found = command.subcommands.find(
+          (command) => command.name == interaction.data?.options?.[0].name,
+        );
+        if (!found) {
+          return;
+        }
+
+        if (hasProperty(found, "subCommands")) {
+          return;
+        }
+
+        command = found;
       }
-
-      if (!hasProperty(subCommandGroup, "subCommands")) {
-        return;
-      }
-
-      // Get name of the command which we are looking for
-      const targetCmdName =
-        interaction.data.options?.[0].options?.[0].name ||
-        interaction.data.options?.[0].options?.[0].name;
-
-      if (!targetCmdName) {
-        return;
-      }
-
-      // Try to find the command
-      command = (subCommandGroup.subCommands as subCommand[]).find(
-        (c) => c.name === targetCmdName,
-      );
-    }
-
-    if (optionType === ApplicationCommandOptionTypes.SubCommand) {
-      // Check if command has subcommand and handle types
-      if (!command?.subcommands) {
-        return;
-      }
-
-      // Try to find the command
-      const found = command.subcommands.find(
-        (command) => command.name == interaction.data?.options?.[0].name,
-      );
-      if (!found) {
-        return;
-      }
-
-      if (hasProperty(found, "subCommands")) {
-        return;
-      }
-
-      command = found;
     }
 
     try {

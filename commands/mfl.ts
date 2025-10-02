@@ -16,12 +16,7 @@ import { createCommand } from "./mod.ts";
 import { updateInteraction } from "./lib/updateInteraction.ts";
 
 export const sendMFLEmbed = async (bot: Bot, interaction: Interaction) => {
-  if (!interaction.data) {
-    return;
-  }
-
-  const leaderboard =
-    "https://www.vulture.com/_components/leaderboard/instances/cmg5pj2fd000j3b749dri5fg8@published";
+  console.log("mfl");
 
   try {
     await bot.helpers.sendInteractionResponse(
@@ -35,13 +30,17 @@ export const sendMFLEmbed = async (bot: Bot, interaction: Interaction) => {
     console.error(error);
     return;
   }
-
+  const leaderboard =
+    "https://www.vulture.com/_components/leaderboard/instances/cmg5pj2fd000j3b749dri5fg8@published";
   const request = await fetch(leaderboard);
   const leaderboardData: any = await request.json();
 
   const fwListings = leaderboardData.players
     .filter((x: any) => x.leagueName === "fireworks pictures ltd")
-    .map((x: any) => `${x.ranking}. ${x.displayName} (${x.score})`);
+    .map((x: any) => `${x.ranking}. ${x.displayName} (${x.score})`)
+    .join("\n");
+
+  console.log(fwListings);
 
   const components: any = [
     {
@@ -54,6 +53,8 @@ export const sendMFLEmbed = async (bot: Bot, interaction: Interaction) => {
       ],
     },
   ];
+
+  console.log(components);
 
   await updateInteraction(bot, interaction, {
     flags: 1 << 15,
