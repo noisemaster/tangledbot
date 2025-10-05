@@ -122,15 +122,27 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
   // let stock = await stockResp.json();
   // let { result } = stock.quoteResponse;
 
-  let text = await fetch(`https://finance.yahoo.com/quote/${symbol}`, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/116.0",
+  // let text = await fetch(`https://finance.yahoo.com/quote/${symbol}`, {
+  let resp: any = await fetch(
+    `https://rallies.ai/api/get-ticker-data-for-mobile?ticker=${symbol.toUpperCase()}`,
+    {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/116.0",
+      },
     },
-  }).then((resp) => resp.text());
-  const titlePos = text.indexOf("<title>");
-  const titlePosEnd = text.indexOf("</title>");
-  const stockName = text.substr(titlePos + 7, titlePosEnd - titlePos - 7 - 55);
+  ).then((resp) => resp.json());
+
+  if (!resp.success) {
+    await updateInteraction(interaction, {
+      content: `${symbol} not found`,
+    });
+    return;
+  }
+
+  // const titlePos = text.indexOf("<title>");
+  // const titlePosEnd = text.indexOf("</title>");
+  // const stockName = text.substr(titlePos + 7, titlePosEnd - titlePos - 7 - 55);
 
   // if (
   //     result.length === 0 ||
@@ -163,9 +175,17 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
   //     return;
   // }
 
-  const data = {
+  const data: YahooStockQuote = {
     symbol: symbol,
-    longName: stockName,
+    longName: resp.ticker_data.company_name,
+    pagable: true,
+    exchange: resp.ticker_data.exchange,
+    regularMarketChange: resp.ticker_data.today_change,
+    regularMarketChangePercent: resp.ticker_data.today_change_percent,
+    regularMarketPrice: resp.ticker_data.current_price,
+    regularMarketTime:
+      new Date(resp.ticker_data.core_last_updated).valueOf() / 1000,
+    quoteType: "EQUITY",
   };
 
   const payload = await generateStockEmbed(data as any, timeRange);
@@ -233,20 +253,22 @@ const generateStockEmbed = async (
     color: diffColor,
   };
 
-  // if (quoteType === "CRYPTOCURRENCY") {
-  //     stockEmbed.author = {
-  //         iconUrl: coinImageUrl,
-  //         name: fromCurrency,
-  //     };
-  //     stockEmbed.description = `${regularMarketPrice}\n${diffSymbol} ${Math.abs(regularMarketChange)
-  //         } (${regularMarketChangePercent.toFixed(2)}%)`;
-  // } else {
-  //     stockEmbed.description = `${regularMarketPrice.toFixed(2)}\n${diffSymbol} ${Math.abs(regularMarketChange).toFixed(2)
-  //         } (${regularMarketChangePercent.toFixed(2)}%)`;
-  //     stockEmbed.footer = {
-  //         text: `Exchange: ${exchange}`,
-  //     };
-  // }
+  if (quoteType === "CRYPTOCURRENCY") {
+    stockEmbed.author = {
+      iconUrl: coinImageUrl,
+      name: fromCurrency || symbol!,
+    };
+    stockEmbed.description = `${regularMarketPrice}\n${diffSymbol} ${Math.abs(
+      regularMarketChange,
+    )} (${regularMarketChangePercent.toFixed(2)}%)`;
+  } else {
+    stockEmbed.description = `${regularMarketPrice.toFixed(2)}\n${diffSymbol} ${Math.abs(
+      regularMarketChange,
+    ).toFixed(2)} (${regularMarketChangePercent.toFixed(2)}%)`;
+    stockEmbed.footer = {
+      text: `Exchange: ${exchange}`,
+    };
+  }
 
   const payload: InteractionCallbackData = {};
 
