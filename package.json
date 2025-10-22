@@ -3,38 +3,38 @@
   "module": "main.ts",
   "type": "module",
   "devDependencies": {
-    "@types/pg": "^8.11.10",
+    "@types/pg": "^8.15.5",
     "bun-types": "latest",
-    "drizzle-kit": "^0.27.0"
+    "drizzle-kit": "^0.31.5"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@discordeno/bot": "next",
     "@discordeno/rest": "next",
     "@discordeno/types": "next",
     "@discordeno/utils": "next",
-    "@types/jsdom": "^21.1.7",
-    "@types/uuid": "^9.0.2",
-    "canvas": "^3.0.0-rc2",
-    "croner": "^9.0.0",
-    "d3-node": "^3.0.0",
+    "@types/jsdom": "^27.0.0",
+    "@types/uuid": "^11.0.0",
+    "canvas": "^3.2.0",
+    "croner": "^9.1.0",
+    "d3-node": "^4.0.1",
     "date-fns": "^2.30.0",
     "discordeno": "next",
-    "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.36.0",
-    "fast-xml-parser": "^4.2.7",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.44.6",
+    "fast-xml-parser": "^5.3.0",
     "fuse.js": "^6.6.2",
     "jsdom": "^25.0.1",
-    "mongodb": "^5.8.0",
-    "pg": "^8.13.1",
-    "redis": "^4.6.7",
+    "mongodb": "^6.20.0",
+    "pg": "^8.16.3",
+    "redis": "^5.8.3",
     "saslprep": "^1.0.3",
-    "sharp": "0.33.0-alpha.9",
-    "uuid": "^9.0.0",
-    "vega": "^5.25.0",
-    "vega-lite": "^5.16.1",
+    "sharp": "0.34.4",
+    "uuid": "^13.0.0",
+    "vega": "^6.2.0",
+    "vega-lite": "^6.4.1",
     "word-wrap": "^1.2.5"
   }
 }
