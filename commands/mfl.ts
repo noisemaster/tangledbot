@@ -1,34 +1,12 @@
-import {
-  ApplicationCommandOptionTypes,
-  ApplicationCommandTypes,
-  ButtonStyles,
-  Camelize,
-  DiscordEmbed,
-  InteractionResponseTypes,
-  MessageComponentTypes,
-  Bot,
-  Interaction,
-  MessageComponents,
-} from "discordeno";
+import { ApplicationCommandTypes, Bot, Interaction } from "discordeno";
 
 import { createCommand } from "./mod.ts";
 import { updateInteraction } from "./lib/updateInteraction.ts";
 
-export const sendMFLEmbed = async (bot: Bot, interaction: Interaction) => {
+export const sendMFLEmbed = async (_bot: Bot, interaction: Interaction) => {
   console.log("mfl");
 
-  try {
-    await bot.helpers.sendInteractionResponse(
-      interaction.id,
-      interaction.token,
-      {
-        type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-      },
-    );
-  } catch (error) {
-    console.error(error);
-    return;
-  }
+  await interaction.defer();
   const leaderboard =
     "https://www.vulture.com/_components/leaderboard/instances/cmg5pj2fd000j3b749dri5fg8@published";
   const request = await fetch(leaderboard);

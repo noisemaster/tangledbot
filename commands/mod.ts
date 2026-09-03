@@ -2,8 +2,8 @@ import {
   ApplicationCommandOption,
   ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
-  Collection,
   Bot,
+  Collection,
   Interaction,
 } from "discordeno";
 
@@ -21,6 +21,7 @@ export interface Command {
   /** Defaults to `Guild` */
   scope?: "Global" | "Guild";
   execute: (bot: Bot, interaction: Interaction) => unknown;
+  autocomplete?: (bot: Bot, interaction: Interaction) => unknown;
   subcommands?: Array<subCommandGroup | subCommand>;
 }
 

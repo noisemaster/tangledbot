@@ -1,7 +1,8 @@
 import { createClient } from "redis";
-import { db } from "../../drizzle";
+import { db } from "../../drizzle/index.ts";
 import { XMLParser } from "fast-xml-parser";
-import { Matchup, Player, Transaction } from "../../drizzle/schema";
+import { Matchup, Player, Transaction } from "../../drizzle/schema.ts";
+import { requireEnv } from "../env.ts";
 
 interface ParsedStandings {
   name: string;
@@ -25,56 +26,101 @@ interface ParsedScoreboard {
   id: string;
 }
 
-export const getAccessToken = async () => {
+export const getAccessToken = async (): Promise<string> => {
   const redis = createClient({
-    url: process.env.REDIS_URL!,
+    url: requireEnv("REDIS_URL"),
+    socket: {
+      connectTimeout: 5_000,
+      reconnectStrategy: (retries) =>
+        retries < 3
+          ? Math.min(100 * 2 ** retries, 1_000)
+          : new Error("Redis reconnect limit reached"),
+    },
   });
 
-  await redis.connect();
+  // Redis clients emit EventEmitter `error` events. An error without a
+  // listener is process-fatal in Node-compatible runtimes.
+  redis.on("error", (error) => {
+    console.error("Redis client error", error);
+  });
 
-  let accessToken = await redis.get("accessToken");
+  try {
+    await redis.connect();
 
-  if (!accessToken) {
-    console.log("Refreshing Yahoo Fantasy Token");
+    let accessToken = await redis.get("accessToken");
 
-    const refreshToken = await redis.get("refreshToken");
+    if (!accessToken) {
+      console.log("Refreshing Yahoo Fantasy Token");
 
-    const encoded = btoa(
-      `${process.env.YAHOO_CLIENT_ID}:${process.env.YAHOO_CLIENT_SECRET}`,
-    );
+      const refreshToken = await redis.get("refreshToken");
 
-    const refreshRequest = await fetch(
-      `https://api.login.yahoo.com/oauth2/get_token`,
-      {
-        method: "POST",
-        body: new URLSearchParams({
-          client_id: process.env.YAHOO_CLIENT_ID!,
-          client_secret: process.env.YAHOO_CLIENT_SECRET!,
-          redirect_uri: "oob",
-          refresh_token: refreshToken!,
-          grant_type: "refresh_token",
-        }),
-        headers: {
-          Authorization: `Basic ${encoded}`,
-          "Content-Type": "application/x-www-form-urlencoded",
+      if (!refreshToken) {
+        throw new Error("Yahoo refresh token is missing from Redis");
+      }
+
+      const clientId = requireEnv("YAHOO_CLIENT_ID");
+      const clientSecret = requireEnv("YAHOO_CLIENT_SECRET");
+      const encoded = btoa(`${clientId}:${clientSecret}`);
+
+      const refreshRequest = await fetch(
+        "https://api.login.yahoo.com/oauth2/get_token",
+        {
+          method: "POST",
+          body: new URLSearchParams({
+            client_id: clientId,
+            client_secret: clientSecret,
+            redirect_uri: "oob",
+            refresh_token: refreshToken,
+            grant_type: "refresh_token",
+          }),
+          headers: {
+            Authorization: `Basic ${encoded}`,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          signal: AbortSignal.timeout(10_000),
         },
-      },
-    );
+      );
 
-    const refreshJson: any = await refreshRequest.json();
+      if (!refreshRequest.ok) {
+        throw new Error(
+          `Yahoo token refresh failed with HTTP ${refreshRequest.status}`,
+        );
+      }
 
-    console.log(refreshJson);
+      const refreshJson: any = await refreshRequest.json();
 
-    await redis.set("accessToken", refreshJson.access_token);
-    await redis.expire("accessToken", 300);
+      if (typeof refreshJson.access_token !== "string") {
+        throw new Error("Yahoo token refresh response had no access token");
+      }
 
-    await redis.set("refreshToken", refreshJson.refresh_token);
-    await redis.expire("refreshToken", 60 * 60 * 24 * 7);
+      accessToken = refreshJson.access_token;
+      const expiresIn = Number(refreshJson.expires_in);
+      const cacheSeconds = Number.isFinite(expiresIn)
+        ? Math.max(60, expiresIn - 60)
+        : 300;
 
-    accessToken = refreshJson.access_token;
+      await redis.setEx(
+        "accessToken",
+        cacheSeconds,
+        refreshJson.access_token as string,
+      );
+
+      if (typeof refreshJson.refresh_token === "string") {
+        await redis.set("refreshToken", refreshJson.refresh_token);
+      }
+    }
+
+    return accessToken!;
+  } finally {
+    if (redis.isOpen) {
+      try {
+        await redis.quit();
+      } catch (error) {
+        console.error("Failed to close Redis client cleanly", error);
+        redis.disconnect();
+      }
+    }
   }
-
-  return accessToken!;
 };
 
 export const fetchStandings = async (
@@ -149,8 +195,7 @@ export const fetchScoreboard = async (
     weekNumber = matchup.week;
 
     const matchupTeams = matchup.teams.team;
-    const matchupId =
-      league.league_key +
+    const matchupId = league.league_key +
       `.mu.${matchupTeams[0].team_id}.v.${matchupTeams[1].team_id}`;
 
     const team1 = {
@@ -230,7 +275,7 @@ export async function addPoints() {
         team2Name: entry.team2.name,
         team1Score: String(entry.team1.actualPoints),
         team2Score: String(entry.team2.actualPoints),
-      }
+      },
     ).onConflictDoUpdate({
       target: Matchup.id,
       set: {
@@ -240,8 +285,8 @@ export async function addPoints() {
         team2Name: entry.team2.name,
         team1Score: String(entry.team1.actualPoints),
         team2Score: String(entry.team2.actualPoints),
-      }
-    })
+      },
+    });
   }
 }
 
@@ -369,7 +414,8 @@ export const collectTransactions = async () => {
 
   for (const apiTransaction of transactions) {
     const dataExists = await db.query.Transaction.findFirst({
-      where: (transaction, { eq }) => eq(transaction.parentTransactionKey, apiTransaction.transaction_key),
+      where: (transaction, { eq }) =>
+        eq(transaction.parentTransactionKey, apiTransaction.transaction_key),
     });
 
     if (dataExists) {
@@ -386,7 +432,7 @@ export const collectTransactions = async () => {
       await db.insert(Transaction).values(
         {
           transactionKey: `${apiTransaction.transaction_key}.${index}`,
-          leagueId: '581427',
+          leagueId: "581427",
           type: apiTransaction.type,
           timestamp: new Date(apiTransaction.timestamp * 1000),
           status: player.transaction_data.type,
@@ -402,19 +448,19 @@ export const collectTransactions = async () => {
           destinationTeam: player.transaction_data.destination_team_name,
           destinationTeamKey: player.transaction_data.destination_team_key,
           winningFaabBid: player.faab_bid || null,
-        }
+        },
       );
     }
 
     const destinations: { [dest: string]: any } = {};
 
     for (const player of apiTransaction.players.player) {
-      let destination =
-        player.transaction_data.destination_team_name ||
+      let destination = player.transaction_data.destination_team_name ||
         player.transaction_data.destination_type;
 
-      if (destination === "waivers" && player.type === 'drop') {
-        destination = `Dropped from ${player.transaction_data.source_team_name}`
+      if (destination === "waivers" && player.type === "drop") {
+        destination =
+          `Dropped from ${player.transaction_data.source_team_name}`;
       }
 
       if (!destinations[destination]) {
@@ -500,12 +546,19 @@ export const collectTransactions = async () => {
     };
 
     // Send embeds to discord
-    await fetch(process.env.YAHOO_DISCORD_WEBHOOK!, {
+    const webhookResponse = await fetch(requireEnv("YAHOO_DISCORD_WEBHOOK"), {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(webhookData),
-    }).catch((err) => console.error(err));
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (!webhookResponse.ok) {
+      throw new Error(
+        `Yahoo webhook failed with HTTP ${webhookResponse.status}`,
+      );
+    }
   }
 };

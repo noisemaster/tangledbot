@@ -1,15 +1,14 @@
 import {
   ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
-  InteractionResponseTypes,
-  DiscordEmbedField,
   Bot,
-  Interaction,
   Camelize,
   DiscordEmbed,
+  DiscordEmbedField,
+  Interaction,
 } from "discordeno";
 
-import { sub, differenceInDays } from "date-fns";
+import { differenceInDays, sub } from "date-fns";
 import { teams } from "../helpers/nfl/teams.ts";
 
 import Fuse from "fuse.js";
@@ -23,7 +22,7 @@ interface parsedEvents {
   text: string;
 }
 
-const sendNFLScoreboard = async (bot: Bot, interaction: Interaction) => {
+const sendNFLScoreboard = async (_bot: Bot, interaction: Interaction) => {
   const request = await fetch(
     "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
   );
@@ -53,8 +52,7 @@ const sendNFLScoreboard = async (bot: Bot, interaction: Interaction) => {
     let timeString = `<t:${gameDate.valueOf() / 1000}>`;
 
     if (now.valueOf() > gameDate.valueOf()) {
-      scoreString =
-        visitingTeam.team.abbreviation +
+      scoreString = visitingTeam.team.abbreviation +
         " " +
         visitingTeam.score +
         " - " +
@@ -68,7 +66,9 @@ const sendNFLScoreboard = async (bot: Bot, interaction: Interaction) => {
         const networks = (
           game.competitions[0]?.broadcasts[0]?.names || []
         ).join(", ");
-        timeString = `<:live:668567946997792800> LIVE ${networks} ${networks !== "" ? ":" : ""}`;
+        timeString = `<:live:668567946997792800> LIVE ${networks} ${
+          networks !== "" ? ":" : ""
+        }`;
       }
     }
 
@@ -92,16 +92,11 @@ const sendNFLScoreboard = async (bot: Bot, interaction: Interaction) => {
     fields: scoreboardFields,
   };
 
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.ChannelMessageWithSource,
-    data: {
-      embeds: [embed],
-    },
-  });
+  await interaction.respond({ embeds: [embed] });
 };
 
 export const sendNFLGameDetails = async (
-  bot: Bot,
+  _bot: Bot,
   interaction: Interaction,
 ) => {
   const subOptions = interaction.data!.options![0];
@@ -112,9 +107,7 @@ export const sendNFLGameDetails = async (
     ? (teamOption.value! as string).trim().toLowerCase()
     : "";
 
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-  });
+  await interaction.defer();
 
   const request = await fetch(
     "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard",
@@ -135,7 +128,7 @@ export const sendNFLGameDetails = async (
   }
 
   const events = await getGameEvents(game.id).then((results) =>
-    results.reverse().slice(0, 5),
+    results.reverse().slice(0, 5)
   );
   const visitingTeam = game.competitions[0].competitors.find(
     (team: { homeAway: string }) => team.homeAway === "away",
@@ -162,19 +155,20 @@ export const sendNFLGameDetails = async (
       },
       {
         name: "Score",
-        value: `${visitingTeam.team.abbreviation} ${visitingTeam.score} - ${homeTeam.team.abbreviation} ${homeTeam.score}`,
+        value:
+          `${visitingTeam.team.abbreviation} ${visitingTeam.score} - ${homeTeam.team.abbreviation} ${homeTeam.score}`,
         inline: true,
       },
       ...(events.length > 0
         ? [
-            {
-              name: "Recent Events",
-              value: events
-                .map((x) => `**${x.gameTime} - ${x.type}**\n${x.text}`)
-                .join("\n\n"),
-              inline: false,
-            },
-          ]
+          {
+            name: "Recent Events",
+            value: events
+              .map((x) => `**${x.gameTime} - ${x.type}**\n${x.text}`)
+              .join("\n\n"),
+            inline: false,
+          },
+        ]
         : []),
     ],
     color: parseInt(selectedTeamObj.team.color, 16),
@@ -186,7 +180,7 @@ export const sendNFLGameDetails = async (
 };
 
 export const handleTeamAutocomplete = async (
-  bot: Bot,
+  _bot: Bot,
   interaction: Interaction,
 ) => {
   const interactionData: any = interaction.data;
@@ -211,16 +205,12 @@ export const handleTeamAutocomplete = async (
     }))
     .slice(0, 25);
 
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
-    data: {
-      choices: formattedResults,
-    },
-  });
+  await interaction.respond({ choices: formattedResults });
 };
 
 const getGameEvents = async (espnId: string) => {
-  const eventUrl = `https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/${espnId}/competitions/${espnId}/plays?limit=500`;
+  const eventUrl =
+    `https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/events/${espnId}/competitions/${espnId}/plays?limit=500`;
   const events: parsedEvents[] = [];
 
   const eventRequest = await fetch(eventUrl);
@@ -255,6 +245,7 @@ const detailsCommand: subCommand = {
   name: "details",
   description: "Get details for a team's game",
   execute: sendNFLGameDetails,
+  autocomplete: handleTeamAutocomplete,
   type: ApplicationCommandTypes.ChatInput,
   options: [
     {

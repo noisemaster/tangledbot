@@ -1,14 +1,11 @@
 import {
   Bot,
-  DiscordMessage,
-  InteractionResponseTypes,
-  Message,
   Camelize,
-  InteractionCallbackData,
-  Interaction,
+  DiscordMessage,
   FileContent,
+  Interaction,
+  InteractionCallbackData,
 } from "discordeno";
-import { SendRequestOptions } from "@discordeno/rest";
 
 export async function updateInteractionWithFile(
   bot: Bot,
@@ -25,20 +22,14 @@ export async function updateInteraction(
   data: InteractionCallbackData,
   files?: FileContent[],
 ): Promise<Camelize<DiscordMessage>> {
-  const result = await interaction.bot.rest
-    .patch<DiscordMessage>(
-      interaction.bot.rest.routes.interactions.responses.original(
-        interaction.applicationId,
-        interaction.token,
-      ),
-      {
-        body: data,
-        files,
-      },
-    )
-    .catch((err) => {
-      console.log(err);
-    });
-
-  return result!;
+  return await interaction.bot.rest.patch<DiscordMessage>(
+    interaction.bot.rest.routes.interactions.responses.original(
+      interaction.applicationId,
+      interaction.token,
+    ),
+    {
+      body: data,
+      files,
+    },
+  );
 }

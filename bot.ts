@@ -1,8 +1,11 @@
 import { createBot, GatewayIntents } from "discordeno";
+import { requireEnv } from "./helpers/env.ts";
+
+const discordToken = requireEnv("DISCORD_TOKEN");
 
 const client = createBot({
   // botId: config.discord.botID,
-  token: process.env.DISCORD_TOKEN!,
+  token: discordToken,
   intents: GatewayIntents.Guilds,
   desiredProperties: {
     interaction: {

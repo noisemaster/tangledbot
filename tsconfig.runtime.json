@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "bot.ts",
+    "main.ts",
+    "commands/*.ts",
+    "commands/lib/trim.ts",
+    "commands/lib/updateInteraction.ts",
+    "drizzle/**/*.ts",
+    "events/interactionCreate.ts",
+    "handlers/**/*.ts",
+    "helpers/charting.ts",
+    "helpers/env.ts",
+    "helpers/expiringStore.ts",
+    "helpers/nfl/**/*.ts",
+    "helpers/yahoo-fantasy/mod.ts",
+    "helpers/yahoo-fantasy/updateScoreboardRedisJob.ts"
+  ]
+}

@@ -1,12 +1,11 @@
 import {
   ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
+  Bot,
   ButtonStyles,
   Camelize,
   DiscordEmbed,
-  Bot,
   Interaction,
-  InteractionResponseTypes,
   MessageComponentTypes,
 } from "discordeno";
 
@@ -33,18 +32,7 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
     queryTags += "+rating:safe";
   }
 
-  try {
-    await bot.helpers.sendInteractionResponse(
-      interaction.id,
-      interaction.token,
-      {
-        type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-      },
-    );
-  } catch (error) {
-    console.error(error);
-    return;
-  }
+  await interaction.defer();
 
   const request = await fetch(`https://e621.net/posts.json?tags=${queryTags}`);
   const postData: any = await request.json();
@@ -77,8 +65,7 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
     embed.color = 0xf40804;
   }
 
-  let postTags =
-    post.tags.character.join(" ") +
+  let postTags = post.tags.character.join(" ") +
     "\n" +
     post.tags.copyright.join(" ") +
     "\n" +
@@ -92,8 +79,7 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
     "\n" +
     post.tags.invalid.join(" ");
 
-  const tagCount =
-    post.tags.character.length +
+  const tagCount = post.tags.character.length +
     post.tags.copyright.length +
     post.tags.general.length +
     post.tags.lore.length +
@@ -116,10 +102,9 @@ export const sendE621Embed = async (bot: Bot, interaction: Interaction) => {
   if (post.tags.artist.length > 0) {
     embed.fields!.push({
       name: post.tags.artist.length === 1 ? "Artist" : "Artists",
-      value:
-        post.tags.artist.length === 1
-          ? post.tags.artist[0]
-          : post.tags.artist.join(", "),
+      value: post.tags.artist.length === 1
+        ? post.tags.artist[0]
+        : post.tags.artist.join(", "),
       inline: true,
     });
   } else {

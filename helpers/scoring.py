@@ -83,7 +83,7 @@ def generate_figure(details: dict):
 if __name__ == '__main__':
     scoring = sys.argv[1]
     connectionUrl = sys.argv[2]
-    details = get_scores(scoring)
+    details = get_scores(scoring, connectionUrl)
     
     if details != None:
         fig = generate_figure(details)

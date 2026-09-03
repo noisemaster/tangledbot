@@ -3,42 +3,48 @@ import {
   Camelize,
   DiscordEmbed,
   Interaction,
-  InteractionResponseTypes,
 } from "discordeno";
-import { updateInteraction } from "../commands/lib/updateInteraction";
+import { updateInteraction } from "../commands/lib/updateInteraction.ts";
+import { ExpiringStore } from "../helpers/expiringStore.ts";
 
 // Contains hideable content in details, original post information
 export interface hideablePost {
   details: {
     imageUrl: string;
   };
-  poster: BigInt;
+  poster: bigint;
   embedMessage: Camelize<DiscordEmbed>;
   visible: boolean;
 }
 
-// In-Memory post detail store
-const hideablePosts: { [messageId: string]: hideablePost } = {};
+const hideablePosts = new ExpiringStore<hideablePost>({
+  maxEntries: 2_000,
+  ttlMs: 6 * 60 * 60 * 1_000,
+});
 
 export const addHideablePost = (
   messageId: string,
   hideablePost: hideablePost,
 ) => {
-  hideablePosts[messageId] = hideablePost;
+  hideablePosts.set(messageId, hideablePost);
 };
 
 export const isPostHideable = (messageId: string) => {
-  return !!hideablePosts[messageId];
+  return !!hideablePosts.get(messageId);
 };
 
-export const togglePost = async (bot: Bot, interaction: Interaction) => {
+export const togglePost = async (_bot: Bot, interaction: Interaction) => {
   const { customId } = interaction.data!;
   const messageId = customId!.replace("hideable_", "");
   const reactingUser = interaction.user;
 
-  const postData = hideablePosts[messageId];
+  const postData = hideablePosts.get(messageId);
 
   if (!postData) {
+    await interaction.respond(
+      "This image control has expired. Run the command again.",
+      { isPrivate: true },
+    );
     return;
   }
 
@@ -55,40 +61,29 @@ export const togglePost = async (bot: Bot, interaction: Interaction) => {
     console.log(embed);
 
     if (interaction.message) {
-      await bot.helpers.sendInteractionResponse(
-        interaction.id,
-        interaction.token,
-        {
-          type: InteractionResponseTypes.UpdateMessage,
-          data: {
-            embeds: [embed],
+      await interaction.edit({
+        embeds: [embed],
+        components: [
+          {
+            type: 1,
             components: [
               {
-                type: 1,
-                components: [
-                  {
-                    type: 2,
-                    style: 2,
-                    label: `${postData.visible ? "Hide" : "Show"} Image`,
-                    customId,
-                  },
-                ],
+                type: 2,
+                style: 2,
+                label: `${postData.visible ? "Hide" : "Show"} Image`,
+                customId,
               },
             ],
           },
-        },
-      );
+        ],
+      });
     }
   } else {
-    await bot.helpers.sendInteractionResponse(
-      interaction.id,
-      interaction.token,
-      {
-        type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-      },
-    );
+    await interaction.defer(true);
     await updateInteraction(interaction, {
-      content: `Only the orignal poster can ${postData.visible ? "hide" : "show"} this message`,
+      content: `Only the orignal poster can ${
+        postData.visible ? "hide" : "show"
+      } this message`,
       // flags:
     });
   }

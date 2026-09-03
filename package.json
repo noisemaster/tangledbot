@@ -2,6 +2,11 @@
   "name": "tangledbot",
   "module": "main.ts",
   "type": "module",
+  "scripts": {
+    "check": "tsc -p tsconfig.runtime.json",
+    "start": "bun run main.ts",
+    "test": "bun test"
+  },
   "devDependencies": {
     "@types/pg": "^8.15.5",
     "bun-types": "latest",

@@ -27,7 +27,7 @@ new Cron(
   },
   () => {
     console.log(new Date(), "Collecting Transactions");
-    collectTransactions();
+    return collectTransactions();
   },
 );
 

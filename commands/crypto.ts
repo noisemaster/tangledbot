@@ -4,22 +4,21 @@
 import {
   ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
+  Bot,
   Camelize,
   DiscordEmbed,
-  Bot,
-  Interaction,
   FileContent,
+  Interaction,
   InteractionCallbackData,
-  InteractionResponseTypes,
   SelectOption,
 } from "discordeno";
 
 import {
+  generatePageButtons,
+  getPageablePost,
   Pageable,
   paginationPost,
   setPageablePost,
-  generatePageButtons,
-  getPageablePost,
 } from "../handlers/paginationHandler.ts";
 import { v4 } from "uuid";
 import {
@@ -30,10 +29,7 @@ import {
   timerangePost,
 } from "../handlers/timerangeHandler.ts";
 import { createCommand } from "./mod.ts";
-import {
-  updateInteraction,
-  updateInteractionWithFile,
-} from "./lib/updateInteraction.ts";
+import { updateInteraction } from "./lib/updateInteraction.ts";
 import vegaLite from "vega-lite";
 import { generateVega } from "../helpers/charting.ts";
 
@@ -60,7 +56,7 @@ const coinGeckoTimeRanges = [
 // Should be cached in redis at some point
 let cryptoMap: cgCoin[] = [];
 
-export const sendCryptoEmbed = async (bot: Bot, interaction: Interaction) => {
+export const sendCryptoEmbed = async (_bot: Bot, interaction: Interaction) => {
   const symbolOption = interaction.data!.options!.find(
     (option) => option.name === "symbol",
   );
@@ -75,16 +71,14 @@ export const sendCryptoEmbed = async (bot: Bot, interaction: Interaction) => {
     ? (timeRangeOption.value as string)
     : "1";
 
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-  });
+  await interaction.defer();
 
   if (cryptoMap.length === 0) {
     await fetchCryptoMap();
   }
 
   let coinsMatchingSymbol = cryptoMap.filter((coin) =>
-    coin.symbol.toLowerCase().startsWith(symbol),
+    coin.symbol.toLowerCase().startsWith(symbol)
   );
 
   if (coinsMatchingSymbol.length === 0) {
@@ -164,13 +158,14 @@ const fetchCryptoMap = async () => {
 };
 
 const cryptoPageHandler = async (
-  bot: Bot,
+  _bot: Bot,
   interaction: Interaction,
   pageData: paginationPost<cgCoin>,
 ) => {
   const { customId } = interaction.data!;
-  const [_componentId, _commandInvoker, action, messageId] =
-    customId!.split("_");
+  const [_componentId, _commandInvoker, action, messageId] = customId!.split(
+    "_",
+  );
 
   console.log(customId);
 
@@ -192,6 +187,11 @@ const cryptoPageHandler = async (
 
   const page = pageData.pages[pageData.currentPage - 1];
   const timerangeData = getTimerangePost<cgCoin>(messageId);
+
+  if (!timerangeData) {
+    throw new Error(`Timerange state expired for message ${messageId}`);
+  }
+
   timerangeData.data = page;
   const newEmbed = await generateCryptoQuoteEmbed(
     page,
@@ -214,13 +214,14 @@ const cryptoPageHandler = async (
 };
 
 const cryptoTimerangeHandler = async (
-  bot: Bot,
+  _bot: Bot,
   interaction: Interaction,
   pageData: timerangePost<cgCoin>,
 ) => {
   const { customId } = interaction.data!;
-  const [_componentId, _commandInvoker, action, messageId] =
-    customId!.split("_");
+  const [_componentId, _commandInvoker, _action, messageId] = customId!.split(
+    "_",
+  );
 
   console.log(customId);
 
@@ -228,14 +229,18 @@ const cryptoTimerangeHandler = async (
   pageData.currentTime = timerange;
 
   const cryptoPages = getPageablePost<cgCoin>(messageId);
+
+  if (!cryptoPages) {
+    throw new Error(`Pagination state expired for message ${messageId}`);
+  }
+
   const newEmbed = await generateCryptoQuoteEmbed(
     pageData.data,
     pageData.currentTime,
   );
-  const pageComponents =
-    cryptoPages.pages.length > 1
-      ? generatePageButtons("crypto", cryptoPages, messageId)
-      : [];
+  const pageComponents = cryptoPages.pages.length > 1
+    ? generatePageButtons("crypto", cryptoPages, messageId)
+    : [];
   const timerangeComponents = generateTimerangeButtons(
     "crypto",
     pageData,
@@ -276,16 +281,19 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
   const dayDiffColor = dayChangePercent > 0 ? 0x44bd32 : 0xe74c3c;
 
   const hourChange = Math.abs(price * (hourChangePercent / 100));
-  const hourDiffSymbol =
-    hourChangePercent > 0 ? "<:small_green_triangle:851144859103395861>" : "🔻";
+  const hourDiffSymbol = hourChangePercent > 0
+    ? "<:small_green_triangle:851144859103395861>"
+    : "🔻";
 
   const dayChange = Math.abs(price * (dayChangePercent / 100));
-  const dayDiffSymbol =
-    dayChangePercent > 0 ? "<:small_green_triangle:851144859103395861>" : "🔻";
+  const dayDiffSymbol = dayChangePercent > 0
+    ? "<:small_green_triangle:851144859103395861>"
+    : "🔻";
 
   const weekChange = Math.abs(price * (weekChangePercent / 100));
-  const weekDiffSymbol =
-    weekChangePercent > 0 ? "<:small_green_triangle:851144859103395861>" : "🔻";
+  const weekDiffSymbol = weekChangePercent > 0
+    ? "<:small_green_triangle:851144859103395861>"
+    : "🔻";
 
   const embed: Camelize<DiscordEmbed> = {
     author: {
@@ -304,17 +312,23 @@ const generateCryptoQuoteEmbed = async (coin: cgCoin, timeRange: string) => {
     },
     {
       name: "Price Change [1h]",
-      value: `${hourDiffSymbol} ${hourChange.toFixed(5)} (${hourChangePercent.toFixed(2)}%)`,
+      value: `${hourDiffSymbol} ${hourChange.toFixed(5)} (${
+        hourChangePercent.toFixed(2)
+      }%)`,
       inline: true,
     },
     {
       name: "Price Change [24h]",
-      value: `${dayDiffSymbol} ${dayChange.toFixed(5)} (${dayChangePercent.toFixed(2)}%)`,
+      value: `${dayDiffSymbol} ${dayChange.toFixed(5)} (${
+        dayChangePercent.toFixed(2)
+      }%)`,
       inline: true,
     },
     {
       name: "Price Change [7d]",
-      value: `${weekDiffSymbol} ${weekChange.toFixed(5)} (${weekChangePercent.toFixed(2)}%)`,
+      value: `${weekDiffSymbol} ${weekChange.toFixed(5)} (${
+        weekChangePercent.toFixed(2)
+      }%)`,
       inline: true,
     },
     {

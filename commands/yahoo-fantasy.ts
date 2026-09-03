@@ -1,35 +1,32 @@
 import {
   ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
+  Bot,
   Camelize,
   DiscordEmbed,
   FileContent,
-  InteractionCallbackData,
-  InteractionResponseTypes,
-  Bot,
   Interaction,
+  InteractionCallbackData,
 } from "discordeno";
 
 import { createCommand } from "./mod.ts";
 import {
-  getAccessToken,
-  fetchStandings,
   fetchScoreboard,
+  fetchStandings,
+  getAccessToken,
   listGames,
 } from "../helpers/yahoo-fantasy/mod.ts";
 
 import Fuse from "fuse.js";
-import config from "../config.ts";
+import { requireEnv } from "../helpers/env.ts";
 import { updateInteraction } from "./lib/updateInteraction.ts";
 import { db } from "../drizzle/index.ts";
 
 export const sendStandingsEmbed = async (
-  bot: Bot,
+  _bot: Bot,
   interaction: Interaction,
 ) => {
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-  });
+  await interaction.defer();
 
   const accessToken = await getAccessToken();
   const { league, standings } = await fetchStandings(accessToken);
@@ -44,7 +41,9 @@ export const sendStandingsEmbed = async (
   embed.fields = standings.map((data, index) => {
     return {
       name: `${index + 1}: ${data.name}`,
-      value: `${data.points} (${data.wins} - ${data.losses}${data.ties ? ` - ${data.ties}` : ""})`,
+      value: `${data.points} (${data.wins} - ${data.losses}${
+        data.ties ? ` - ${data.ties}` : ""
+      })`,
       inline: false,
     };
   });
@@ -55,12 +54,10 @@ export const sendStandingsEmbed = async (
 };
 
 export const sendScoreboardEmbed = async (
-  bot: Bot,
+  _bot: Bot,
   interaction: Interaction,
 ) => {
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-  });
+  await interaction.defer();
 
   const accessToken = await getAccessToken();
   const { league, scoreboard } = await fetchScoreboard(accessToken);
@@ -76,7 +73,12 @@ export const sendScoreboardEmbed = async (
   embed.fields = scoreboard.map((data, index) => {
     return {
       name: `Matchup ${index + 1}`,
-      value: `${data.team1.name}: ${data.team1.actualPoints} (Projected: ${data.team1.projectedPoints}) - Win Probability ${(data.team1.winProbability * 100).toFixed(0)}%\n${data.team2.name}: ${data.team2.actualPoints} (Projected: ${data.team2.projectedPoints}) - Win Probability ${(data.team2.winProbability * 100).toFixed(0)}%`,
+      value:
+        `${data.team1.name}: ${data.team1.actualPoints} (Projected: ${data.team1.projectedPoints}) - Win Probability ${
+          (data.team1.winProbability * 100).toFixed(0)
+        }%\n${data.team2.name}: ${data.team2.actualPoints} (Projected: ${data.team2.projectedPoints}) - Win Probability ${
+          (data.team2.winProbability * 100).toFixed(0)
+        }%`,
       inline: false,
     };
   });
@@ -85,12 +87,10 @@ export const sendScoreboardEmbed = async (
 
   await updateInteraction(interaction, {
     embeds: [embed],
-  }).catch((err) => {
-    console.log(err);
   });
 };
 
-export const sendScoringGraph = async (bot: Bot, interaction: Interaction) => {
+export const sendScoringGraph = async (_bot: Bot, interaction: Interaction) => {
   const interactionData: any = interaction.data;
   const detailsOption = interactionData.options.find(
     (option: any) => option.name === "graph",
@@ -100,28 +100,21 @@ export const sendScoringGraph = async (bot: Bot, interaction: Interaction) => {
     : null;
   const searchGame: string = searchGameOption ? searchGameOption.value : "";
 
-  const image = await fetchChart(searchGame).catch((err) => {
-    console.log(err);
-  });
+  const image = await fetchChart(searchGame);
 
   const payload: InteractionCallbackData = {};
 
-  if (image) {
-    const imageAttach: FileContent = {
-      name: `${searchGame}.png`,
-      blob: new Blob([image]) as any,
-    };
-    payload.files = [imageAttach];
-  }
+  const imageAttach: FileContent = {
+    name: `${searchGame}.png`,
+    blob: new Blob([image]) as any,
+  };
+  payload.files = [imageAttach];
 
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.ChannelMessageWithSource,
-    data: payload,
-  });
+  await interaction.respond(payload);
 };
 
 export const handleGraphAutocomplete = async (
-  bot: Bot,
+  _bot: Bot,
   interaction: Interaction,
 ) => {
   const interactionData: any = interaction.data;
@@ -143,21 +136,17 @@ export const handleGraphAutocomplete = async (
 
   const formattedResults = searchResults
     .map((results) => ({
-      name: `Week ${results.item.week}: ${results.item.team1} vs ${results.item.team2}`,
+      name:
+        `Week ${results.item.week}: ${results.item.team1} vs ${results.item.team2}`,
       value: results.item.key!,
     }))
     .slice(0, 25);
 
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
-    data: {
-      choices: formattedResults,
-    },
-  });
+  await interaction.respond({ choices: formattedResults });
 };
 
 export const handlePlayerAutocomplete = async (
-  bot: Bot,
+  _bot: Bot,
   interaction: Interaction,
 ) => {
   const interactionData: any = interaction.data;
@@ -173,21 +162,14 @@ export const handlePlayerAutocomplete = async (
 
   if (searchPlayer === "") {
     console.log("empty");
-    await bot.helpers.sendInteractionResponse(
-      interaction.id,
-      interaction.token,
-      {
-        type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
-        data: {
-          choices: [
-            {
-              name: "Player",
-              value: "player",
-            },
-          ],
+    await interaction.respond({
+      choices: [
+        {
+          name: "Player",
+          value: "player",
         },
-      },
-    );
+      ],
+    });
     return;
   }
 
@@ -199,7 +181,9 @@ export const handlePlayerAutocomplete = async (
       where: (player, { inArray, and, sql }) =>
         and(
           inArray(player.positionAbbr, ["QB", "RB", "WR", "TE", "K"]),
-          sql`to_tsvector('english', ${player.name}) @@ websearch_to_tsquery(${searchPlayer.trim() + ":*"})`,
+          sql`to_tsvector('english', ${player.name}) @@ websearch_to_tsquery(${
+            searchPlayer.trim() + ":*"
+          })`,
         ),
       // orderBy: (player, { desc }) => desc(player.rank),
     });
@@ -211,23 +195,16 @@ export const handlePlayerAutocomplete = async (
       }))
       .slice(0, 25);
 
-    await bot.helpers.sendInteractionResponse(
-      interaction.id,
-      interaction.token,
-      {
-        type: InteractionResponseTypes.ApplicationCommandAutocompleteResult,
-        data: {
-          choices: formattedResults,
-        },
-      },
-    );
+    await interaction.respond({ choices: formattedResults });
   } catch (err) {
-    console.log(err);
-    return;
+    throw new Error("Player autocomplete failed", { cause: err });
   }
 };
 
-export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
+export const sendPlayerDetails = async (
+  _bot: Bot,
+  interaction: Interaction,
+) => {
   const interactionData: any = interaction.data;
   const detailsOption = interactionData.options.find(
     (option: any) => option.name === "details",
@@ -239,9 +216,7 @@ export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
     ? searchPlayerOption.value
     : "";
 
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-  });
+  await interaction.defer();
 
   const player = await db.query.Player.findFirst({
     where: (player, { eq }) => eq(player.playerKey, searchPlayer),
@@ -266,11 +241,15 @@ export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
         .filter((x) => x.value)
         .map(
           (x) =>
-            `${x.value} ${x.statCat[0].toUpperCase() + x.statCat.substring(1)} ${x.statAbbr}`,
+            `${x.value} ${
+              x.statCat[0].toUpperCase() + x.statCat.substring(1)
+            } ${x.statAbbr}`,
         )
         .join(", ");
 
-      return `Week ${stat.week}: ${stat.points}\n${breakdown ? `-# ${breakdown}` : ""}`;
+      return `Week ${stat.week}: ${stat.points}\n${
+        breakdown ? `-# ${breakdown}` : ""
+      }`;
     })
     .join("\n");
 
@@ -289,19 +268,28 @@ export const sendPlayerDetails = async (bot: Bot, interaction: Interaction) => {
 };
 
 const fetchChart = async (game: string): Promise<ArrayBuffer> => {
+  const mongoUrl = requireEnv("MONGODB_URL");
   const badger = Bun.spawn({
-    cmd: ["python3", "./helpers/scoring.py", game, config.mongo.url],
+    cmd: ["python3", "./helpers/scoring.py", game, mongoUrl],
     stdout: "pipe",
+    stderr: "pipe",
   });
 
-  const output = badger.stdout;
-  const code = badger.exitCode;
+  const [output, errorOutput, code] = await Promise.all([
+    new Response(badger.stdout).arrayBuffer(),
+    new Response(badger.stderr).text(),
+    badger.exited,
+  ]);
 
   if (code !== 0) {
-    throw new Error("Chart not generated");
+    throw new Error(`Chart process exited with code ${code}: ${errorOutput}`);
   }
 
-  return new Response(output).arrayBuffer();
+  if (output.byteLength === 0) {
+    throw new Error("Chart process returned no image data");
+  }
+
+  return output;
 };
 
 createCommand({
@@ -334,12 +322,14 @@ createCommand({
         },
       ],
       execute: sendScoringGraph,
+      autocomplete: handleGraphAutocomplete,
       type: ApplicationCommandTypes.ChatInput,
     },
     {
       name: "details",
       description: "Get details about a player",
       execute: sendPlayerDetails,
+      autocomplete: handlePlayerAutocomplete,
       type: ApplicationCommandTypes.ChatInput,
       options: [
         {

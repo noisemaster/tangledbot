@@ -6,13 +6,12 @@ import { v4 } from "uuid";
 import {
   ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
+  Bot,
   ButtonStyles,
   Camelize,
   DiscordEmbed,
-  InteractionResponseTypes,
-  MessageComponentTypes,
-  Bot,
   Interaction,
+  MessageComponentTypes,
 } from "discordeno";
 
 import { createCommand } from "./mod.ts";
@@ -54,18 +53,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
     ? (isImageOption.value as boolean)
     : false;
 
-  try {
-    await bot.helpers.sendInteractionResponse(
-      interaction.id,
-      interaction.token,
-      {
-        type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-      },
-    );
-  } catch (error) {
-    console.error(error);
-    return;
-  }
+  await interaction.defer();
 
   const request = await fetch(
     `https://www.reddit.com/r/${subreddit}.json?limit=100`,
@@ -78,7 +66,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
         x.data.url.includes(".png") ||
         x.data.url.includes(".jpeg") ||
         (x.data.url.includes(".gif") && !x.data.url.includes(".gifv"))
-      : true,
+      : true
   );
 
   if (posts.length === 0) {
@@ -91,8 +79,7 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
   const randomIndex = Math.floor(Math.random() * posts.length);
   const post = posts[randomIndex].data;
 
-  const isPostImage =
-    isImage ||
+  const isPostImage = isImage ||
     post.url.includes(".jpg") ||
     post.url.includes(".png") ||
     post.url.includes(".jpeg") ||
@@ -105,7 +92,9 @@ export const sendRedditEmbed = async (bot: Bot, interaction: Interaction) => {
       name: `/${post.subreddit_name_prefixed}`,
       url: `https://reddit.com/r/${subreddit}`,
     },
-    description: `[View Comments](https://www.reddit.com${post.permalink})\n${post.is_self ? trim(post.selftext, 850) : ""}`,
+    description: `[View Comments](https://www.reddit.com${post.permalink})\n${
+      post.is_self ? trim(post.selftext, 850) : ""
+    }`,
     color: 0xe5343a,
     fields: [
       { name: "Score", value: post.score, inline: true },

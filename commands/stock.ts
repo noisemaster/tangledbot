@@ -10,19 +10,15 @@ import { createCommand } from "./mod.ts";
 import {
   ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
+  Bot,
   Camelize,
   DiscordEmbed,
   FileContent,
-  InteractionCallbackData,
-  InteractionResponseTypes,
-  Bot,
   Interaction,
+  InteractionCallbackData,
 } from "discordeno";
 
-import {
-  updateInteraction,
-  updateInteractionWithFile,
-} from "./lib/updateInteraction.ts";
+import { updateInteraction } from "./lib/updateInteraction.ts";
 import vegaLite from "vega-lite";
 import { generateVega } from "../helpers/charting.ts";
 
@@ -94,7 +90,7 @@ const intervalDataPointMap: { [key in YahooRanges]: YahooInterval } = {
   max: "3mo",
 };
 
-const fetchQuote = async (bot: Bot, interaction: Interaction) => {
+const fetchQuote = async (_bot: Bot, interaction: Interaction) => {
   if (!interaction.data) {
     return;
   }
@@ -111,9 +107,7 @@ const fetchQuote = async (bot: Bot, interaction: Interaction) => {
     ? (timeRangeOption.value as string)
     : "1d";
 
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-  });
+  await interaction.defer();
 
   // const url =
   // `https://query1.finance.yahoo.com/v6/finance/quote?symbols=${symbol}`;
@@ -237,10 +231,9 @@ const generateStockEmbed = async (
   const lastRefresh = regularMarketTime
     ? new Date(regularMarketTime * 1000)
     : new Date();
-  const diffSymbol =
-    regularMarketChange > 0
-      ? "<:small_green_triangle:851144859103395861>"
-      : "🔻";
+  const diffSymbol = regularMarketChange > 0
+    ? "<:small_green_triangle:851144859103395861>"
+    : "🔻";
   const diffColor = regularMarketChange > 0 ? 0x44bd32 : 0xe74c3c;
 
   const image = await fetchChart(symbol!, timerange).catch((err) => {
@@ -290,13 +283,14 @@ const generateStockEmbed = async (
 };
 
 const stockTimerangeHandler = async (
-  bot: Bot,
+  _bot: Bot,
   interaction: Interaction,
   pageData: timerangePost<YahooStockQuote>,
 ) => {
   const { customId } = interaction.data!;
-  const [_componentId, _commandInvoker, _action, messageId] =
-    customId!.split("_");
+  const [_componentId, _commandInvoker, _action, messageId] = customId!.split(
+    "_",
+  );
 
   console.log(customId);
 

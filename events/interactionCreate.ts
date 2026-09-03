@@ -1,156 +1,166 @@
 import {
   ApplicationCommandOptionTypes,
   hasProperty,
-  InteractionTypes,
-  Bot,
   Interaction,
-  EventHandlers,
+  InteractionTypes,
 } from "discordeno";
+import { logger } from "@discordeno/utils";
 
+import { client } from "../bot.ts";
 import { Command, commands, subCommand } from "../commands/mod.ts";
-import { handleTeamAutocomplete } from "../commands/nfl.ts";
-import {
-  handleGraphAutocomplete,
-  handlePlayerAutocomplete,
-} from "../commands/yahoo-fantasy.ts";
 import { togglePost } from "../handlers/imagePostHandler.ts";
 import { updatePage } from "../handlers/paginationHandler.ts";
 import { updateTimerange } from "../handlers/timerangeHandler.ts";
-import { client } from "../bot.ts";
 
-client.events.interactionCreate = async (interaction) => {
-  const bot = interaction.bot as any;
-  // Cast interaction to have the full properties we need
-  const fullInteraction = interaction as any as Interaction;
+function resolveCommand(interaction: Interaction): Command | undefined {
+  const data = interaction.data;
 
-  if (fullInteraction.type === InteractionTypes.ApplicationCommandAutocomplete) {
-    if (fullInteraction.data!.name === "nfl") {
-      handleTeamAutocomplete(bot, fullInteraction);
+  if (!data?.name) {
+    return undefined;
+  }
+
+  const command = commands.get(data.name);
+  const firstOption = data.options?.[0];
+
+  if (!command || !firstOption) {
+    return command;
+  }
+
+  if (firstOption.type === ApplicationCommandOptionTypes.SubCommandGroup) {
+    const group = command.subcommands?.find(
+      (candidate) => candidate.name === firstOption.name,
+    );
+
+    if (!group || !hasProperty(group, "subCommands")) {
+      return undefined;
     }
 
-    if (
-      fullInteraction.data!.name === "fantasy" &&
-      fullInteraction.data!.options?.[0].name === "details"
-    ) {
-      handlePlayerAutocomplete(bot, fullInteraction);
-    }
+    const targetName = firstOption.options?.[0]?.name;
+    return targetName
+      ? (group.subCommands as subCommand[]).find(
+        (candidate) => candidate.name === targetName,
+      )
+      : undefined;
+  }
 
-    if (
-      fullInteraction.data!.name === "fantasy" &&
-      fullInteraction.data!.options?.[0].name === "graph"
-    ) {
-      handleGraphAutocomplete(bot, fullInteraction);
+  if (firstOption.type === ApplicationCommandOptionTypes.SubCommand) {
+    const subcommand = command.subcommands?.find(
+      (candidate) => candidate.name === firstOption.name,
+    );
+
+    return subcommand && !hasProperty(subcommand, "subCommands")
+      ? subcommand
+      : undefined;
+  }
+
+  return command;
+}
+
+async function dispatchInteraction(interaction: Interaction): Promise<void> {
+  const bot = interaction.bot;
+
+  if (interaction.type === InteractionTypes.ApplicationCommandAutocomplete) {
+    const command = resolveCommand(interaction);
+
+    if (command?.autocomplete) {
+      await command.autocomplete(bot, interaction);
+    } else {
+      await interaction.respond({ choices: [] });
     }
 
     return;
   }
 
-  if (fullInteraction.type === InteractionTypes.MessageComponent) {
-    const { customId } = fullInteraction.data!;
-    const [command] = customId!.split("_");
+  if (interaction.type === InteractionTypes.MessageComponent) {
+    const commandType = interaction.data?.customId?.split("_")[0];
 
-    switch (command) {
+    switch (commandType) {
       case "hideable":
-        await togglePost(bot, fullInteraction);
+        await togglePost(bot, interaction);
         break;
       case "pageable":
-        await updatePage(bot, fullInteraction);
+        await updatePage(bot, interaction);
         break;
       case "timerange":
-        await updateTimerange(bot, fullInteraction);
+        await updateTimerange(bot, interaction);
         break;
       default:
-        console.log(`Unknown command type ${command}`);
+        logger.warn(`Unknown component type: ${commandType ?? "missing"}`);
         break;
     }
+
+    return;
   }
 
-  if (
-    fullInteraction.type === InteractionTypes.ApplicationCommand &&
-    fullInteraction.data &&
-    fullInteraction.id
-  ) {
-    let command: undefined | Command = fullInteraction.data.name
-      ? commands.get(fullInteraction.data.name)
-      : undefined;
+  if (interaction.type !== InteractionTypes.ApplicationCommand) {
+    return;
+  }
 
-    console.log(command);
+  const command = resolveCommand(interaction);
 
-    if (!command) {
+  if (!command) {
+    logger.warn(`Unknown application command: ${interaction.data?.name}`);
+    await interaction.respond("That command is not available right now.", {
+      isPrivate: true,
+    });
+    return;
+  }
+
+  // Discordeno does not await interaction event callbacks. Awaiting here is
+  // therefore essential so a rejected command promise reaches our boundary.
+  await command.execute(bot, interaction);
+}
+
+async function reportInteractionError(
+  interaction: Interaction,
+  error: unknown,
+): Promise<void> {
+  logger.error(
+    `Interaction ${String(interaction.id)} failed (${
+      interaction.data?.name ?? interaction.data?.customId ?? "unknown"
+    })`,
+    error,
+  );
+
+  try {
+    if (interaction.type === InteractionTypes.ApplicationCommandAutocomplete) {
+      if (!interaction.acknowledged) {
+        await interaction.respond({ choices: [] });
+      }
       return;
     }
 
-    if (!fullInteraction.data.name) {
-      return;
+    const response = {
+      content: "Something went wrong while handling that interaction.",
+      components: [],
+      embeds: [],
+    };
+
+    if (interaction.acknowledged) {
+      await interaction.edit(response);
+    } else {
+      await interaction.respond(response, { isPrivate: true });
     }
-
-    if (fullInteraction.data.options?.[0]) {
-      const optionType = fullInteraction.data.options[0].type;
-
-      if (optionType === ApplicationCommandOptionTypes.SubCommandGroup) {
-        // Check if command has subcommand and handle types
-        if (!command.subcommands) {
-          return;
-        }
-
-        // Try to find the subcommand group
-        const subCommandGroup = command.subcommands?.find(
-          (command) => command.name == fullInteraction.data?.options?.[0].name,
-        );
-
-        if (!subCommandGroup) {
-          return;
-        }
-
-        if (!hasProperty(subCommandGroup, "subCommands")) {
-          return;
-        }
-
-        // Get name of the command which we are looking for
-        const targetCmdName =
-          fullInteraction.data.options?.[0].options?.[0].name ||
-          fullInteraction.data.options?.[0].options?.[0].name;
-
-        if (!targetCmdName) {
-          return;
-        }
-
-        // Try to find the command
-        command = (subCommandGroup.subCommands as subCommand[]).find(
-          (c) => c.name === targetCmdName,
-        );
-      }
-
-      if (optionType === ApplicationCommandOptionTypes.SubCommand) {
-        // Check if command has subcommand and handle types
-        if (!command?.subcommands) {
-          return;
-        }
-
-        // Try to find the command
-        const found = command.subcommands.find(
-          (command) => command.name == fullInteraction.data?.options?.[0].name,
-        );
-        if (!found) {
-          return;
-        }
-
-        if (hasProperty(found, "subCommands")) {
-          return;
-        }
-
-        command = found;
-      }
-    }
-
-    try {
-      if (command) {
-        command.execute(bot, fullInteraction);
-      } else {
-        throw "";
-      }
-    } catch (err) {
-      console.log(err);
-    }
+  } catch (responseError) {
+    logger.error(
+      `Failed to report interaction ${String(interaction.id)} error to Discord`,
+      responseError,
+    );
   }
+}
+
+export async function handleInteractionCreate(
+  interaction: Interaction,
+): Promise<void> {
+  try {
+    await dispatchInteraction(interaction);
+  } catch (error) {
+    await reportInteractionError(interaction, error);
+  }
+}
+
+client.events.interactionCreate = (interaction) => {
+  // The library intentionally drops the returned event promise, so explicitly
+  // own it here and keep every rejection inside handleInteractionCreate.
+  void handleInteractionCreate(interaction as Interaction);
 };

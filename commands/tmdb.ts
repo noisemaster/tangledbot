@@ -6,21 +6,22 @@ import {
 } from "../handlers/paginationHandler.ts";
 import { v4 } from "uuid";
 
-import config from "../config.ts";
+import { requireEnv } from "../helpers/env.ts";
 import {
   ApplicationCommandOptionTypes,
   ApplicationCommandTypes,
+  Bot,
   Camelize,
   DiscordEmbed,
   DiscordEmbedField,
-  InteractionResponseTypes,
-  SelectOption,
-  Bot,
   Interaction,
+  SelectOption,
 } from "discordeno";
 
 import { createCommand } from "./mod.ts";
 import { updateInteraction } from "./lib/updateInteraction.ts";
+
+const tmdbApiKey = requireEnv("TMDB_API_KEY");
 
 /**
  * @TODO Cleanup logic, there's quite a bit of duplicated logic
@@ -44,7 +45,7 @@ interface TMDBResult extends Pageable {
   vote_count: number;
 }
 
-const fetchMovie = async (bot: Bot, interaction: Interaction) => {
+const fetchMovie = async (_bot: Bot, interaction: Interaction) => {
   if (!interaction.data) {
     return;
   }
@@ -54,13 +55,12 @@ const fetchMovie = async (bot: Bot, interaction: Interaction) => {
   const interactionOptions = interaction.data!.options![0].options!;
   const { title, year } = parseOptions(interactionOptions);
 
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-  });
+  await interaction.defer();
 
-  const url = `https://api.themoviedb.org/3/search/${type}?api_key=${config.tmdb.apiKey}&language=en-US&query=${title}&page=1&include_adult=false${
-    year ? `&year=${year}` : ""
-  }`;
+  const url =
+    `https://api.themoviedb.org/3/search/${type}?api_key=${tmdbApiKey}&language=en-US&query=${title}&page=1&include_adult=false${
+      year ? `&year=${year}` : ""
+    }`;
 
   const request = await fetch(url);
   const response: any = await request.json();
@@ -101,7 +101,7 @@ const fetchMovie = async (bot: Bot, interaction: Interaction) => {
   }
 };
 
-const fetchWhereToWatch = async (bot: Bot, interaction: Interaction) => {
+const fetchWhereToWatch = async (_bot: Bot, interaction: Interaction) => {
   if (!interaction.data) {
     return;
   }
@@ -111,13 +111,12 @@ const fetchWhereToWatch = async (bot: Bot, interaction: Interaction) => {
 
   const { title, year } = parseOptions(interactionOptions);
 
-  await bot.helpers.sendInteractionResponse(interaction.id, interaction.token, {
-    type: InteractionResponseTypes.DeferredChannelMessageWithSource,
-  });
+  await interaction.defer();
 
-  const url = `https://api.themoviedb.org/3/search/${type}?api_key=${config.tmdb.apiKey}&language=en-US&query=${title}&page=1&include_adult=false${
-    year ? `&year=${year}` : ""
-  }`;
+  const url =
+    `https://api.themoviedb.org/3/search/${type}?api_key=${tmdbApiKey}&language=en-US&query=${title}&page=1&include_adult=false${
+      year ? `&year=${year}` : ""
+    }`;
 
   const request = await fetch(url);
   const response: any = await request.json();
@@ -159,7 +158,7 @@ const fetchWhereToWatch = async (bot: Bot, interaction: Interaction) => {
 };
 
 const tmdbPageHandler = async (
-  bot: Bot,
+  _bot: Bot,
   interaction: Interaction,
   pageData: paginationPost<TMDBResult>,
 ) => {
@@ -218,7 +217,7 @@ const tmdbPageHandler = async (
 
 const generateMovieEmbed = async (result: TMDBResult, type: string) => {
   const fullDetails: any = await fetch(
-    `https://api.themoviedb.org/3/${type}/${result.id}?api_key=${config.tmdb.apiKey}`,
+    `https://api.themoviedb.org/3/${type}/${result.id}?api_key=${tmdbApiKey}`,
   ).then((res) => res.json());
 
   const possibleOptionalFields: DiscordEmbedField[] = [];
@@ -226,17 +225,15 @@ const generateMovieEmbed = async (result: TMDBResult, type: string) => {
   let title = "";
 
   if (fullDetails.title || fullDetails.original_title) {
-    title =
-      fullDetails.title === fullDetails.original_title
-        ? fullDetails.title
-        : `${fullDetails.title} (${fullDetails.original_title})`;
+    title = fullDetails.title === fullDetails.original_title
+      ? fullDetails.title
+      : `${fullDetails.title} (${fullDetails.original_title})`;
   }
 
   if (fullDetails.name || fullDetails.original_name) {
-    title =
-      fullDetails.name === fullDetails.original_name
-        ? fullDetails.name
-        : `${fullDetails.name} (${fullDetails.original_name})`;
+    title = fullDetails.name === fullDetails.original_name
+      ? fullDetails.name
+      : `${fullDetails.name} (${fullDetails.original_name})`;
   }
 
   if (fullDetails.production_companies.length > 0) {
@@ -260,10 +257,11 @@ const generateMovieEmbed = async (result: TMDBResult, type: string) => {
   if (fullDetails.runtime) {
     possibleOptionalFields.push({
       name: "Runtime",
-      value:
-        fullDetails.runtime > 60
-          ? `${Math.floor(fullDetails.runtime / 60)}h ${fullDetails.runtime % 60}m`
-          : `${fullDetails.runtime}m`,
+      value: fullDetails.runtime > 60
+        ? `${Math.floor(fullDetails.runtime / 60)}h ${
+          fullDetails.runtime % 60
+        }m`
+        : `${fullDetails.runtime}m`,
       inline: false,
     });
   }
@@ -304,11 +302,11 @@ const generateMovieEmbed = async (result: TMDBResult, type: string) => {
 
 const generateWatchEmbed = async (result: TMDBResult, type: string) => {
   const fullDetails: any = await fetch(
-    `https://api.themoviedb.org/3/${type}/${result.id}?api_key=${config.tmdb.apiKey}`,
+    `https://api.themoviedb.org/3/${type}/${result.id}?api_key=${tmdbApiKey}`,
   ).then((res) => res.json());
 
   const providers: any = await fetch(
-    `https://api.themoviedb.org/3/${type}/${result.id}/watch/providers?api_key=${config.tmdb.apiKey}`,
+    `https://api.themoviedb.org/3/${type}/${result.id}/watch/providers?api_key=${tmdbApiKey}`,
   ).then((res) => res.json());
 
   const possibleOptionalFields: DiscordEmbedField[] = [];
@@ -318,17 +316,15 @@ const generateWatchEmbed = async (result: TMDBResult, type: string) => {
   let title = "";
 
   if (result.title || result.original_title) {
-    title =
-      result.title === result.original_title
-        ? result.title
-        : `${result.title} (${result.original_title})`;
+    title = result.title === result.original_title
+      ? result.title
+      : `${result.title} (${result.original_title})`;
   }
 
   if (result.name || result.original_name) {
-    title =
-      result.name! === result.original_name!
-        ? result.name
-        : `${result.name} (${result.original_name})`;
+    title = result.name! === result.original_name!
+      ? result.name
+      : `${result.name} (${result.original_name})`;
   }
 
   if (providerRegion?.flatrate?.length > 0) {
@@ -364,10 +360,11 @@ const generateWatchEmbed = async (result: TMDBResult, type: string) => {
   if (fullDetails.runtime) {
     possibleOptionalFields.push({
       name: "Runtime",
-      value:
-        fullDetails.runtime > 60
-          ? `${Math.floor(fullDetails.runtime / 60)}h ${fullDetails.runtime % 60}m`
-          : `${fullDetails.runtime}m`,
+      value: fullDetails.runtime > 60
+        ? `${Math.floor(fullDetails.runtime / 60)}h ${
+          fullDetails.runtime % 60
+        }m`
+        : `${fullDetails.runtime}m`,
       inline: false,
     });
   }
@@ -414,19 +411,17 @@ const generateTMDBPages = (pages: TMDBResult[]): SelectOption[] => {
 
     if (page.title) {
       return {
-        label:
-          page.title.length > 97
-            ? `${page.title.substr(0, 97)}...`
-            : page.title,
+        label: page.title.length > 97
+          ? `${page.title.substr(0, 97)}...`
+          : page.title,
         description: `${releaseYearString}`,
         value: `${index + 1}`,
       };
     } else {
       return {
-        label:
-          page.name!.length > 97
-            ? `${page.name!.substr(0, 97)}...`
-            : page.name!,
+        label: page.name!.length > 97
+          ? `${page.name!.substr(0, 97)}...`
+          : page.name!,
         description: `${releaseYearString}`,
         value: `${index + 1}`,
       };
