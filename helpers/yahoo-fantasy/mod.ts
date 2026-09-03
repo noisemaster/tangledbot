@@ -125,7 +125,7 @@ export const getAccessToken = async (): Promise<string> => {
 
 export const fetchStandings = async (
   accessToken: string,
-  leagueId: string = "581427",
+  leagueId: string = "803557",
 ) => {
   const standingsRequestXML = await fetch(
     `https://fantasysports.yahooapis.com/fantasy/v2/league/nfl.l.${leagueId}/standings`,
@@ -168,7 +168,7 @@ export const fetchStandings = async (
 
 export const fetchScoreboard = async (
   accessToken: string,
-  leagueId: string = "581427",
+  leagueId: string = "803557",
   gameId = "nfl",
 ) => {
   const scoreboardRequest = await fetch(
@@ -265,7 +265,7 @@ export async function addPoints() {
       {
         matchupKey: entry.id,
         gameId: "nfl",
-        leagueId: "581427",
+        leagueId: "803557",
         week: league.week,
         team1Id: entry.team1.teamKey,
         team2Id: entry.team2.teamKey,
@@ -306,7 +306,7 @@ export const listGames = async () => {
 
 export const getTransactions = async (
   accessToken: string,
-  leagueId: string = "581427",
+  leagueId: string = "803557",
   gameId = "nfl",
 ) => {
   const tradesRequest = await fetch(
@@ -339,7 +339,7 @@ export const getTransactions = async (
 
 export const getTeams = async (
   accessToken: string,
-  leagueId = "581427",
+  leagueId = "803557",
   gameId = "nfl",
 ) => {
   const tradesRequest = await fetch(
@@ -408,7 +408,7 @@ export const getPlayerDetails = async (
 
 export const collectTransactions = async () => {
   const accessToken = await getAccessToken();
-  const { league, transactions } = await getTransactions(accessToken, "581427");
+  const { league, transactions } = await getTransactions(accessToken, "803557");
 
   const embedsToSend: any[] = [];
 
@@ -432,7 +432,7 @@ export const collectTransactions = async () => {
       await db.insert(Transaction).values(
         {
           transactionKey: `${apiTransaction.transaction_key}.${index}`,
-          leagueId: "581427",
+          leagueId: "803557",
           type: apiTransaction.type,
           timestamp: new Date(apiTransaction.timestamp * 1000),
           status: player.transaction_data.type,
