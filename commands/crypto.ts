@@ -30,7 +30,7 @@ import {
 } from "../handlers/timerangeHandler.ts";
 import { createCommand } from "./mod.ts";
 import { updateInteraction } from "./lib/updateInteraction.ts";
-import vegaLite from "vega-lite";
+import { compile as compileVegaLite } from "vega-lite";
 import { generateVega } from "../helpers/charting.ts";
 
 interface cgCoin extends Pageable, HasTimerange {
@@ -372,7 +372,7 @@ const fetchChart = async (symbol: string, timeRange: string): Promise<Blob> => {
     `https://api.coingecko.com/api/v3/coins/${symbol}/ohlc?vs_currency=usd&days=${timeRange}`,
   ).then((res) => res.json() as any);
 
-  const candleStickSchema = vegaLite.compile({
+  const candleStickSchema = compileVegaLite({
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",
     description: "A simple bar chart with embedded data.",
     width: 1280 / 2,

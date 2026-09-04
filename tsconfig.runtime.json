@@ -14,6 +14,8 @@
     "helpers/expiringStore.ts",
     "helpers/nfl/**/*.ts",
     "helpers/yahoo-fantasy/mod.ts",
-    "helpers/yahoo-fantasy/updateScoreboardRedisJob.ts"
+    "helpers/yahoo-fantasy/oauth.ts",
+    "helpers/yahoo-fantasy/updateScoreboardRedisJob.ts",
+    "scripts/yahoo-authorize.ts"
   ]
 }

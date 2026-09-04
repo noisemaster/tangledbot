@@ -1,8 +1,15 @@
-import { createClient } from "redis";
 import { db } from "../../drizzle/index.ts";
 import { XMLParser } from "fast-xml-parser";
 import { Matchup, Player, Transaction } from "../../drizzle/schema.ts";
 import { requireEnv } from "../env.ts";
+import {
+  closeYahooRedisClient,
+  createYahooRedisClient,
+  refreshYahooAccessToken,
+  storeYahooTokens,
+  YAHOO_ACCESS_TOKEN_KEY,
+  YAHOO_REFRESH_TOKEN_KEY,
+} from "./oauth.ts";
 
 interface ParsedStandings {
   name: string;
@@ -26,101 +33,56 @@ interface ParsedScoreboard {
   id: string;
 }
 
-export const getAccessToken = async (): Promise<string> => {
-  const redis = createClient({
-    url: requireEnv("REDIS_URL"),
-    socket: {
-      connectTimeout: 5_000,
-      reconnectStrategy: (retries) =>
-        retries < 3
-          ? Math.min(100 * 2 ** retries, 1_000)
-          : new Error("Redis reconnect limit reached"),
-    },
-  });
+let accessTokenRequest: Promise<string> | undefined;
 
-  // Redis clients emit EventEmitter `error` events. An error without a
-  // listener is process-fatal in Node-compatible runtimes.
-  redis.on("error", (error) => {
-    console.error("Redis client error", error);
-  });
-
+const loadAccessToken = async (): Promise<string> => {
+  const redis = createYahooRedisClient(requireEnv("REDIS_URL"));
   try {
     await redis.connect();
 
-    let accessToken = await redis.get("accessToken");
+    const [cachedAccessToken, cachedAccessTokenTtl] = await Promise.all([
+      redis.get(YAHOO_ACCESS_TOKEN_KEY),
+      redis.ttl(YAHOO_ACCESS_TOKEN_KEY),
+    ]);
 
-    if (!accessToken) {
-      console.log("Refreshing Yahoo Fantasy Token");
-
-      const refreshToken = await redis.get("refreshToken");
-
-      if (!refreshToken) {
-        throw new Error("Yahoo refresh token is missing from Redis");
-      }
-
-      const clientId = requireEnv("YAHOO_CLIENT_ID");
-      const clientSecret = requireEnv("YAHOO_CLIENT_SECRET");
-      const encoded = btoa(`${clientId}:${clientSecret}`);
-
-      const refreshRequest = await fetch(
-        "https://api.login.yahoo.com/oauth2/get_token",
-        {
-          method: "POST",
-          body: new URLSearchParams({
-            client_id: clientId,
-            client_secret: clientSecret,
-            redirect_uri: "oob",
-            refresh_token: refreshToken,
-            grant_type: "refresh_token",
-          }),
-          headers: {
-            Authorization: `Basic ${encoded}`,
-            "Content-Type": "application/x-www-form-urlencoded",
-          },
-          signal: AbortSignal.timeout(10_000),
-        },
-      );
-
-      if (!refreshRequest.ok) {
-        throw new Error(
-          `Yahoo token refresh failed with HTTP ${refreshRequest.status}`,
-        );
-      }
-
-      const refreshJson: any = await refreshRequest.json();
-
-      if (typeof refreshJson.access_token !== "string") {
-        throw new Error("Yahoo token refresh response had no access token");
-      }
-
-      accessToken = refreshJson.access_token;
-      const expiresIn = Number(refreshJson.expires_in);
-      const cacheSeconds = Number.isFinite(expiresIn)
-        ? Math.max(60, expiresIn - 60)
-        : 300;
-
-      await redis.setEx(
-        "accessToken",
-        cacheSeconds,
-        refreshJson.access_token as string,
-      );
-
-      if (typeof refreshJson.refresh_token === "string") {
-        await redis.set("refreshToken", refreshJson.refresh_token);
-      }
+    // A manually inserted access token may have no expiry. Treat it as stale
+    // so the bot does not keep using it after Yahoo's one-hour lifetime.
+    if (cachedAccessToken && cachedAccessTokenTtl > 0) {
+      return cachedAccessToken;
     }
 
-    return accessToken!;
+    console.log("Refreshing Yahoo Fantasy token");
+
+    const refreshToken = await redis.get(YAHOO_REFRESH_TOKEN_KEY);
+
+    if (!refreshToken) {
+      throw new Error(
+        "Yahoo refresh token is missing from Redis; run `bun run yahoo:authorize`",
+      );
+    }
+
+    const tokens = await refreshYahooAccessToken({
+      clientId: requireEnv("YAHOO_CLIENT_ID"),
+      clientSecret: requireEnv("YAHOO_CLIENT_SECRET"),
+      refreshToken,
+    });
+    await storeYahooTokens(redis, tokens);
+
+    return tokens.accessToken;
   } finally {
-    if (redis.isOpen) {
-      try {
-        await redis.quit();
-      } catch (error) {
-        console.error("Failed to close Redis client cleanly", error);
-        redis.disconnect();
-      }
-    }
+    await closeYahooRedisClient(redis);
   }
+};
+
+export const getAccessToken = (): Promise<string> => {
+  // Discord interactions and scheduled jobs can arrive together. Share one
+  // in-flight refresh within this process instead of rotating the refresh
+  // token several times concurrently.
+  accessTokenRequest ??= loadAccessToken().finally(() => {
+    accessTokenRequest = undefined;
+  });
+
+  return accessTokenRequest;
 };
 
 export const fetchStandings = async (

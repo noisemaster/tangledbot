@@ -5,7 +5,8 @@
   "scripts": {
     "check": "tsc -p tsconfig.runtime.json",
     "start": "bun run main.ts",
-    "test": "bun test"
+    "test": "bun test",
+    "yahoo:authorize": "bun run scripts/yahoo-authorize.ts"
   },
   "devDependencies": {
     "@types/pg": "^8.15.5",

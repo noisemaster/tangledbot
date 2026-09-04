@@ -19,7 +19,7 @@ import {
 } from "discordeno";
 
 import { updateInteraction } from "./lib/updateInteraction.ts";
-import vegaLite from "vega-lite";
+import { compile as compileVegaLite } from "vega-lite";
 import { generateVega } from "../helpers/charting.ts";
 
 interface YahooStockQuote extends HasTimerange {
@@ -334,7 +334,7 @@ const fetchChart = async (symbol: string, timeRange: string): Promise<Blob> => {
   const high = data.chart.result[0].indicators.quote[0].high;
   const low = data.chart.result[0].indicators.quote[0].low;
 
-  const candleStickSchema = vegaLite.compile({
+  const candleStickSchema = compileVegaLite({
     $schema: "https://vega.github.io/schema/vega-lite/v5.json",
     description: "A simple bar chart with embedded data.",
     width: 1280 / 2,

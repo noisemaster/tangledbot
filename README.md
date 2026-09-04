@@ -20,6 +20,18 @@ Yahoo Fantasy requires `DATABASE_URL`, `REDIS_URL`, `YAHOO_CLIENT_ID`, and
 `YAHOO_CLIENT_SECRET`. Its graph command also requires `MONGODB_URL`. TMDB
 commands require `TMDB_API_KEY`.
 
+Authorize Yahoo once from an interactive terminal:
+
+```sh
+bun run yahoo:authorize
+```
+
+Open the displayed Yahoo consent URL, approve access, and paste the returned
+authorization code. The command stores the refresh token in Redis and caches
+the access token with a TTL. After that, the bot refreshes access tokens and
+persists any rotated refresh token automatically. Re-run the command only if
+Yahoo revokes the grant or the refresh token is lost.
+
 ## Production
 
 Run the bot under a service manager with restart-on-failure enabled. The bot
