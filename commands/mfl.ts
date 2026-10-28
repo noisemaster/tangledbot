@@ -8,7 +8,7 @@ export const sendMFLEmbed = async (_bot: Bot, interaction: Interaction) => {
 
   await interaction.defer();
   const leaderboard =
-    "https://www.vulture.com/_components/leaderboard/instances/cmg5pj2fd000j3b749dri5fg8@published";
+    "https://www.vulture.com/static/leaderboard/production/cmuec30my000h3b7egrtm2p6h.json";
   const request = await fetch(leaderboard);
   const leaderboardData: any = await request.json();
 
