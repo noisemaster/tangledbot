@@ -12,7 +12,7 @@ export const sendMFLEmbed = async (_bot: Bot, interaction: Interaction) => {
   const request = await fetch(leaderboard);
   const leaderboardData: any = await request.json();
 
-  const fwListings = leaderboardData.players
+  const fwListings = leaderboardData
     .filter((x: any) => x.leagueName === "fireworks pictures ltd")
     .map((x: any) => `${x.ranking}. ${x.displayName} (${x.score})`)
     .join("\n");
